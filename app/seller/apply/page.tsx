@@ -76,7 +76,7 @@ export default function SellerApplyPage() {
         website: form.website.trim() || undefined,
         businessType: form.businessType,
         productCategories: form.productCategories.trim(),
-        yearsInBusiness: form.yearsInBusiness || undefined,
+        yearsInBusiness: form.yearsInBusiness || '',
         businessInformation: form.businessInformation.trim() || undefined,
         reason: form.reason.trim() || undefined,
         catalogUrl: form.catalogUrl.trim() || undefined,
