@@ -58,13 +58,22 @@ export type ContactMessageStatus =
 export interface SupportTicket extends TimestampedRecord {
   name: string;
   email: string;
+
+  // Seller-specific ownership fields
+  sellerUid?: string;
+  sellerEmail?: string;
+
   category: string;
   subject: string;
   message: string;
   status: TicketStatus;
 }
 
-export type TicketStatus = 'open' | 'in-progress' | 'resolved' | 'closed';
+export type TicketStatus =
+  | 'open'
+  | 'in-progress'
+  | 'resolved'
+  | 'closed';
 
 export interface BlogPost extends TimestampedRecord {
   title: string;
@@ -233,10 +242,27 @@ export interface PartnerPortalData extends TimestampedRecord {
   partnerId: string;
   overview: string;
   status: string;
-  documents: { name: string; url: string; uploadedAt: number }[];
-  catalogs: { name: string; url: string; uploadedAt: number }[];
-  requests: { subject: string; message: string; status: string; createdAt: number }[];
-  resources: { title: string; url: string; description: string }[];
+  documents: {
+    name: string;
+    url: string;
+    uploadedAt: number;
+  }[];
+  catalogs: {
+    name: string;
+    url: string;
+    uploadedAt: number;
+  }[];
+  requests: {
+    subject: string;
+    message: string;
+    status: string;
+    createdAt: number;
+  }[];
+  resources: {
+    title: string;
+    url: string;
+    description: string;
+  }[];
 }
 
 export interface CompanyInfo extends TimestampedRecord {
