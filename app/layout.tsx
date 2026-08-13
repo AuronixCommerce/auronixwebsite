@@ -1,7 +1,8 @@
 import './globals.css';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from '@/components/ui/toaster';
+import { AIChat } from '@/components/site/ai-chat';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -11,12 +12,16 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://auronix.com'),
+
   title: {
-    default: 'Auronix Commerce LLC | Modern E-Commerce & Marketplace Operations',
+    default:
+      'Auronix Commerce LLC | Modern E-Commerce & Marketplace Operations',
     template: '%s | Auronix Commerce LLC',
   },
+
   description:
     'Auronix Commerce LLC connects quality suppliers, brands, and online marketplaces through smarter procurement, distribution, and e-commerce operations.',
+
   keywords: [
     'e-commerce',
     'marketplace operations',
@@ -26,24 +31,35 @@ export const metadata: Metadata = {
     'commerce technology',
     'Auronix',
   ],
-  authors: [{ name: 'Auronix Commerce LLC' }],
+
+  authors: [
+    {
+      name: 'Auronix Commerce LLC',
+    },
+  ],
+
   creator: 'Auronix Commerce LLC',
   publisher: 'Auronix Commerce LLC',
+
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: 'https://auronix.com',
     siteName: 'Auronix Commerce LLC',
-    title: 'Auronix Commerce LLC | Modern E-Commerce & Marketplace Operations',
+    title:
+      'Auronix Commerce LLC | Modern E-Commerce & Marketplace Operations',
     description:
       'Auronix Commerce LLC connects quality suppliers, brands, and online marketplaces through smarter procurement, distribution, and e-commerce operations.',
   },
+
   twitter: {
     card: 'summary_large_image',
-    title: 'Auronix Commerce LLC | Modern E-Commerce & Marketplace Operations',
+    title:
+      'Auronix Commerce LLC | Modern E-Commerce & Marketplace Operations',
     description:
       'Auronix Commerce LLC connects quality suppliers, brands, and online marketplaces through smarter procurement, distribution, and e-commerce operations.',
   },
+
   robots: {
     index: true,
     follow: true,
@@ -54,12 +70,13 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+
   alternates: {
     canonical: '/',
   },
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -72,9 +89,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={inter.variable} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={inter.variable}
+      suppressHydrationWarning
+    >
       <body className="font-sans antialiased bg-background text-foreground min-h-screen">
         {children}
+        <AIChat />
         <Toaster />
       </body>
     </html>

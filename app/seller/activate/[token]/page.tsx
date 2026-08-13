@@ -1,195 +1,205 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { SiteLayout } from '@/components/site/site-layout';
-import { Section } from '@/components/site/section';
-import { Reveal } from '@/components/site/reveal';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { toast } from '@/hooks/use-toast';
-import { auth, db } from '@/lib/firebase';
-import { getData, updateData } from '@/lib/firebase-db';
-import { ref, get } from 'firebase/database';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { Loader2, CheckCircle2, ArrowRight, AlertCircle } from 'lucide-react';
+import { FormEvent, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
-export default function SellerActivatePage({ params }: { params: { token: string } }) {
-  const [loading, setLoading] = useState(true);
-  const [valid, setValid] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [applicationId, setApplicationId] = useState('');
+export default function SellerActivatePage() {
+  const searchParams = useSearchParams();
   const router = useRouter();
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const snapshot = await get(ref(db, 'sellerApplications'));
-        if (!snapshot.exists()) {
-          setLoading(false);
-          return;
-        }
-        const apps = snapshot.val();
-        let found = false;
-        for (const [id, app] of Object.entries(apps) as [string, any][]) {
-          if (app.invitationToken === params.token && app.invitationExpires && app.invitationExpires > Date.now()) {
-            setValid(true);
-            setEmail(app.email);
-            setApplicationId(id);
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          setValid(false);
-        }
-      } catch {
-        setValid(false);
-      }
-      setLoading(false);
-    })();
-  }, [params.token]);
+  const token = searchParams.get('token') || '';
 
-  const handleActivate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (submitting) return;
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+
+    setError('');
+
+    if (!token) {
+      setError('This invitation link is missing its invitation token.');
+      return;
+    }
+
     if (password.length < 8) {
-      toast({ title: 'Password too short', description: 'Password must be at least 8 characters.', variant: 'destructive' });
-      return;
-    }
-    if (password !== confirmPassword) {
-      toast({ title: 'Passwords do not match', description: 'Please confirm your password.', variant: 'destructive' });
+      setError('Password must be at least 8 characters.');
       return;
     }
 
-    setSubmitting(true);
+    if (password !== confirm) {
+      setError('Passwords do not match.');
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const uid = userCredential.user.uid;
-      const now = Date.now();
-
-      await updateData(`users/${uid}`, {
-        uid,
-        email,
-        role: 'seller',
-        sellerApplicationId: applicationId,
-        status: 'active',
-        createdAt: now,
-        updatedAt: now,
+      const response = await fetch('/api/seller/activate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token,
+          password,
+        }),
       });
 
-      await updateData(`sellerApplications/${applicationId}`, {
-        status: 'active',
-        invitationToken: null,
-        invitationExpires: null,
-        updatedAt: now,
-      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || 'Unable to create seller account.'
+        );
+      }
 
       setSuccess(true);
-      toast({ title: 'Account activated', description: 'Welcome to Auronix.' });
-      setTimeout(() => router.push('/seller/dashboard'), 2000);
+
+      setTimeout(() => {
+        router.push('/seller/login');
+      }, 1800);
     } catch (err) {
-      toast({
-        title: 'Activation failed',
-        description: err instanceof Error ? err.message : 'Please try again.',
-        variant: 'destructive',
-      });
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Unable to create seller account.'
+      );
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <SiteLayout>
-        <Section className="min-h-[60vh] flex items-center">
-          <div className="text-center">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto text-foreground-muted" />
-            <p className="mt-4 text-sm text-foreground-muted">Verifying invitation…</p>
-          </div>
-        </Section>
-      </SiteLayout>
-    );
-  }
-
-  if (success) {
-    return (
-      <SiteLayout>
-        <Section className="min-h-[60vh] flex items-center">
-          <Reveal className="max-w-lg mx-auto text-center">
-            <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-6">
-              <CheckCircle2 className="w-10 h-10 text-green-600" />
-            </div>
-            <h1 className="text-3xl font-semibold tracking-tight mb-4">Account activated.</h1>
-            <p className="text-lg text-foreground-muted leading-relaxed mb-8">
-              Your seller account is now active. Redirecting you to your dashboard…
-            </p>
-            <Link href="/seller/dashboard">
-              <Button>Go to Dashboard<ArrowRight className="w-4 h-4 ml-2" /></Button>
-            </Link>
-          </Reveal>
-        </Section>
-      </SiteLayout>
-    );
-  }
-
-  if (!valid) {
-    return (
-      <SiteLayout>
-        <Section className="min-h-[60vh] flex items-center">
-          <Reveal className="max-w-lg mx-auto text-center">
-            <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-6">
-              <AlertCircle className="w-10 h-10 text-destructive" />
-            </div>
-            <h1 className="text-3xl font-semibold tracking-tight mb-4">Invalid or expired invitation.</h1>
-            <p className="text-lg text-foreground-muted leading-relaxed mb-8">
-              This invitation link is no longer valid. Please contact support if you believe this is an error.
-            </p>
-            <Link href="/support"><Button variant="outline">Contact Support</Button></Link>
-          </Reveal>
-        </Section>
-      </SiteLayout>
-    );
-  }
-
   return (
-    <SiteLayout>
-      <Section className="min-h-[60vh] flex items-center">
-        <Reveal className="max-w-md mx-auto w-full">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-semibold tracking-tight mb-2">Activate your account</h1>
-            <p className="text-sm text-foreground-muted">Create your password to access your seller dashboard.</p>
-          </div>
+    <div className="min-h-screen bg-background-subtle flex items-center justify-center px-5">
+      <div className="w-full max-w-md">
 
-          <form onSubmit={handleActivate} className="space-y-5 rounded-2xl border border-border bg-card p-8">
-            <div>
-              <Label className="mb-2 block">Email</Label>
-              <Input value={email} disabled className="bg-secondary" />
+        <div className="text-center mb-7">
+          <div className="inline-flex items-center gap-2">
+            <div className="w-9 h-9 rounded-md bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold">
+                A
+              </span>
             </div>
-            <div>
-              <Label className="mb-2 block">Password</Label>
-              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="At least 8 characters" />
+
+            <div className="text-left">
+              <div className="text-sm font-semibold">
+                AURONIX
+              </div>
+
+              <div className="text-[9px] uppercase tracking-[0.16em] text-foreground-muted">
+                Commerce LLC
+              </div>
             </div>
-            <div>
-              <Label className="mb-2 block">Confirm Password</Label>
-              <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required placeholder="Re-enter password" />
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-8">
+          {success ? (
+            <div className="text-center py-6">
+              <CheckCircle2 className="w-12 h-12 mx-auto text-green-600 mb-4" />
+
+              <h1 className="text-xl font-semibold">
+                Account created
+              </h1>
+
+              <p className="text-sm text-foreground-muted mt-2">
+                Your seller account has been created.
+                Redirecting to login…
+              </p>
             </div>
-            <Button type="submit" disabled={submitting} className="w-full" size="lg">
-              {submitting ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Activating…</>
-              ) : (
-                <>Activate Account<ArrowRight className="w-4 h-4 ml-2" /></>
+          ) : (
+            <>
+              <h1 className="text-2xl font-semibold tracking-tight">
+                Create your seller account
+              </h1>
+
+              <p className="text-sm text-foreground-muted mt-2">
+                Your Auronix Commerce seller application has been approved.
+              </p>
+
+              {!token && (
+                <div className="mt-5 rounded-xl border border-red-500/20 bg-red-500/5 text-red-700 p-4 text-sm flex gap-3">
+                  <AlertCircle className="w-5 h-5 shrink-0" />
+                  <span>
+                    This invitation link is missing its token.
+                  </span>
+                </div>
               )}
-            </Button>
-          </form>
-        </Reveal>
-      </Section>
-    </SiteLayout>
+
+              <form
+                onSubmit={submit}
+                className="mt-7 space-y-5"
+              >
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Create Password
+                  </label>
+
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    minLength={8}
+                    required
+                    className="w-full h-11 rounded-xl border border-border bg-background px-4 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Confirm Password
+                  </label>
+
+                  <input
+                    type="password"
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    minLength={8}
+                    required
+                    className="w-full h-11 rounded-xl border border-border bg-background px-4 text-sm"
+                  />
+                </div>
+
+                {error && (
+                  <div className="rounded-xl border border-red-500/20 bg-red-500/5 text-red-700 p-4 text-sm">
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading || !token}
+                  className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Creating account…
+                    </>
+                  ) : (
+                    'Create Seller Account'
+                  )}
+                </button>
+              </form>
+            </>
+          )}
+        </div>
+
+        <div className="text-center mt-6">
+          <Link
+            href="/seller/login"
+            className="text-sm text-foreground-muted hover:text-foreground"
+          >
+            Seller Login
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 }

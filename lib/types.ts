@@ -58,15 +58,14 @@ export type ContactMessageStatus =
 export interface SupportTicket extends TimestampedRecord {
   name: string;
   email: string;
-
-  // Seller-specific ownership fields
   sellerUid?: string;
   sellerEmail?: string;
-
   category: string;
   subject: string;
   message: string;
   status: TicketStatus;
+  lastResponse?: string;
+  respondedAt?: number;
 }
 
 export type TicketStatus =
@@ -169,12 +168,27 @@ export interface UserProfile extends TimestampedRecord {
   uid: string;
   email: string;
   displayName?: string;
-  role: 'admin' | 'seller' | 'support' | 'partner' | 'user';
+  role:
+    | 'admin'
+    | 'seller'
+    | 'support'
+    | 'partner'
+    | 'supplier'
+    | 'user';
+
   sellerApplicationId?: string;
   businessName?: string;
   name?: string;
+  phone?: string;
+  website?: string;
   status?: string;
   partnerId?: string;
+
+  banned?: boolean;
+  bannedUntil?: number | null;
+  banReason?: string;
+  bannedAt?: number | null;
+  deletedAt?: number;
 }
 
 export interface SellerApplication extends TimestampedRecord {
@@ -190,9 +204,13 @@ export interface SellerApplication extends TimestampedRecord {
   businessInformation?: string;
   reason?: string;
   catalogUrl?: string;
+
   status: SellerApplicationStatus;
+
   invitationToken?: string;
-  invitationExpires?: number;
+  invitationTokenHash?: string;
+  invitationExpires?: number | null;
+  invitationUsedAt?: number | null;
 }
 
 export type SellerApplicationStatus =
