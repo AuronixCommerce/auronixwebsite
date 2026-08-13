@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /seller/dashboard
+Disallow: /seller/profile
+Disallow: /seller/support
+Disallow: /seller/settings
+Disallow: /seller/activate
+
+Sitemap: https://auronix.com/sitemap.xml
