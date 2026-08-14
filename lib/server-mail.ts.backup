@@ -23,10 +23,6 @@ const WEBSITE =
   process.env.AURONIX_WEBSITE ||
   'https://auronixcommerce.com';
 
-const MESSAGE_DOMAIN =
-  process.env.EMAIL_MESSAGE_DOMAIN ||
-  'auronixcommerce.com';
-
 const transporter = nodemailer.createTransport({
   host: SMTP_HOST,
   port: SMTP_PORT,
@@ -92,7 +88,10 @@ function getFirstName(name?: string): string {
     return 'there';
   }
 
-  return value.split(/\s+/)[0] || 'there';
+  return (
+    value.split(/\s+/)[0] ||
+    'there'
+  );
 }
 
 function generateThreadId(): string {
@@ -102,19 +101,22 @@ function generateThreadId(): string {
 }
 
 function generateMessageId(): string {
+  const domain =
+    process.env.EMAIL_MESSAGE_DOMAIN ||
+    'auronixcommerce.com';
+
   return `<${Date.now()}.${Math.random()
     .toString(36)
-    .slice(2, 12)}@${MESSAGE_DOMAIN}>`;
+    .slice(2, 12)}@${domain}>`;
 }
 
 function createHtmlEmail(body: string): string {
   const paragraphs = body
     .split(/\n\s*\n/)
     .map((paragraph) => {
-      const safe = escapeHtml(paragraph).replace(
-        /\n/g,
-        '<br />'
-      );
+      const safe = escapeHtml(
+        paragraph
+      ).replace(/\n/g, '<br />');
 
       return `
         <p
@@ -134,141 +136,140 @@ function createHtmlEmail(body: string): string {
   return `
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta
-    name="viewport"
-    content="width=device-width,initial-scale=1"
-  >
-  <title>Auronix Commerce</title>
-</head>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1"
+    />
+    <title>Auronix Commerce</title>
+  </head>
 
-<body
-  style="
-    margin:0;
-    padding:0;
-    background:#f5f5f5;
-    font-family:Arial,Helvetica,sans-serif;
-    color:#111111;
-  "
->
-  <div
+  <body
     style="
-      max-width:680px;
-      margin:32px auto;
-      background:#ffffff;
-      border:1px solid #e8e8e8;
-      border-radius:18px;
-      overflow:hidden;
+      margin:0;
+      padding:0;
+      background:#f5f5f5;
+      font-family:Arial,Helvetica,sans-serif;
+      color:#111111;
     "
   >
     <div
       style="
-        padding:28px 32px;
-        border-bottom:1px solid #eeeeee;
+        max-width:680px;
+        margin:32px auto;
+        background:#ffffff;
+        border:1px solid #e8e8e8;
+        border-radius:18px;
+        overflow:hidden;
       "
     >
       <div
         style="
-          font-size:19px;
-          font-weight:700;
-          letter-spacing:-0.2px;
+          padding:28px 32px;
+          border-bottom:1px solid #eeeeee;
         "
       >
-        AURONIX
-      </div>
-
-      <div
-        style="
-          margin-top:4px;
-          font-size:11px;
-          letter-spacing:2px;
-          text-transform:uppercase;
-          color:#888888;
-        "
-      >
-        Commerce LLC
-      </div>
-    </div>
-
-    <div style="padding:32px;">
-      ${paragraphs}
-    </div>
-
-    <div
-      style="
-        padding:24px 32px;
-        border-top:1px solid #eeeeee;
-        background:#fafafa;
-      "
-    >
-      <div
-        style="
-          font-size:14px;
-          font-weight:600;
-        "
-      >
-        Auronix Commerce Team
-      </div>
-
-      <div
-        style="
-          margin-top:4px;
-          font-size:13px;
-          color:#666666;
-        "
-      >
-        Auronix Commerce LLC
-      </div>
-
-      <div
-        style="
-          margin-top:10px;
-          font-size:13px;
-        "
-      >
-        <a
-          href="mailto:${SUPPORT_EMAIL}"
+        <div
           style="
-            color:#111111;
-            text-decoration:none;
+            font-size:19px;
+            font-weight:700;
+            letter-spacing:-0.2px;
           "
         >
-          ${SUPPORT_EMAIL}
-        </a>
-      </div>
+          AURONIX
+        </div>
 
-      <div
-        style="
-          margin-top:4px;
-          font-size:13px;
-        "
-      >
-        <a
-          href="${WEBSITE}"
+        <div
           style="
-            color:#111111;
-            text-decoration:none;
+            margin-top:4px;
+            font-size:11px;
+            letter-spacing:2px;
+            text-transform:uppercase;
+            color:#888888;
           "
         >
-          ${WEBSITE}
-        </a>
+          Commerce LLC
+        </div>
+      </div>
+
+      <div style="padding:32px;">
+        ${paragraphs}
       </div>
 
       <div
         style="
-          margin-top:16px;
-          font-size:11px;
-          color:#999999;
-          line-height:1.6;
+          padding:24px 32px;
+          border-top:1px solid #eeeeee;
+          background:#fafafa;
         "
       >
-        This email was sent regarding your communication
-        with Auronix Commerce LLC.
+        <div
+          style="
+            font-size:14px;
+            font-weight:600;
+          "
+        >
+          Auronix Commerce Team
+        </div>
+
+        <div
+          style="
+            margin-top:4px;
+            font-size:13px;
+            color:#666666;
+          "
+        >
+          Auronix Commerce LLC
+        </div>
+
+        <div
+          style="
+            margin-top:10px;
+            font-size:13px;
+          "
+        >
+          <a
+            href="mailto:${SUPPORT_EMAIL}"
+            style="
+              color:#111111;
+              text-decoration:none;
+            "
+          >
+            ${SUPPORT_EMAIL}
+          </a>
+        </div>
+
+        <div
+          style="
+            margin-top:4px;
+            font-size:13px;
+          "
+        >
+          <a
+            href="${WEBSITE}"
+            style="
+              color:#111111;
+              text-decoration:none;
+            "
+          >
+            ${WEBSITE}
+          </a>
+        </div>
+
+        <div
+          style="
+            margin-top:16px;
+            font-size:11px;
+            color:#999999;
+            line-height:1.6;
+          "
+        >
+          This email was sent regarding your communication with Auronix Commerce LLC.
+        </div>
       </div>
     </div>
-  </div>
-</body>
+  </body>
 </html>
 `.trim();
 }
@@ -307,55 +308,97 @@ async function saveEmailThread(options: {
   try {
     const now = Date.now();
 
-    const threadRef = adminDb.ref(
-      `emailThreads/${options.threadId}`
-    );
+    const threadRef =
+      adminDb.ref(
+        `emailThreads/${options.threadId}`
+      );
 
-    const existing = await threadRef.get();
+    const existing =
+      await threadRef.get();
 
     if (!existing.exists()) {
       await threadRef.set({
-        threadId: options.threadId,
-        type: options.type,
-        recipient: options.to,
-        name: options.name || '',
-        subject: options.subject,
+        threadId:
+          options.threadId,
+
+        type:
+          options.type,
+
+        recipient:
+          options.to,
+
+        name:
+          options.name || '',
+
+        subject:
+          options.subject,
+
         relatedRecordId:
           options.relatedRecordId || '',
+
         relatedRecordType:
           options.relatedRecordType || '',
-        createdAt: now,
-        updatedAt: now,
+
+        createdAt:
+          now,
+
+        updatedAt:
+          now,
       });
     }
 
-    const messageRef = threadRef
-      .child('messages')
-      .push();
+    const messageRef =
+      threadRef
+        .child('messages')
+        .push();
 
     await messageRef.set({
-      id: options.messageId,
-      direction: 'outbound',
-      sender: SMTP_USER,
-      recipient: options.to,
-      subject: options.subject,
-      body: options.body,
-      type: options.type,
+      id:
+        options.messageId,
+
+      direction:
+        'outbound',
+
+      sender:
+        SMTP_USER,
+
+      recipient:
+        options.to,
+
+      subject:
+        options.subject,
+
+      body:
+        options.body,
+
+      type:
+        options.type,
+
       aiGenerated:
         options.aiGenerated === true,
+
       automated:
         options.automated === true,
+
       inReplyTo:
         options.inReplyTo || '',
+
       references:
         options.references || [],
-      createdAt: now,
+
+      createdAt:
+        now,
     });
 
     await threadRef.update({
-      updatedAt: now,
-      lastMessageAt: now,
-      lastDirection: 'outbound',
+      updatedAt:
+        now,
+
+      lastMessageAt:
+        now,
+
+      lastDirection:
+        'outbound',
     });
   } catch (error) {
     console.error(
@@ -368,9 +411,14 @@ async function saveEmailThread(options: {
 export async function sendProfessionalEmail(
   options: SendEmailOptions
 ): Promise<SendEmailResult> {
-  const to = clean(options.to);
-  const subject = clean(options.subject);
-  const body = clean(options.body);
+  const to =
+    clean(options.to);
+
+  const subject =
+    clean(options.subject);
+
+  const body =
+    clean(options.body);
 
   if (!to) {
     throw new Error(
@@ -424,7 +472,8 @@ export async function sendProfessionalEmail(
 
       subject,
 
-      text: body,
+      text:
+        body,
 
       html,
 
@@ -445,16 +494,19 @@ export async function sendProfessionalEmail(
     });
 
   const actualMessageId =
-    info.messageId || messageId;
+    info.messageId ||
+    messageId;
 
   await saveEmailThread({
     threadId,
-    messageId: actualMessageId,
+    messageId:
+      actualMessageId,
     to,
     subject,
     body,
     type:
-      options.type || 'general',
+      options.type ||
+      'general',
     name:
       options.name,
     relatedRecordId:
@@ -473,7 +525,8 @@ export async function sendProfessionalEmail(
 
   return {
     success: true,
-    messageId: actualMessageId,
+    messageId:
+      actualMessageId,
     threadId,
     to,
     subject,
@@ -498,14 +551,22 @@ export async function sendContactResponseEmail(
   }
 ) {
   return sendProfessionalEmail({
-    to: params.to,
-    name: params.name,
-    subject: params.subject,
-    body: params.body,
-    type: 'contact',
-    threadId: params.threadId,
-    inReplyTo: params.inReplyTo,
-    references: params.references,
+    to:
+      params.to,
+    name:
+      params.name,
+    subject:
+      params.subject,
+    body:
+      params.body,
+    type:
+      'contact',
+    threadId:
+      params.threadId,
+    inReplyTo:
+      params.inReplyTo,
+    references:
+      params.references,
     relatedRecordId:
       params.relatedRecordId,
     relatedRecordType:
@@ -533,14 +594,22 @@ export async function sendSupplierResponseEmail(
   }
 ) {
   return sendProfessionalEmail({
-    to: params.to,
-    name: params.name,
-    subject: params.subject,
-    body: params.body,
-    type: 'supplier',
-    threadId: params.threadId,
-    inReplyTo: params.inReplyTo,
-    references: params.references,
+    to:
+      params.to,
+    name:
+      params.name,
+    subject:
+      params.subject,
+    body:
+      params.body,
+    type:
+      'supplier',
+    threadId:
+      params.threadId,
+    inReplyTo:
+      params.inReplyTo,
+    references:
+      params.references,
     relatedRecordId:
       params.relatedRecordId,
     relatedRecordType:
@@ -569,14 +638,22 @@ export async function sendSupportResponseEmail(
   }
 ) {
   return sendProfessionalEmail({
-    to: params.to,
-    name: params.name,
-    subject: params.subject,
-    body: params.body,
-    type: 'support',
-    threadId: params.threadId,
-    inReplyTo: params.inReplyTo,
-    references: params.references,
+    to:
+      params.to,
+    name:
+      params.name,
+    subject:
+      params.subject,
+    body:
+      params.body,
+    type:
+      'support',
+    threadId:
+      params.threadId,
+    inReplyTo:
+      params.inReplyTo,
+    references:
+      params.references,
     relatedRecordId:
       params.ticketId,
     relatedRecordType:
@@ -589,16 +666,453 @@ export async function sendSupportResponseEmail(
 }
 
 /* ============================================================
-   OLD SUPPORT COMPATIBILITY
-   Supports:
-   sendTicketResponseEmail(email, subject, response)
+   SELLER INVITATION
+   Supports BOTH:
+   sendSellerInvitationEmail(email, name, url)
+   and:
+   sendSellerInvitationEmail({ to, name, activationUrl })
+============================================================ */
 
-   Also supports:
-   sendTicketResponseEmail({
-     to,
-     subject,
-     body
-   })
+export async function sendSellerInvitationEmail(
+  toOrParams:
+    | string
+    | {
+        to?: string;
+        email?: string;
+        name?: string;
+        fullName?: string;
+        activationUrl?: string;
+        invitationUrl?: string;
+        threadId?: string;
+        relatedRecordId?: string;
+        applicationId?: string;
+      },
+  nameOrActivationUrl?: string,
+  activationUrlOrUndefined?: string
+) {
+  let to = '';
+
+  let name = 'there';
+
+  let activationUrl = '';
+
+  let threadId:
+    | string
+    | undefined;
+
+  let relatedRecordId:
+    | string
+    | undefined;
+
+  if (
+    typeof toOrParams ===
+    'object'
+  ) {
+    const params =
+      toOrParams;
+
+    to =
+      clean(
+        params.to ||
+          params.email
+      );
+
+    name =
+      clean(
+        params.name ||
+          params.fullName
+      ) || 'there';
+
+    activationUrl =
+      clean(
+        params.activationUrl ||
+          params.invitationUrl
+      );
+
+    threadId =
+      clean(
+        params.threadId
+      ) || undefined;
+
+    relatedRecordId =
+      clean(
+        params.relatedRecordId ||
+          params.applicationId
+      ) || undefined;
+  } else {
+    /*
+     * Existing route:
+     *
+     * sendSellerInvitationEmail(
+     *   application.email,
+     *   application.fullName,
+     *   invitationUrl
+     * );
+     */
+
+    to =
+      clean(
+        toOrParams
+      );
+
+    name =
+      clean(
+        nameOrActivationUrl
+      ) || 'there';
+
+    activationUrl =
+      clean(
+        activationUrlOrUndefined
+      );
+  }
+
+  if (!to) {
+    throw new Error(
+      'Seller email address is required.'
+    );
+  }
+
+  if (!activationUrl) {
+    throw new Error(
+      'Seller activation URL is required.'
+    );
+  }
+
+  const first =
+    getFirstName(name);
+
+  const subject =
+    'Your Auronix Commerce Seller Account Is Ready';
+
+  const body = `
+Dear ${first},
+
+We are pleased to let you know that your seller application with Auronix Commerce LLC has been reviewed and your account is ready for setup.
+
+To complete your account, please use the secure link below:
+
+${activationUrl}
+
+During account setup, you will be able to establish your login credentials and complete the remaining onboarding information.
+
+If you need help at any point, simply reply to this email and our support team can assist you. Please include your application or ticket information when possible so we can help you more efficiently.
+
+If you did not submit an application to Auronix Commerce LLC, you may disregard this message and contact our support team.
+
+We look forward to welcoming you to Auronix Commerce.
+
+Kind regards,
+
+Auronix Commerce Team
+Auronix Commerce LLC
+`.trim();
+
+  return sendProfessionalEmail({
+    to,
+    name,
+    subject,
+    body,
+    type:
+      'seller',
+    threadId,
+    relatedRecordId,
+    relatedRecordType:
+      'seller-application',
+    automated:
+      true,
+  });
+}
+
+/* ============================================================
+   APPLICATION UPDATE
+============================================================ */
+
+export async function sendApplicationUpdateEmail(
+  params: {
+    to: string;
+    name?: string;
+    subject: string;
+    body: string;
+    applicationId?: string;
+    applicationType?:
+      | 'seller'
+      | 'supplier'
+      | 'partner';
+    threadId?: string;
+    aiGenerated?: boolean;
+  }
+) {
+  return sendProfessionalEmail({
+    to:
+      params.to,
+    name:
+      params.name,
+    subject:
+      params.subject,
+    body:
+      params.body,
+    type:
+      'application',
+    threadId:
+      params.threadId,
+    relatedRecordId:
+      params.applicationId,
+    relatedRecordType:
+      params.applicationType ||
+      'application',
+    aiGenerated:
+      params.aiGenerated,
+  });
+}
+
+/* ============================================================
+   SELLER REJECTION
+   Supports old positional and new object format.
+============================================================ */
+
+export async function sendSellerRejectionEmail(
+  toOrParams:
+    | string
+    | {
+        to?: string;
+        email?: string;
+        name?: string;
+        fullName?: string;
+        reason?: string;
+        rejectionReason?: string;
+        applicationId?: string;
+        aiGenerated?: boolean;
+        threadId?: string;
+      },
+  nameOrReason?: string,
+  reasonOrApplicationId?: string,
+  applicationId?: string
+) {
+  let to = '';
+
+  let name = 'there';
+
+  let reason =
+    'The application did not meet the current requirements.';
+
+  let actualApplicationId:
+    | string
+    | undefined;
+
+  let threadId:
+    | string
+    | undefined;
+
+  let aiGenerated = false;
+
+  if (
+    typeof toOrParams ===
+    'object'
+  ) {
+    const params =
+      toOrParams;
+
+    to =
+      clean(
+        params.to ||
+          params.email
+      );
+
+    name =
+      clean(
+        params.name ||
+          params.fullName
+      ) || 'there';
+
+    reason =
+      clean(
+        params.reason ||
+          params.rejectionReason
+      ) || reason;
+
+    actualApplicationId =
+      params.applicationId;
+
+    threadId =
+      clean(
+        params.threadId
+      ) || undefined;
+
+    aiGenerated =
+      params.aiGenerated === true;
+  } else {
+    to =
+      clean(
+        toOrParams
+      );
+
+    /*
+     * Supported old signatures:
+     *
+     * sendSellerRejectionEmail(
+     *   email,
+     *   name,
+     *   reason
+     * )
+     *
+     * sendSellerRejectionEmail(
+     *   email,
+     *   reason
+     * )
+     *
+     * sendSellerRejectionEmail(
+     *   email,
+     *   name,
+     *   reason,
+     *   applicationId
+     * )
+     */
+
+    if (
+      reasonOrApplicationId
+    ) {
+      name =
+        clean(
+          nameOrReason
+        ) || 'there';
+
+      reason =
+        clean(
+          reasonOrApplicationId
+        ) || reason;
+
+      actualApplicationId =
+        clean(
+          applicationId
+        ) || undefined;
+    } else {
+      reason =
+        clean(
+          nameOrReason
+        ) || reason;
+    }
+  }
+
+  const first =
+    getFirstName(name);
+
+  const subject =
+    'Update Regarding Your Auronix Commerce Seller Application';
+
+  const body = `
+Dear ${first},
+
+Thank you for your interest in becoming a seller with Auronix Commerce LLC.
+
+After reviewing your application, we are unable to approve it at this time.
+
+Reason for this decision:
+
+${reason}
+
+This decision does not necessarily prevent you from applying again. You may review the information submitted, address the issue identified above, and submit a new application where applicable.
+
+If you need clarification or believe this decision was made in error, simply reply to this email and our support team will be happy to assist you.
+
+Kind regards,
+
+Auronix Commerce Team
+Auronix Commerce LLC
+`.trim();
+
+  return sendApplicationUpdateEmail({
+    to,
+    name,
+    subject,
+    body,
+    applicationId:
+      actualApplicationId,
+    applicationType:
+      'seller',
+    threadId,
+    aiGenerated,
+  });
+}
+
+/* ============================================================
+   PASSWORD RESET
+============================================================ */
+
+export async function sendPasswordResetEmail(
+  params: {
+    to: string;
+    name?: string;
+    resetUrl: string;
+  }
+) {
+  const first =
+    getFirstName(
+      params.name
+    );
+
+  const subject =
+    'Reset Your Auronix Commerce Password';
+
+  const body = `
+Dear ${first},
+
+We received a request to reset the password for your Auronix Commerce account.
+
+Use the secure link below to choose a new password:
+
+${params.resetUrl}
+
+For your security, this link may expire after a limited period and should not be shared with anyone.
+
+If you did not request a password reset, you can safely ignore this email. Your current password will remain unchanged.
+
+If you need assistance, simply reply to this email and our support team will help you.
+
+Kind regards,
+
+Auronix Commerce Team
+Auronix Commerce LLC
+`.trim();
+
+  return sendProfessionalEmail({
+    to:
+      params.to,
+    name:
+      params.name,
+    subject,
+    body,
+    type:
+      'password-reset',
+    automated:
+      true,
+  });
+}
+
+/* ============================================================
+   SMTP TEST
+============================================================ */
+
+export async function verifyMailConnection() {
+  if (!SMTP_PASSWORD) {
+    throw new Error(
+      'SMTP_PASSWORD is not configured.'
+    );
+  }
+
+  await transporter.verify();
+
+  return {
+    success: true,
+    from:
+      SMTP_USER,
+    support:
+      SUPPORT_EMAIL,
+  };
+}
+
+/* ============================================================
+   BACKWARD COMPATIBILITY:
+   EXISTING TICKET RESPONSE ROUTES
 ============================================================ */
 
 export async function sendTicketResponseEmail(
@@ -672,7 +1186,8 @@ export async function sendTicketResponseEmail(
   }
 
   return sendProfessionalEmail({
-    to: toOrParams,
+    to:
+      toOrParams,
 
     subject:
       subject ||
@@ -690,432 +1205,22 @@ export async function sendTicketResponseEmail(
 }
 
 /* ============================================================
-   SELLER INVITATION
-   Supports:
-   sendSellerInvitationEmail(email, name, invitationUrl)
-
-   And:
-   sendSellerInvitationEmail({
-     to,
-     name,
-     activationUrl
-   })
+   BACKWARD COMPATIBILITY:
+   EXISTING PASSWORD RESET ROUTES
 ============================================================ */
 
-export async function sendSellerInvitationEmail(
-  toOrParams:
-    | string
-    | {
-        to?: string;
-        email?: string;
-        name?: string;
-        fullName?: string;
-        activationUrl?: string;
-        invitationUrl?: string;
-        threadId?: string;
-        relatedRecordId?: string;
-        applicationId?: string;
-      },
-  nameOrActivationUrl?: string,
-  activationUrlArg?: string
-) {
-  let to = '';
-  let name = 'there';
-  let activationUrl = '';
-  let threadId:
-    | string
-    | undefined;
-  let relatedRecordId:
-    | string
-    | undefined;
-
-  if (
-    typeof toOrParams === 'object'
-  ) {
-    const params =
-      toOrParams;
-
-    to =
-      clean(
-        params.to ||
-          params.email
-      );
-
-    name =
-      clean(
-        params.name ||
-          params.fullName
-      ) || 'there';
-
-    activationUrl =
-      clean(
-        params.activationUrl ||
-          params.invitationUrl
-      );
-
-    threadId =
-      clean(
-        params.threadId
-      ) || undefined;
-
-    relatedRecordId =
-      clean(
-        params.relatedRecordId ||
-          params.applicationId
-      ) || undefined;
-  } else {
-    to =
-      clean(
-        toOrParams
-      );
-
-    name =
-      clean(
-        nameOrActivationUrl
-      ) || 'there';
-
-    activationUrl =
-      clean(
-        activationUrlArg
-      );
-  }
-
-  if (!to) {
-    throw new Error(
-      'Seller email address is required.'
-    );
-  }
-
-  if (!activationUrl) {
-    throw new Error(
-      'Seller activation URL is required.'
-    );
-  }
-
-  const first =
-    getFirstName(name);
-
-  const subject =
-    'Your Auronix Commerce Seller Account Is Ready';
-
-  const body = `
-Dear ${first},
-
-We are pleased to let you know that your seller application with Auronix Commerce LLC has been reviewed and your account is ready for setup.
-
-To complete your account, please use the secure link below:
-
-${activationUrl}
-
-During account setup, you will be able to establish your login credentials and complete the remaining onboarding information.
-
-If you need help at any point, simply reply to this email and our support team can assist you. Please include your application or ticket information when possible so we can help you more efficiently.
-
-If you did not submit an application to Auronix Commerce LLC, you may disregard this message and contact our support team.
-
-We look forward to welcoming you to Auronix Commerce.
-
-Kind regards,
-
-Auronix Commerce Team
-Auronix Commerce LLC
-`.trim();
-
-  return sendProfessionalEmail({
-    to,
-    name,
-    subject,
-    body,
-    type: 'seller',
-    threadId,
-    relatedRecordId,
-    relatedRecordType:
-      'seller-application',
-    automated: true,
-  });
-}
-
-/* ============================================================
-   APPLICATION UPDATE
-============================================================ */
-
-export async function sendApplicationUpdateEmail(
-  params: {
-    to: string;
-    name?: string;
-    subject: string;
-    body: string;
-    applicationId?: string;
-    applicationType?:
-      | 'seller'
-      | 'supplier'
-      | 'partner';
-    threadId?: string;
-    aiGenerated?: boolean;
-  }
+export async function sendPasswordResetEmailLegacy(
+  email: string,
+  name: string,
+  resetUrl: string
 ) {
   return sendProfessionalEmail({
-    to: params.to,
-    name: params.name,
-    subject: params.subject,
-    body: params.body,
-    type: 'application',
-    threadId:
-      params.threadId,
-    relatedRecordId:
-      params.applicationId,
-    relatedRecordType:
-      params.applicationType ||
-      'application',
-    aiGenerated:
-      params.aiGenerated,
-  });
-}
-
-/* ============================================================
-   SELLER REJECTION
-   Supports common existing positional calls.
-============================================================ */
-
-export async function sendSellerRejectionEmail(
-  toOrParams:
-    | string
-    | {
-        to?: string;
-        email?: string;
-        name?: string;
-        fullName?: string;
-        reason?: string;
-        rejectionReason?: string;
-        applicationId?: string;
-        threadId?: string;
-        aiGenerated?: boolean;
-      },
-  nameOrReason?: string,
-  reasonOrApplicationId?: string,
-  applicationIdArg?: string
-) {
-  let to = '';
-  let name = 'there';
-
-  let reason =
-    'The application did not meet the current requirements.';
-
-  let applicationId:
-    | string
-    | undefined;
-
-  let threadId:
-    | string
-    | undefined;
-
-  let aiGenerated = false;
-
-  if (
-    typeof toOrParams === 'object'
-  ) {
-    const params =
-      toOrParams;
-
-    to =
-      clean(
-        params.to ||
-          params.email
-      );
-
-    name =
-      clean(
-        params.name ||
-          params.fullName
-      ) || 'there';
-
-    reason =
-      clean(
-        params.reason ||
-          params.rejectionReason
-      ) || reason;
-
-    applicationId =
-      clean(
-        params.applicationId
-      ) || undefined;
-
-    threadId =
-      clean(
-        params.threadId
-      ) || undefined;
-
-    aiGenerated =
-      params.aiGenerated === true;
-  } else {
-    to =
-      clean(
-        toOrParams
-      );
-
-    /*
-     * Existing common signature:
-     * email, name, reason
-     */
-
-    if (
-      typeof reasonOrApplicationId ===
-      'string'
-    ) {
-      name =
-        clean(
-          nameOrReason
-        ) || 'there';
-
-      reason =
-        clean(
-          reasonOrApplicationId
-        ) || reason;
-
-      applicationId =
-        clean(
-          applicationIdArg
-        ) || undefined;
-    } else {
-      reason =
-        clean(
-          nameOrReason
-        ) || reason;
-    }
-  }
-
-  const first =
-    getFirstName(name);
-
-  const subject =
-    'Update Regarding Your Auronix Commerce Seller Application';
-
-  const body = `
-Dear ${first},
-
-Thank you for your interest in becoming a seller with Auronix Commerce LLC.
-
-After reviewing your application, we are unable to approve it at this time.
-
-Reason for this decision:
-
-${reason}
-
-This decision does not necessarily prevent you from applying again. You may review the information submitted, address the issue identified above, and submit a new application where applicable.
-
-If you need clarification or believe this decision was made in error, simply reply to this email and our support team will be happy to assist you.
-
-Kind regards,
-
-Auronix Commerce Team
-Auronix Commerce LLC
-`.trim();
-
-  return sendApplicationUpdateEmail({
-    to,
-    name,
-    subject,
-    body,
-    applicationId,
-    applicationType: 'seller',
-    threadId,
-    aiGenerated,
-  });
-}
-
-/* ============================================================
-   PASSWORD RESET
-   Supports BOTH:
-   sendPasswordResetEmail(email, name, resetUrl)
-
-   And:
-   sendPasswordResetEmail({
-     to,
-     name,
-     resetUrl
-   })
-============================================================ */
-
-export async function sendPasswordResetEmail(
-  paramsOrEmail:
-    | {
-        to: string;
-        name?: string;
-        resetUrl: string;
-      }
-    | string,
-  nameOrResetUrl?: string,
-  resetUrlArg?: string
-) {
-  let to = '';
-  let name = 'there';
-  let resetUrl = '';
-
-  if (
-    typeof paramsOrEmail ===
-    'object'
-  ) {
-    to =
-      clean(
-        paramsOrEmail.to
-      );
-
-    name =
-      clean(
-        paramsOrEmail.name
-      ) || 'there';
-
-    resetUrl =
-      clean(
-        paramsOrEmail.resetUrl
-      );
-  } else {
-    /*
-     * Existing route:
-     *
-     * sendPasswordResetEmail(
-     *   user.email,
-     *   user.displayName || '',
-     *   resetLink
-     * );
-     */
-
-    to =
-      clean(
-        paramsOrEmail
-      );
-
-    name =
-      clean(
-        nameOrResetUrl
-      ) || 'there';
-
-    resetUrl =
-      clean(
-        resetUrlArg
-      );
-  }
-
-  if (!to) {
-    throw new Error(
-      'Password reset email address is required.'
-    );
-  }
-
-  if (!resetUrl) {
-    throw new Error(
-      'Password reset URL is required.'
-    );
-  }
-
-  const first =
-    getFirstName(name);
-
-  const subject =
-    'Reset Your Auronix Commerce Password';
-
-  const body = `
-Dear ${first},
+    to: email,
+    name: name,
+    subject:
+      'Reset Your Auronix Commerce Password',
+    body: `
+Dear ${getFirstName(name)},
 
 We received a request to reset the password for your Auronix Commerce account.
 
@@ -1133,34 +1238,8 @@ Kind regards,
 
 Auronix Commerce Team
 Auronix Commerce LLC
-`.trim();
-
-  return sendProfessionalEmail({
-    to,
-    name,
-    subject,
-    body,
+`.trim(),
     type: 'password-reset',
     automated: true,
   });
-}
-
-/* ============================================================
-   SMTP TEST
-============================================================ */
-
-export async function verifyMailConnection() {
-  if (!SMTP_PASSWORD) {
-    throw new Error(
-      'SMTP_PASSWORD is not configured.'
-    );
-  }
-
-  await transporter.verify();
-
-  return {
-    success: true,
-    from: SMTP_USER,
-    support: SUPPORT_EMAIL,
-  };
 }
