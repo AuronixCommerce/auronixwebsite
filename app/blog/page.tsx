@@ -22,7 +22,9 @@ export default function BlogPage() {
         title={
           <>
             Ideas, perspective, and
-            marketplace intelligence.
+            <span className="text-foreground-muted">
+              {' '}marketplace intelligence.
+            </span>
           </>
         }
         description="Explore practical thinking from Auronix Commerce LLC across procurement, e-commerce, supplier partnerships, and marketplace operations."
