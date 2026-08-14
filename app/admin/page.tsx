@@ -2,27 +2,25 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import {
-  ref,
-  onValue,
-} from 'firebase/database';
+import { ref, onValue } from 'firebase/database';
 
 import { db, auth } from '@/lib/firebase';
 import { AdminLayout } from '@/components/admin/admin-layout';
+
 import {
-  Loader2,
   ArrowRight,
   Activity,
-  Users,
-  ShoppingBag,
-  Mail,
-  Ticket,
+  Building2,
   FileText,
   Briefcase,
-  Building2,
+  Mail,
+  Ticket,
+  Users,
+  ShoppingBag,
   Bot,
   Wifi,
   WifiOff,
+  Loader2,
 } from 'lucide-react';
 
 interface Counts {
@@ -36,25 +34,19 @@ interface Counts {
 }
 
 export default function AdminDashboardPage() {
-  const [counts, setCounts] =
-    useState<Counts>({
-      suppliers: 0,
-      contacts: 0,
-      tickets: 0,
-      sellers: 0,
-      blog: 0,
-      careers: 0,
-      partners: 0,
-    });
+  const [counts, setCounts] = useState<Counts>({
+    suppliers: 0,
+    contacts: 0,
+    tickets: 0,
+    sellers: 0,
+    blog: 0,
+    careers: 0,
+    partners: 0,
+  });
 
-  const [availability, setAvailability] =
-    useState(true);
-
-  const [updatingAvailability, setUpdatingAvailability] =
-    useState(false);
-
-  const [loading, setLoading] =
-    useState(true);
+  const [availability, setAvailability] = useState(true);
+  const [updatingAvailability, setUpdatingAvailability] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!db) {
@@ -62,138 +54,229 @@ export default function AdminDashboardPage() {
       return;
     }
 
-    const unsubscribers = [
-      ['suppliers', (value: any) => {
+    const unsubscribers: Array<() => void> = [];
+
+    const suppliersUnsub = onValue(
+      ref(db, 'suppliers'),
+      (snapshot) => {
+        const value = snapshot.exists()
+          ? snapshot.val()
+          : null;
+
         setCounts((current) => ({
           ...current,
-          suppliers: value
-            ? Object.keys(value).length
-            : 0,
+          suppliers:
+            value && typeof value === 'object'
+              ? Object.keys(value).length
+              : 0,
         }));
-      }],
 
-      ['contact', (value: any) => {
+        setLoading(false);
+      }
+    );
+
+    unsubscribers.push(suppliersUnsub);
+
+    const contactUnsub = onValue(
+      ref(db, 'contact'),
+      (snapshot) => {
+        const value = snapshot.exists()
+          ? snapshot.val()
+          : null;
+
         setCounts((current) => ({
           ...current,
-          contacts: value
-            ? Object.keys(value).length
-            : 0,
+          contacts:
+            value && typeof value === 'object'
+              ? Object.keys(value).length
+              : 0,
         }));
-      }],
 
-      ['tickets', (value: any) => {
+        setLoading(false);
+      }
+    );
+
+    unsubscribers.push(contactUnsub);
+
+    const ticketsUnsub = onValue(
+      ref(db, 'tickets'),
+      (snapshot) => {
+        const value = snapshot.exists()
+          ? snapshot.val()
+          : null;
+
         setCounts((current) => ({
           ...current,
-          tickets: value
-            ? Object.keys(value).length
-            : 0,
+          tickets:
+            value && typeof value === 'object'
+              ? Object.keys(value).length
+              : 0,
         }));
-      }],
 
-      ['sellerApplications', (value: any) => {
+        setLoading(false);
+      }
+    );
+
+    unsubscribers.push(ticketsUnsub);
+
+    const sellersUnsub = onValue(
+      ref(db, 'sellerApplications'),
+      (snapshot) => {
+        const value = snapshot.exists()
+          ? snapshot.val()
+          : null;
+
         setCounts((current) => ({
           ...current,
-          sellers: value
-            ? Object.keys(value).length
-            : 0,
+          sellers:
+            value && typeof value === 'object'
+              ? Object.keys(value).length
+              : 0,
         }));
-      }],
 
-      ['blogPosts', (value: any) => {
-        setCounts((current) => ({
-          ...current,
-          blog: value
-            ? Object.values(value).filter(
-                (item: any) =>
-                  item?.published === true
-              ).length
-            : 0,
-        }));
-      }],
+        setLoading(false);
+      }
+    );
 
-      ['careers', (value: any) => {
-        setCounts((current) => ({
-          ...current,
-          careers: value
-            ? Object.values(value).filter(
-                (item: any) =>
-                  item?.status === 'active'
-              ).length
-            : 0,
-        }));
-      }],
+    unsubscribers.push(sellersUnsub);
 
-      ['partners', (value: any) => {
-        setCounts((current) => ({
-          ...current,
-          partners: value
-            ? Object.values(value).filter(
-                (item: any) =>
-                  item?.active === true
-              ).length
-            : 0,
-        }));
-      }],
-    ].map(([path, callback]) => {
-      return onValue(
-        ref(db, String(path)),
-        (snapshot) => {
-          callback(
-            snapshot.exists()
-              ? snapshot.val()
-              : null
-          );
+    const blogUnsub = onValue(
+      ref(db, 'blogPosts'),
+      (snapshot) => {
+        const value = snapshot.exists()
+          ? snapshot.val()
+          : null;
 
-          setLoading(false);
+        let publishedCount = 0;
+
+        if (value && typeof value === 'object') {
+          publishedCount = Object.values(value).filter(
+            (item) =>
+              Boolean(
+                item &&
+                  typeof item === 'object' &&
+                  (item as { published?: boolean }).published === true
+              )
+          ).length;
         }
-      );
-    });
+
+        setCounts((current) => ({
+          ...current,
+          blog: publishedCount,
+        }));
+
+        setLoading(false);
+      }
+    );
+
+    unsubscribers.push(blogUnsub);
+
+    const careersUnsub = onValue(
+      ref(db, 'careers'),
+      (snapshot) => {
+        const value = snapshot.exists()
+          ? snapshot.val()
+          : null;
+
+        let activeCount = 0;
+
+        if (value && typeof value === 'object') {
+          activeCount = Object.values(value).filter(
+            (item) =>
+              Boolean(
+                item &&
+                  typeof item === 'object' &&
+                  (item as { status?: string }).status === 'active'
+              )
+          ).length;
+        }
+
+        setCounts((current) => ({
+          ...current,
+          careers: activeCount,
+        }));
+
+        setLoading(false);
+      }
+    );
+
+    unsubscribers.push(careersUnsub);
+
+    const partnersUnsub = onValue(
+      ref(db, 'partners'),
+      (snapshot) => {
+        const value = snapshot.exists()
+          ? snapshot.val()
+          : null;
+
+        let activeCount = 0;
+
+        if (value && typeof value === 'object') {
+          activeCount = Object.values(value).filter(
+            (item) =>
+              Boolean(
+                item &&
+                  typeof item === 'object' &&
+                  (item as { active?: boolean }).active === true
+              )
+          ).length;
+        }
+
+        setCounts((current) => ({
+          ...current,
+          partners: activeCount,
+        }));
+
+        setLoading(false);
+      }
+    );
+
+    unsubscribers.push(partnersUnsub);
 
     return () => {
-      unsubscribers.forEach((unsubscribe) =>
-        unsubscribe()
-      );
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
     };
   }, []);
 
   useEffect(() => {
-    if (!auth.currentUser) return;
-
     let active = true;
 
-    fetch('/api/admin/availability', {
-      headers: {
-        Authorization: `Bearer ${auth.currentUser.getIdToken
-          ? ''
-          : ''}`,
-      },
-    }).catch(() => {
-      // Availability is loaded through the POST state
-      // when first changed. Keep the default online state.
-    });
+    const loadAvailability = async () => {
+      if (!auth.currentUser) return;
 
-    // Load directly through the authenticated admin session.
-    auth.currentUser
-      .getIdToken()
-      .then((token) =>
-        fetch('/api/admin/availability', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        })
-      )
-      .then((response) => response.json())
-      .then((data) => {
-        if (active && typeof data.online === 'boolean') {
+      try {
+        const token = await auth.currentUser.getIdToken();
+
+        const response = await fetch(
+          '/api/admin/availability',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const data = await response.json();
+
+        if (
+          active &&
+          typeof data.online === 'boolean'
+        ) {
           setAvailability(data.online);
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error(
           'Unable to load admin availability:',
           error
         );
-      });
+      }
+    };
+
+    loadAvailability();
 
     return () => {
       active = false;
@@ -208,8 +291,7 @@ export default function AdminDashboardPage() {
     setUpdatingAvailability(true);
 
     try {
-      const token =
-        await auth.currentUser.getIdToken();
+      const token = await auth.currentUser.getIdToken();
 
       const response = await fetch(
         '/api/admin/availability',
@@ -230,18 +312,16 @@ export default function AdminDashboardPage() {
       if (!response.ok) {
         throw new Error(
           data.error ||
-            'Unable to update availability.'
+            'Unable to update admin availability.'
         );
       }
 
-      setAvailability(
-        Boolean(data.online)
-      );
+      setAvailability(Boolean(data.online));
     } catch (error) {
       alert(
         error instanceof Error
           ? error.message
-          : 'Unable to update availability.'
+          : 'Unable to update admin availability.'
       );
     } finally {
       setUpdatingAvailability(false);
@@ -276,7 +356,6 @@ export default function AdminDashboardPage() {
           </Link>
         </div>
 
-        {/* Admin availability */}
         <div
           className={`rounded-2xl border p-5 ${
             availability
@@ -303,10 +382,7 @@ export default function AdminDashboardPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="font-semibold">
-                    Admin is{' '}
-                    {availability
-                      ? 'Online'
-                      : 'Offline'}
+                    Admin is {availability ? 'Online' : 'Offline'}
                   </h2>
 
                   <span
@@ -329,11 +405,11 @@ export default function AdminDashboardPage() {
             <button
               onClick={toggleAvailability}
               disabled={updatingAvailability}
-              className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium ${
+              className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium disabled:opacity-50 ${
                 availability
                   ? 'bg-yellow-600 text-white'
                   : 'bg-green-600 text-white'
-              } disabled:opacity-50`}
+              }`}
             >
               {updatingAvailability ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -350,7 +426,6 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Stats */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Stat
             href="/admin/suppliers"
@@ -409,7 +484,6 @@ export default function AdminDashboardPage() {
           />
         </div>
 
-        {/* Quick actions */}
         <div>
           <div className="flex items-center gap-2 mb-4">
             <Activity className="w-4 h-4 text-accent" />
@@ -452,11 +526,10 @@ export default function AdminDashboardPage() {
           </h2>
 
           <p className="text-sm text-foreground-muted mt-2 leading-relaxed">
-            Your administration workspace is connected
-            to Firebase Realtime Database. Admin availability
-            controls whether automated support handling is active.
-            Seller and partner applications always require
-            human review.
+            Your administration workspace is connected to
+            Firebase Realtime Database. Admin availability controls
+            whether automated support handling is active.
+            Seller and partner applications always require human review.
           </p>
         </div>
       </div>
