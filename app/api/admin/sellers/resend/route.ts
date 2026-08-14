@@ -1,0 +1,114 @@
+﻿import { randomBytes, createHash } from 'crypto';
+import { NextResponse } from 'next/server';
+import { adminDb } from '@/lib/firebase-admin';
+import { requireAdmin } from '@/lib/server-auth';
+import { sendSellerInvitationEmail } from '@/lib/server-mail';
+
+function hashToken(token: string) {
+  return createHash('sha256')
+    .update(token.trim())
+    .digest('hex');
+}
+
+export async function POST(request: Request) {
+  try {
+    await requireAdmin(request);
+
+    const body = await request.json();
+
+    const applicationId = String(
+      body.applicationId || ''
+    ).trim();
+
+    if (!applicationId) {
+      return NextResponse.json(
+        { error: 'Application ID is required.' },
+        { status: 400 }
+      );
+    }
+
+    const snapshot = await adminDb
+      .ref(`sellerApplications/${applicationId}`)
+      .get();
+
+    if (!snapshot.exists()) {
+      return NextResponse.json(
+        { error: 'Seller application not found.' },
+        { status: 404 }
+      );
+    }
+
+    const application = snapshot.val();
+
+    if (
+      !application.email ||
+      !application.fullName
+    ) {
+      return NextResponse.json(
+        { error: 'Application contact information is incomplete.' },
+        { status: 400 }
+      );
+    }
+
+    if (application.status === 'active') {
+      return NextResponse.json(
+        {
+          error:
+            'This application is already active. Manage the account under Users.',
+        },
+        { status: 400 }
+      );
+    }
+
+    const token = randomBytes(32).toString('hex');
+
+    const tokenHash = hashToken(token);
+
+    const expiresAt =
+      Date.now() + 48 * 60 * 60 * 1000;
+
+    await adminDb
+      .ref(`sellerApplications/${applicationId}`)
+      .update({
+        status: 'invited',
+        invitationTokenHash: tokenHash,
+        invitationExpires: expiresAt,
+        invitationUsedAt: null,
+        updatedAt: Date.now(),
+      });
+
+    const baseUrl = (
+      process.env.APP_URL ||
+      'http://localhost:3000'
+    ).replace(/\/+$/, '');
+
+    const invitationUrl =
+      `${baseUrl}/seller/activate?token=${token}`;
+
+    await sendSellerInvitationEmail(
+      application.email,
+      application.fullName,
+      invitationUrl
+    );
+
+    return NextResponse.json({
+      success: true,
+      expiresAt,
+    });
+  } catch (error) {
+    console.error(
+      'Invitation resend failed:',
+      error
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unable to resend invitation.',
+      },
+      { status: 500 }
+    );
+  }
+}

@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ref, onValue } from 'firebase/database';
 import { db, auth } from '@/lib/firebase';
 import { AdminLayout } from '@/components/admin/admin-layout';
@@ -11,18 +11,28 @@ import {
   Check,
   X,
   Mail,
+  Trash2,
+  RefreshCw,
 } from 'lucide-react';
 
 export default function AdminSellersPage() {
   const [items, setItems] =
     useState<Record<string, SellerApplication>>({});
 
-  const [loading, setLoading] = useState(true);
-  const [working, setWorking] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
+  const [loading, setLoading] =
+    useState(true);
 
-  const [rejectId, setRejectId] = useState<string | null>(null);
-  const [rejectReason, setRejectReason] = useState('');
+  const [working, setWorking] =
+    useState<string | null>(null);
+
+  const [search, setSearch] =
+    useState('');
+
+  const [rejectId, setRejectId] =
+    useState<string | null>(null);
+
+  const [rejectReason, setRejectReason] =
+    useState('');
 
   useEffect(() => {
     if (!db) return;
@@ -36,14 +46,38 @@ export default function AdminSellersPage() {
     );
   }, []);
 
-  const approve = async (id: string) => {
-    if (!auth.currentUser || working) return;
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
 
+    return Object.entries(items).filter(
+      ([id, seller]) =>
+        !q ||
+        id.toLowerCase().includes(q) ||
+        seller.fullName
+          ?.toLowerCase()
+          .includes(q) ||
+        seller.businessName
+          ?.toLowerCase()
+          .includes(q) ||
+        seller.email
+          ?.toLowerCase()
+          .includes(q)
+    );
+  }, [items, search]);
+
+  const adminToken = async () => {
+    if (!auth.currentUser) {
+      throw new Error('Admin session expired.');
+    }
+
+    return auth.currentUser.getIdToken();
+  };
+
+  const approve = async (id: string) => {
     setWorking(id);
 
     try {
-      const token =
-        await auth.currentUser.getIdToken();
+      const token = await adminToken();
 
       const response = await fetch(
         '/api/admin/sellers/approve',
@@ -68,7 +102,7 @@ export default function AdminSellersPage() {
       }
 
       alert(
-        'Seller approved. The invitation email has been sent.'
+        'Seller approved and invitation sent.'
       );
     } catch (error) {
       alert(
@@ -81,12 +115,52 @@ export default function AdminSellersPage() {
     }
   };
 
+  const resendInvitation = async (
+    id: string
+  ) => {
+    setWorking(id);
+
+    try {
+      const token = await adminToken();
+
+      const response = await fetch(
+        '/api/admin/sellers/resend',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            applicationId: id,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || 'Unable to resend invitation.'
+        );
+      }
+
+      alert('A fresh invitation has been sent.');
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'Unable to resend invitation.'
+      );
+    } finally {
+      setWorking(null);
+    }
+  };
+
   const reject = async () => {
     if (
-      !auth.currentUser ||
       !rejectId ||
-      !rejectReason.trim() ||
-      working
+      !rejectReason.trim()
     ) {
       return;
     }
@@ -94,8 +168,7 @@ export default function AdminSellersPage() {
     setWorking(rejectId);
 
     try {
-      const token =
-        await auth.currentUser.getIdToken();
+      const token = await adminToken();
 
       const response = await fetch(
         '/api/admin/sellers/reject',
@@ -124,7 +197,7 @@ export default function AdminSellersPage() {
       setRejectReason('');
 
       alert(
-        'Applicant notified with AI-generated professional feedback and the application was removed.'
+        'Applicant notified and application removed.'
       );
     } catch (error) {
       alert(
@@ -137,25 +210,55 @@ export default function AdminSellersPage() {
     }
   };
 
-  const filtered = Object.entries(items).filter(
-    ([id, seller]) => {
-      const q = search.toLowerCase();
-
-      return (
-        !q ||
-        id.toLowerCase().includes(q) ||
-        seller.fullName
-          ?.toLowerCase()
-          .includes(q) ||
-        seller.businessName
-          ?.toLowerCase()
-          .includes(q) ||
-        seller.email
-          ?.toLowerCase()
-          .includes(q)
-      );
+  const deleteApplication = async (
+    id: string
+  ) => {
+    if (
+      !window.confirm(
+        'Permanently delete this seller application?'
+      )
+    ) {
+      return;
     }
-  );
+
+    setWorking(id);
+
+    try {
+      const token = await adminToken();
+
+      const response = await fetch(
+        '/api/admin/sellers/delete',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            applicationId: id,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || 'Deletion failed.'
+        );
+      }
+
+      alert('Application deleted.');
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'Deletion failed.'
+      );
+    } finally {
+      setWorking(null);
+    }
+  };
 
   return (
     <AdminLayout>
@@ -170,7 +273,8 @@ export default function AdminSellersPage() {
           </h1>
 
           <p className="mt-2 text-sm text-foreground-muted">
-            Review, approve, invite, or reject seller applications.
+            Review applications, send invitations, reject,
+            resend, or delete applications.
           </p>
         </div>
 
@@ -179,7 +283,9 @@ export default function AdminSellersPage() {
 
           <input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) =>
+              setSearch(e.target.value)
+            }
             placeholder="Search sellers…"
             className="w-full h-11 rounded-xl border border-border bg-card pl-10 pr-4 text-sm"
           />
@@ -196,78 +302,137 @@ export default function AdminSellersPage() {
             </div>
           ) : (
             <div className="divide-y divide-border">
-              {filtered.map(([id, seller]) => (
-                <div key={id} className="p-6">
-                  <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-5">
-                    <div>
-                      <h2 className="font-semibold text-lg">
-                        {seller.businessName}
-                      </h2>
+              {filtered.map(
+                ([id, seller]) => (
+                  <div
+                    key={id}
+                    className="p-6"
+                  >
+                    <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-5">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h2 className="text-lg font-semibold">
+                            {seller.businessName}
+                          </h2>
 
-                      <p className="text-sm text-foreground-muted mt-1">
-                        {seller.fullName} · {seller.email}
-                      </p>
-
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        <span className="text-xs rounded-full bg-secondary px-2.5 py-1">
-                          {seller.status}
-                        </span>
-
-                        {seller.country && (
                           <span className="text-xs rounded-full bg-secondary px-2.5 py-1">
-                            {seller.country}
+                            {seller.status}
                           </span>
+                        </div>
+
+                        <p className="text-sm text-foreground-muted mt-1">
+                          {seller.fullName} ·{' '}
+                          {seller.email}
+                        </p>
+
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {seller.country && (
+                            <span className="text-xs rounded-full bg-secondary px-2.5 py-1">
+                              {seller.country}
+                            </span>
+                          )}
+
+                          {seller.businessType && (
+                            <span className="text-xs rounded-full bg-secondary px-2.5 py-1">
+                              {seller.businessType}
+                            </span>
+                          )}
+                        </div>
+
+                        {seller.businessInformation && (
+                          <p className="max-w-2xl mt-4 text-sm text-foreground-muted leading-relaxed">
+                            {seller.businessInformation}
+                          </p>
                         )}
                       </div>
 
-                      {seller.businessInformation && (
-                        <p className="mt-4 text-sm text-foreground-muted max-w-2xl leading-relaxed">
-                          {seller.businessInformation}
-                        </p>
-                      )}
-                    </div>
+                      <div className="flex flex-wrap gap-2">
+                        {seller.status !== 'active' &&
+                          seller.status !== 'invited' && (
+                            <button
+                              onClick={() =>
+                                approve(id)
+                              }
+                              disabled={
+                                working === id
+                              }
+                              className="inline-flex items-center gap-2 rounded-xl bg-green-600 text-white px-4 py-2 text-sm disabled:opacity-50"
+                            >
+                              {working === id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Mail className="w-4 h-4" />
+                              )}
 
-                    <div className="flex flex-wrap gap-2">
-                      {seller.status !== 'active' && (
-                        <button
-                          onClick={() => approve(id)}
-                          disabled={working === id}
-                          className="inline-flex items-center gap-2 rounded-xl bg-green-600 text-white px-4 py-2 text-sm disabled:opacity-50"
-                        >
-                          {working === id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Mail className="w-4 h-4" />
+                              Approve & Invite
+                            </button>
                           )}
 
-                          Approve & Invite
-                        </button>
-                      )}
+                        {seller.status ===
+                          'invited' && (
+                          <button
+                            onClick={() =>
+                              resendInvitation(
+                                id
+                              )
+                            }
+                            disabled={
+                              working === id
+                            }
+                            className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm hover:bg-secondary disabled:opacity-50"
+                          >
+                            {working === id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <RefreshCw className="w-4 h-4" />
+                            )}
 
-                      {seller.status !== 'active' && (
+                            Resend Invite
+                          </button>
+                        )}
+
+                        {seller.status !== 'active' &&
+                          seller.status !== 'rejected' && (
+                            <button
+                              onClick={() => {
+                                setRejectId(id);
+                                setRejectReason('');
+                              }}
+                              disabled={
+                                working === id
+                              }
+                              className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 text-red-600 px-4 py-2 text-sm hover:bg-red-500/10"
+                            >
+                              <X className="w-4 h-4" />
+                              Reject
+                            </button>
+                          )}
+
+                        {seller.status ===
+                          'active' && (
+                          <span className="inline-flex items-center gap-2 rounded-xl bg-green-500/10 text-green-700 px-4 py-2 text-sm">
+                            <Check className="w-4 h-4" />
+                            Active
+                          </span>
+                        )}
+
                         <button
-                          onClick={() => {
-                            setRejectId(id);
-                            setRejectReason('');
-                          }}
-                          disabled={working === id}
-                          className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 text-red-600 px-4 py-2 text-sm hover:bg-red-500/10"
+                          onClick={() =>
+                            deleteApplication(id)
+                          }
+                          disabled={
+                            working === id
+                          }
+                          className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 text-red-600 px-4 py-2 text-sm hover:bg-red-500/10 disabled:opacity-50"
                         >
-                          <X className="w-4 h-4" />
-                          Reject
+                          <Trash2 className="w-4 h-4" />
+                          Delete
                         </button>
-                      )}
-
-                      {seller.status === 'active' && (
-                        <span className="inline-flex items-center gap-2 rounded-xl bg-green-500/10 text-green-700 px-4 py-2 text-sm">
-                          <Check className="w-4 h-4" />
-                          Active
-                        </span>
-                      )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              )}
             </div>
           )}
         </div>
@@ -276,19 +441,22 @@ export default function AdminSellersPage() {
       {rejectId && (
         <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-2xl">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-lg font-semibold">
-                  Reject Seller Application
+                  Reject Application
                 </h2>
 
                 <p className="text-sm text-foreground-muted mt-1">
-                  Enter the internal reason. Groq will turn it into a professional applicant-facing explanation.
+                  Enter the internal reason. The system will
+                  turn it into a professional applicant email.
                 </p>
               </div>
 
               <button
-                onClick={() => setRejectId(null)}
+                onClick={() =>
+                  setRejectId(null)
+                }
                 className="p-2 rounded-lg hover:bg-secondary"
               >
                 <X className="w-4 h-4" />
@@ -298,17 +466,21 @@ export default function AdminSellersPage() {
             <textarea
               value={rejectReason}
               onChange={(e) =>
-                setRejectReason(e.target.value)
+                setRejectReason(
+                  e.target.value
+                )
               }
               rows={7}
-              placeholder="Example: Business description is incomplete and the submitted catalog URL is not valid. Please provide a working catalog and clearer company information."
               className="w-full mt-5 rounded-xl border border-border bg-background px-4 py-3 text-sm"
+              placeholder="Example: Business information is incomplete and the catalog URL is invalid."
             />
 
             <div className="flex justify-end gap-3 mt-5">
               <button
-                onClick={() => setRejectId(null)}
-                className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium hover:bg-secondary"
+                onClick={() =>
+                  setRejectId(null)
+                }
+                className="rounded-xl border border-border px-4 py-2.5 text-sm"
               >
                 Cancel
               </button>
@@ -319,7 +491,7 @@ export default function AdminSellersPage() {
                   !rejectReason.trim() ||
                   working === rejectId
                 }
-                className="rounded-xl bg-red-600 text-white px-5 py-2.5 text-sm font-medium disabled:opacity-50 inline-flex items-center gap-2"
+                className="rounded-xl bg-red-600 text-white px-5 py-2.5 text-sm font-medium inline-flex items-center gap-2 disabled:opacity-50"
               >
                 {working === rejectId ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -327,7 +499,7 @@ export default function AdminSellersPage() {
                   <Mail className="w-4 h-4" />
                 )}
 
-                Reject & Email Applicant
+                Reject & Email
               </button>
             </div>
           </div>

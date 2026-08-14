@@ -1,298 +1,531 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
+  ref,
+  onValue,
+} from 'firebase/database';
+
+import { db, auth } from '@/lib/firebase';
+import { AdminLayout } from '@/components/admin/admin-layout';
+import {
+  Loader2,
   ArrowRight,
-  FileText,
+  Activity,
+  Users,
+  ShoppingBag,
   Mail,
   Ticket,
-  UserCheck,
+  FileText,
   Briefcase,
-  BookOpen,
-  Users,
-  Activity,
+  Building2,
+  Bot,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 
-import { AdminLayout } from '@/components/admin/admin-layout';
-import { getData } from '@/lib/firebase-db';
-import type {
-  SupplierSubmission,
-  ContactMessage,
-  SupportTicket,
-  BlogPost,
-  SellerApplication,
-  JobPosting,
-  Partner,
-} from '@/lib/types';
-
-interface DashboardCounts {
+interface Counts {
   suppliers: number;
   contacts: number;
   tickets: number;
   sellers: number;
-  blogs: number;
-  jobs: number;
+  blog: number;
+  careers: number;
   partners: number;
 }
 
 export default function AdminDashboardPage() {
-  const [counts, setCounts] = useState<DashboardCounts>({
-    suppliers: 0,
-    contacts: 0,
-    tickets: 0,
-    sellers: 0,
-    blogs: 0,
-    jobs: 0,
-    partners: 0,
-  });
+  const [counts, setCounts] =
+    useState<Counts>({
+      suppliers: 0,
+      contacts: 0,
+      tickets: 0,
+      sellers: 0,
+      blog: 0,
+      careers: 0,
+      partners: 0,
+    });
 
-  const [loading, setLoading] = useState(true);
+  const [availability, setAvailability] =
+    useState(true);
+
+  const [updatingAvailability, setUpdatingAvailability] =
+    useState(false);
+
+  const [loading, setLoading] =
+    useState(true);
 
   useEffect(() => {
-    const loadDashboard = async () => {
-      try {
-        const [
-          suppliers,
-          contacts,
-          tickets,
-          sellers,
-          blogs,
-          jobs,
-          partners,
-        ] = await Promise.all([
-          getData<Record<string, SupplierSubmission>>('suppliers'),
-          getData<Record<string, ContactMessage>>('contactMessages'),
-          getData<Record<string, SupportTicket>>('tickets'),
-          getData<Record<string, SellerApplication>>('sellerApplications'),
-          getData<Record<string, BlogPost>>('blogPosts'),
-          getData<Record<string, JobPosting>>('careers'),
-          getData<Record<string, Partner>>('partners'),
-        ]);
+    if (!db) {
+      setLoading(false);
+      return;
+    }
 
-        setCounts({
-          suppliers: suppliers ? Object.keys(suppliers).length : 0,
-          contacts: contacts ? Object.keys(contacts).length : 0,
-          tickets: tickets ? Object.keys(tickets).length : 0,
-          sellers: sellers ? Object.keys(sellers).length : 0,
-          blogs: blogs ? Object.keys(blogs).length : 0,
-          jobs: jobs
-            ? Object.values(jobs).filter((job) => job.status === 'active').length
+    const unsubscribers = [
+      ['suppliers', (value: any) => {
+        setCounts((current) => ({
+          ...current,
+          suppliers: value
+            ? Object.keys(value).length
             : 0,
-          partners: partners
-            ? Object.values(partners).filter((partner) => partner.active).length
+        }));
+      }],
+
+      ['contact', (value: any) => {
+        setCounts((current) => ({
+          ...current,
+          contacts: value
+            ? Object.keys(value).length
             : 0,
-        });
-      } catch (error) {
-        console.error('Failed to load admin dashboard:', error);
-      } finally {
-        setLoading(false);
-      }
+        }));
+      }],
+
+      ['tickets', (value: any) => {
+        setCounts((current) => ({
+          ...current,
+          tickets: value
+            ? Object.keys(value).length
+            : 0,
+        }));
+      }],
+
+      ['sellerApplications', (value: any) => {
+        setCounts((current) => ({
+          ...current,
+          sellers: value
+            ? Object.keys(value).length
+            : 0,
+        }));
+      }],
+
+      ['blogPosts', (value: any) => {
+        setCounts((current) => ({
+          ...current,
+          blog: value
+            ? Object.values(value).filter(
+                (item: any) =>
+                  item?.published === true
+              ).length
+            : 0,
+        }));
+      }],
+
+      ['careers', (value: any) => {
+        setCounts((current) => ({
+          ...current,
+          careers: value
+            ? Object.values(value).filter(
+                (item: any) =>
+                  item?.status === 'active'
+              ).length
+            : 0,
+        }));
+      }],
+
+      ['partners', (value: any) => {
+        setCounts((current) => ({
+          ...current,
+          partners: value
+            ? Object.values(value).filter(
+                (item: any) =>
+                  item?.active === true
+              ).length
+            : 0,
+        }));
+      }],
+    ].map(([path, callback]) => {
+      return onValue(
+        ref(db, String(path)),
+        (snapshot) => {
+          callback(
+            snapshot.exists()
+              ? snapshot.val()
+              : null
+          );
+
+          setLoading(false);
+        }
+      );
+    });
+
+    return () => {
+      unsubscribers.forEach((unsubscribe) =>
+        unsubscribe()
+      );
     };
-
-    loadDashboard();
   }, []);
 
-  const cards = [
-    {
-      label: 'Supplier Submissions',
-      value: counts.suppliers,
-      icon: UserCheck,
-      href: '/admin/suppliers',
-    },
-    {
-      label: 'Contact Messages',
-      value: counts.contacts,
-      icon: Mail,
-      href: '/admin/contact',
-    },
-    {
-      label: 'Support Tickets',
-      value: counts.tickets,
-      icon: Ticket,
-      href: '/admin/tickets',
-    },
-    {
-      label: 'Seller Applications',
-      value: counts.sellers,
-      icon: Users,
-      href: '/admin/sellers',
-    },
-    {
-      label: 'Published Articles',
-      value: counts.blogs,
-      icon: BookOpen,
-      href: '/admin/blog',
-    },
-    {
-      label: 'Active Jobs',
-      value: counts.jobs,
-      icon: Briefcase,
-      href: '/admin/careers',
-    },
-    {
-      label: 'Active Partners',
-      value: counts.partners,
-      icon: Activity,
-      href: '/admin/partners',
-    },
-  ];
+  useEffect(() => {
+    if (!auth.currentUser) return;
+
+    let active = true;
+
+    fetch('/api/admin/availability', {
+      headers: {
+        Authorization: `Bearer ${auth.currentUser.getIdToken
+          ? ''
+          : ''}`,
+      },
+    }).catch(() => {
+      // Availability is loaded through the POST state
+      // when first changed. Keep the default online state.
+    });
+
+    // Load directly through the authenticated admin session.
+    auth.currentUser
+      .getIdToken()
+      .then((token) =>
+        fetch('/api/admin/availability', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+      )
+      .then((response) => response.json())
+      .then((data) => {
+        if (active && typeof data.online === 'boolean') {
+          setAvailability(data.online);
+        }
+      })
+      .catch((error) => {
+        console.error(
+          'Unable to load admin availability:',
+          error
+        );
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const toggleAvailability = async () => {
+    if (!auth.currentUser || updatingAvailability) {
+      return;
+    }
+
+    setUpdatingAvailability(true);
+
+    try {
+      const token =
+        await auth.currentUser.getIdToken();
+
+      const response = await fetch(
+        '/api/admin/availability',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            online: !availability,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+            'Unable to update availability.'
+        );
+      }
+
+      setAvailability(
+        Boolean(data.online)
+      );
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'Unable to update availability.'
+      );
+    } finally {
+      setUpdatingAvailability(false);
+    }
+  };
 
   return (
     <AdminLayout>
       <div className="space-y-8">
-        {/* Header */}
-        <div>
-          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.12em] text-accent mb-3">
-            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-            Auronix Commerce
-          </div>
-
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl lg:text-4xl font-semibold tracking-tight">
-                Dashboard
-              </h1>
-
-              <p className="mt-2 text-sm lg:text-base text-foreground-muted">
-                Overview of your Auronix Commerce operations.
-              </p>
+        <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-5">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-[0.12em] text-accent mb-3">
+              AURONIX ADMIN
             </div>
 
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-sm font-medium text-foreground-muted hover:text-foreground transition-colors"
+            <h1 className="text-3xl font-semibold tracking-tight">
+              Dashboard
+            </h1>
+
+            <p className="mt-2 text-sm text-foreground-muted">
+              Overview of your Auronix Commerce operations.
+            </p>
+          </div>
+
+          <Link
+            href="/"
+            target="_blank"
+            className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium hover:bg-secondary"
+          >
+            View Website
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+
+        {/* Admin availability */}
+        <div
+          className={`rounded-2xl border p-5 ${
+            availability
+              ? 'border-green-500/20 bg-green-500/5'
+              : 'border-yellow-500/20 bg-yellow-500/5'
+          }`}
+        >
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+            <div className="flex items-start gap-4">
+              <div
+                className={`w-11 h-11 rounded-xl flex items-center justify-center ${
+                  availability
+                    ? 'bg-green-500/10'
+                    : 'bg-yellow-500/10'
+                }`}
+              >
+                {availability ? (
+                  <Wifi className="w-5 h-5 text-green-700" />
+                ) : (
+                  <WifiOff className="w-5 h-5 text-yellow-700" />
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="font-semibold">
+                    Admin is{' '}
+                    {availability
+                      ? 'Online'
+                      : 'Offline'}
+                  </h2>
+
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      availability
+                        ? 'bg-green-500 animate-pulse'
+                        : 'bg-yellow-500'
+                    }`}
+                  />
+                </div>
+
+                <p className="text-sm text-foreground-muted mt-1 max-w-2xl">
+                  {availability
+                    ? 'Manual support is active. AI will assist when requested.'
+                    : 'AI support automation is active for tickets. Seller and partner applications remain manual.'}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={toggleAvailability}
+              disabled={updatingAvailability}
+              className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium ${
+                availability
+                  ? 'bg-yellow-600 text-white'
+                  : 'bg-green-600 text-white'
+              } disabled:opacity-50`}
             >
-              View website
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+              {updatingAvailability ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : availability ? (
+                <WifiOff className="w-4 h-4" />
+              ) : (
+                <Wifi className="w-4 h-4" />
+              )}
+
+              {availability
+                ? 'Go Offline'
+                : 'Go Online'}
+            </button>
           </div>
         </div>
 
-        {/* Overview cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          {cards.map((card) => {
-            const Icon = card.icon;
+        {/* Stats */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Stat
+            href="/admin/suppliers"
+            label="Supplier Submissions"
+            value={counts.suppliers}
+            icon={<Building2 className="w-5 h-5" />}
+          />
 
-            return (
-              <Link
-                key={card.label}
-                href={card.href}
-                className="group rounded-2xl border border-border bg-card p-5 hover:border-border-strong hover:shadow-premium-lg transition-all"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-primary/5 border border-border flex items-center justify-center">
-                    <Icon className="w-4 h-4 text-foreground" />
-                  </div>
+          <Stat
+            href="/admin/contact"
+            label="Contact Messages"
+            value={counts.contacts}
+            icon={<Mail className="w-5 h-5" />}
+          />
 
-                  <ArrowRight className="w-4 h-4 text-foreground-muted group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
-                </div>
+          <Stat
+            href="/admin/tickets"
+            label="Support Tickets"
+            value={counts.tickets}
+            icon={<Ticket className="w-5 h-5" />}
+          />
 
-                <div className="mt-6">
-                  <div className="text-3xl font-semibold tracking-tight">
-                    {loading ? '—' : card.value}
-                  </div>
+          <Stat
+            href="/admin/sellers"
+            label="Seller Applications"
+            value={counts.sellers}
+            icon={<Users className="w-5 h-5" />}
+          />
 
-                  <div className="mt-1 text-sm text-foreground-muted">
-                    {card.label}
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
+          <Stat
+            href="/admin/blog"
+            label="Published Articles"
+            value={counts.blog}
+            icon={<FileText className="w-5 h-5" />}
+          />
+
+          <Stat
+            href="/admin/careers"
+            label="Active Jobs"
+            value={counts.careers}
+            icon={<Briefcase className="w-5 h-5" />}
+          />
+
+          <Stat
+            href="/admin/partners"
+            label="Active Partners"
+            value={counts.partners}
+            icon={<ShoppingBag className="w-5 h-5" />}
+          />
+
+          <Stat
+            href="/admin/ai"
+            label="AI Workspace"
+            value="AI"
+            icon={<Bot className="w-5 h-5" />}
+          />
         </div>
 
         {/* Quick actions */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-semibold tracking-tight">
-                Quick actions
-              </h2>
-              <p className="text-sm text-foreground-muted mt-1">
-                Jump directly into the most-used areas.
-              </p>
-            </div>
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Activity className="w-4 h-4 text-accent" />
+
+            <h2 className="text-lg font-semibold">
+              Quick actions
+            </h2>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid md:grid-cols-2 gap-4">
             <QuickAction
               href="/admin/sellers"
-              icon={Users}
               title="Review Sellers"
               description="Manage seller applications and approvals."
             />
 
             <QuickAction
               href="/admin/suppliers"
-              icon={UserCheck}
               title="Review Suppliers"
               description="Review incoming supplier submissions."
             />
 
             <QuickAction
               href="/admin/tickets"
-              icon={Ticket}
               title="Support Tickets"
-              description="Review and respond to open tickets."
+              description="Review tickets and use AI-assisted support."
             />
 
             <QuickAction
               href="/admin/blog"
-              icon={FileText}
               title="Manage Blog"
-              description="Create, edit, and publish articles."
+              description="Create, edit, publish, and delete articles."
             />
           </div>
-        </section>
+        </div>
 
-        {/* System status */}
-        <section className="rounded-2xl border border-border bg-card p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
-              <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
-            </div>
+        <div className="rounded-2xl border border-border bg-card p-6">
+          <h2 className="font-semibold">
+            System overview
+          </h2>
 
-            <div>
-              <h2 className="font-semibold">System overview</h2>
-
-              <p className="text-sm text-foreground-muted mt-1">
-                Your administration workspace is ready. Live counts above are
-                loaded directly from Firebase Realtime Database.
-              </p>
-            </div>
-          </div>
-        </section>
+          <p className="text-sm text-foreground-muted mt-2 leading-relaxed">
+            Your administration workspace is connected
+            to Firebase Realtime Database. Admin availability
+            controls whether automated support handling is active.
+            Seller and partner applications always require
+            human review.
+          </p>
+        </div>
       </div>
     </AdminLayout>
   );
 }
 
+function Stat({
+  href,
+  label,
+  value,
+  icon,
+}: {
+  href: string;
+  label: string;
+  value: number | string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="rounded-2xl border border-border bg-card p-5 hover:bg-secondary/40 transition-colors"
+    >
+      <div className="flex items-center justify-between">
+        <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-foreground-muted">
+          {icon}
+        </div>
+
+        <ArrowRight className="w-4 h-4 text-foreground-muted" />
+      </div>
+
+      <div className="mt-5 text-3xl font-semibold">
+        {value}
+      </div>
+
+      <div className="mt-1 text-sm text-foreground-muted">
+        {label}
+      </div>
+    </Link>
+  );
+}
+
 function QuickAction({
   href,
-  icon: Icon,
   title,
   description,
 }: {
   href: string;
-  icon: typeof Users;
   title: string;
   description: string;
 }) {
   return (
     <Link
       href={href}
-      className="group rounded-2xl border border-border bg-card p-5 hover:border-border-strong hover:shadow-premium-lg transition-all"
+      className="rounded-2xl border border-border bg-card p-5 hover:bg-secondary/40 transition-colors"
     >
-      <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-        <Icon className="w-4 h-4 text-foreground" />
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h3 className="font-semibold">
+            {title}
+          </h3>
+
+          <p className="text-sm text-foreground-muted mt-1">
+            {description}
+          </p>
+        </div>
+
+        <ArrowRight className="w-4 h-4 shrink-0 text-foreground-muted" />
       </div>
-
-      <h3 className="mt-4 text-sm font-semibold">{title}</h3>
-
-      <p className="mt-1 text-sm text-foreground-muted leading-relaxed">
-        {description}
-      </p>
     </Link>
   );
 }
