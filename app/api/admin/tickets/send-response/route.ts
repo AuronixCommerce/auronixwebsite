@@ -1,26 +1,35 @@
 ﻿import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/server-auth';
+
 import { adminDb } from '@/lib/firebase-admin';
+import { requireAdmin } from '@/lib/server-auth';
 import { sendTicketResponseEmail } from '@/lib/server-mail';
+
+function text(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
 
 export async function POST(request: Request) {
   try {
-    await requireAdmin(request);
-
+    const admin = await requireAdmin(request);
     const body = await request.json();
 
-    const ticketId = String(body.ticketId || '');
-    const response = String(body.response || '').trim();
+    const ticketId = text(body.ticketId);
+    const response = text(body.response);
 
     if (!ticketId || !response) {
       return NextResponse.json(
-        { error: 'Ticket ID and response are required.' },
+        {
+          error:
+            'Ticket ID and response are required.',
+        },
         { status: 400 }
       );
     }
 
-    const snapshot =
-      await adminDb.ref(`tickets/${ticketId}`).get();
+    const ticketRef =
+      adminDb.ref(`tickets/${ticketId}`);
+
+    const snapshot = await ticketRef.get();
 
     if (!snapshot.exists()) {
       return NextResponse.json(
@@ -31,12 +40,35 @@ export async function POST(request: Request) {
 
     const ticket = snapshot.val();
 
-    if (!ticket.email) {
+    if (!text(ticket.email)) {
       return NextResponse.json(
-        { error: 'Ticket has no email address.' },
+        {
+          error:
+            'This ticket does not contain a customer email.',
+        },
         { status: 400 }
       );
     }
+
+    const messageRef =
+      ticketRef.child('messages').push();
+
+    await messageRef.set({
+      role: 'admin',
+      content: response,
+      createdAt: Date.now(),
+      createdBy: admin.uid,
+    });
+
+    await ticketRef.update({
+      lastResponse: response,
+      respondedAt: Date.now(),
+      updatedAt: Date.now(),
+      status:
+        ticket.status === 'closed'
+          ? 'open'
+          : 'in-progress',
+    });
 
     await sendTicketResponseEmail(
       ticket.email,
@@ -44,25 +76,21 @@ export async function POST(request: Request) {
       response
     );
 
-    await adminDb.ref(`tickets/${ticketId}`).update({
-      lastResponse: response,
-      respondedAt: Date.now(),
-      updatedAt: Date.now(),
-      status: 'resolved',
-    });
-
     return NextResponse.json({
       success: true,
     });
   } catch (error) {
-    console.error('Ticket response failed:', error);
+    console.error(
+      'Ticket response send failed:',
+      error
+    );
 
     return NextResponse.json(
       {
         error:
           error instanceof Error
             ? error.message
-            : 'Unable to send response.',
+            : 'Unable to send support response.',
       },
       { status: 500 }
     );
