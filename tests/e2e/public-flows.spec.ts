@@ -52,3 +52,30 @@ test('Help Center opens dedicated technical seller guidance', async ({ page }) =
   await expect(page.getByRole('heading', { name: 'Troubleshoot seller dashboard access' })).toBeVisible();
   await expect(page.getByText('Restore access')).toBeVisible();
 });
+
+test('AI local memory creates one reload boundary and can be cleared', async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!localStorage.getItem('auronix-ai-local-memory-v1')) {
+      localStorage.setItem('auronix-ai-local-memory-v1', JSON.stringify([
+        { id: 'saved-question', role: 'user', content: 'Saved seller question' },
+        { id: 'saved-answer', role: 'assistant', content: 'Saved seller answer', answerSource: 'found', responseSeconds: 1 },
+      ]));
+    }
+  });
+
+  await openPage(page, '/');
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.getByRole('button', { name: 'Open Auronix AI chat' }).click();
+  await expect(page.getByText('Saved seller answer')).toBeVisible();
+  await expect(page.getByRole('separator', { name: 'Previous chat ended' })).toHaveCount(1);
+
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.getByRole('button', { name: 'Open Auronix AI chat' }).click();
+  await expect(page.getByRole('separator', { name: 'Previous chat ended' })).toHaveCount(1);
+
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: 'Clear saved AI chat memory' }).click();
+  await expect(page.getByText('Saved seller answer')).toHaveCount(0);
+  await expect(page.getByRole('separator', { name: 'Previous chat ended' })).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('auronix-ai-local-memory-v1'))).toBe('[]');
+});

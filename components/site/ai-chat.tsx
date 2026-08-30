@@ -17,6 +17,7 @@ import {
   Send,
   Sparkles,
   Square,
+  Trash2,
   X,
 } from 'lucide-react';
 
@@ -484,16 +485,30 @@ export function AIChat() {
           )
           .slice(-MAX_LOCAL_MESSAGES) as ChatMessage[];
         if (restored.some((message) => message.content.trim())) {
-          setMessages([
-            ...restored,
-            {
-              id: makeId(),
-              role: 'assistant',
-              content: '',
-              sessionBoundary: true,
-              endedAt: Date.now(),
-            },
-          ]);
+          const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+          const isReload = navigation?.type === 'reload';
+          const lastBoundaryIndex = restored.reduce(
+            (lastIndex, message, index) => message.sessionBoundary ? index : lastIndex,
+            -1
+          );
+          const hasConversationSinceBoundary = restored
+            .slice(lastBoundaryIndex + 1)
+            .some((message) => !message.sessionBoundary && message.content.trim());
+
+          setMessages(
+            isReload && hasConversationSinceBoundary
+              ? [
+                  ...restored,
+                  {
+                    id: makeId(),
+                    role: 'assistant',
+                    content: '',
+                    sessionBoundary: true,
+                    endedAt: Date.now(),
+                  },
+                ]
+              : restored
+          );
         }
       }
     } catch {
@@ -597,6 +612,29 @@ export function AIChat() {
     setThinkingSeconds(0);
 
     setLoading(false);
+  };
+
+  const clearChatMemory = () => {
+    if (!window.confirm('Clear this saved AI conversation from this browser?')) {
+      return;
+    }
+
+    abortRef.current?.abort();
+
+    if (typingTimerRef.current) {
+      clearInterval(typingTimerRef.current);
+      typingTimerRef.current = null;
+    }
+
+    currentAnswerRef.current = '';
+    setMessages([]);
+    setVisibleAnswer('');
+    setInput('');
+    setError('');
+    setThinkingSeconds(0);
+    setCompletedThinkingSeconds(0);
+    setLoading(false);
+    window.localStorage.removeItem(CHAT_STORAGE_KEY);
   };
 
   const typeAnswer = (
@@ -970,16 +1008,29 @@ export function AIChat() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() =>
-                  setOpen(false)
-                }
-                aria-label="Close Auronix AI chat"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-secondary/60 transition-colors hover:bg-secondary"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={clearChatMemory}
+                  aria-label="Clear saved AI chat memory"
+                  title="Clear saved chat memory"
+                  className="flex h-10 items-center justify-center gap-1.5 rounded-full border border-border bg-secondary/60 px-3 font-sans text-xs font-semibold text-foreground-muted transition-colors hover:bg-secondary hover:text-foreground"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Clear
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpen(false)
+                  }
+                  aria-label="Close Auronix AI chat"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-secondary/60 transition-colors hover:bg-secondary"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             <div
