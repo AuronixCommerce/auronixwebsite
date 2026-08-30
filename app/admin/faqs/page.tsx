@@ -4,7 +4,7 @@ export default function FAQsAdminPage() {
   return (
     <AdminCrudPage
       title="FAQs"
-      description="Manage the public FAQ library."
+      description="Manage additional public FAQs shown alongside the built-in categorized support library."
       path="faqs"
       searchKeys={['question', 'answer', 'category']}
       fields={[

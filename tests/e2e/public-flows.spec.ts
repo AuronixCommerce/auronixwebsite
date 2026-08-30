@@ -31,3 +31,24 @@ test('newsletter confirmation activates only through secure confirmation API', a
   await page.route('**/api/newsletter/confirm', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true }) }));
   await openPage(page, '/newsletter/confirm?token=e2e-confirmation-token-that-is-long-enough-for-testing'); await expect(page.getByRole('heading', { name: 'Subscription confirmed' })).toBeVisible();
 });
+
+test('FAQ library is searchable and category sorted', async ({ page }) => {
+  await openPage(page, '/faq');
+  const countText = await page.getByText(/Showing \d+ answers/).textContent();
+  expect(Number(countText?.match(/\d+/)?.[0] || 0)).toBeGreaterThan(100);
+  await page.getByRole('button', { name: 'Seller Dashboard', exact: true }).click();
+  await expect(page.getByText('What can I access from the seller dashboard?')).toBeVisible();
+  await page.getByRole('button', { name: 'All', exact: true }).click();
+  await page
+    .getByRole('searchbox', { name: 'Search frequently asked questions' })
+    .fill('invitation link invalid');
+  await expect(page.getByText('Why does my invitation link say invalid?')).toBeVisible();
+});
+
+test('Help Center opens dedicated technical seller guidance', async ({ page }) => {
+  await openPage(page, '/help');
+  await page.locator('a[href="/help/seller-dashboard-access"]').first().click();
+  await expect(page).toHaveURL(/\/help\/seller-dashboard-access$/);
+  await expect(page.getByRole('heading', { name: 'Troubleshoot seller dashboard access' })).toBeVisible();
+  await expect(page.getByText('Restore access')).toBeVisible();
+});

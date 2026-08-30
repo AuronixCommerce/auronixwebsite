@@ -18,6 +18,7 @@ import {
   getPageKnowledge,
 } from '@/lib/ai-site-knowledge';
 import { protectPublicRequest, publicRequestErrorResponse } from '@/lib/server-protection';
+import { findPremadeAnswer } from '@/lib/ai-premade-memory';
 
 export const runtime = 'nodejs';
 
@@ -226,6 +227,39 @@ export async function POST(
           headers: {
             'Cache-Control':
               'no-store',
+          },
+        }
+      );
+    }
+
+    const latestUserMessage = [...messages]
+      .reverse()
+      .find((message) => message.role === 'user')
+      ?.content || '';
+
+    const memoryMatch = findPremadeAnswer(latestUserMessage);
+
+    if (memoryMatch) {
+      return NextResponse.json(
+        {
+          success: true,
+          response: memoryMatch.answer,
+          pathname,
+          maintenance,
+          aiMaintenance: { active: false },
+          websiteMaintenance,
+          answerSource: 'premade-memory',
+          providerUsed: false,
+          memory: {
+            category: memoryMatch.category,
+            confidence: memoryMatch.confidence,
+          },
+        },
+        {
+          status: 200,
+          headers: {
+            'Cache-Control': 'private, max-age=300',
+            'X-Auronix-Answer-Source': 'premade-memory',
           },
         }
       );
@@ -513,6 +547,8 @@ Never expose API keys, Firebase credentials, admin internals, private records or
         },
 
         websiteMaintenance,
+        answerSource: 'ai-provider',
+        providerUsed: true,
       },
       {
         status: 200,

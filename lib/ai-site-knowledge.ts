@@ -277,6 +277,28 @@ export const AURONIX_SITE_KNOWLEDGE: SiteKnowledgeEntry[] = [
     related: [
       '/contact',
       '/support',
+      '/help',
+    ],
+  },
+
+  {
+    path: '/help',
+    title: 'Help Center and Seller Troubleshooting',
+    visibility: 'public',
+    summary:
+      'Step-by-step technical troubleshooting for seller applications, verification, invitation links, password reset, seller dashboard access, catalogs, notifications, support, maintenance, and browser site data.',
+    topics: [
+      'technical help',
+      'seller dashboard troubleshooting',
+      'verification problems',
+      'account access',
+      'catalog troubleshooting',
+    ],
+    related: [
+      '/faq',
+      '/support',
+      '/seller/login',
+      '/seller/apply',
     ],
   },
 

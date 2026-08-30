@@ -9,7 +9,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test tests/e2e",
-    "test:a11y": "playwright test tests/accessibility"
+    "test:a11y": "playwright test tests/accessibility",
+    "test:memory": "playwright test tests/unit/ai-memory.spec.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

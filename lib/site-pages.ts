@@ -113,6 +113,13 @@ export const SITE_PAGES: SitePageDefinition[] = [
     section: 'support',
   },
   {
+    id: 'help',
+    path: '/help',
+    title: 'Help Center',
+    category: 'Support',
+    section: 'support',
+  },
+  {
     id: 'partner-portal',
     path: '/partner-portal',
     title: 'Partner Portal',

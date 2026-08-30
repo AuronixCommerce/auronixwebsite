@@ -7,6 +7,7 @@ import {
 import {
   SEO_SITE_URL,
 } from '@/lib/seo';
+import { TROUBLESHOOTING_ARTICLES } from '@/lib/help-content';
 
 type Frequency =
   | 'always'
@@ -103,6 +104,11 @@ const PUBLIC_ROUTES: Array<{
     priority: 0.7,
   },
   {
+    path: '/help',
+    changeFrequency: 'monthly',
+    priority: 0.8,
+  },
+  {
     path: '/whats-new',
     changeFrequency: 'weekly',
     priority: 0.7,
@@ -150,6 +156,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority,
       })
     );
+
+  routes.push(...TROUBLESHOOTING_ARTICLES.map((article) => ({
+    url: `${SEO_SITE_URL}/help/${article.slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  })));
 
   try {
     const snapshot =

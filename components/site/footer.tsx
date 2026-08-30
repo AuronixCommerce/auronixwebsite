@@ -307,6 +307,13 @@ export function Footer() {
               >
                 Frequently Asked Questions
               </Link>
+
+              <Link
+                href="/help"
+                className="block hover:text-foreground"
+              >
+                Help & Troubleshooting
+              </Link>
             </nav>
           </div>
 
