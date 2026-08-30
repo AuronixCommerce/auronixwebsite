@@ -32,6 +32,8 @@ type ChatMessage = {
   id: string;
   role: Role;
   content: string;
+  answerSource?: 'found' | 'online';
+  responseSeconds?: number;
   sessionBoundary?: boolean;
   endedAt?: number;
 };
@@ -417,6 +419,9 @@ export function AIChat() {
   const [completedThinkingSeconds, setCompletedThinkingSeconds] =
     useState(0);
 
+  const [activeAnswerSource, setActiveAnswerSource] =
+    useState<'found' | 'online'>('online');
+
   const [localMemoryReady, setLocalMemoryReady] = useState(false);
 
   const [visibleAnswer, setVisibleAnswer] =
@@ -579,6 +584,8 @@ export function AIChat() {
           id: makeId(),
           role: 'assistant',
           content: partial,
+          answerSource: activeAnswerSource,
+          responseSeconds: completedThinkingSeconds || 1,
         },
       ]);
     }
@@ -592,7 +599,11 @@ export function AIChat() {
     setLoading(false);
   };
 
-  const typeAnswer = (answer: string) => {
+  const typeAnswer = (
+    answer: string,
+    answerSource: 'found' | 'online',
+    responseSeconds: number
+  ) => {
     if (typingTimerRef.current) {
       clearInterval(
         typingTimerRef.current
@@ -622,6 +633,8 @@ export function AIChat() {
               id: makeId(),
               role: 'assistant',
               content: answer,
+              answerSource,
+              responseSeconds,
             },
           ]);
 
@@ -693,6 +706,8 @@ export function AIChat() {
     setThinkingSeconds(0);
 
     setCompletedThinkingSeconds(0);
+
+    setActiveAnswerSource('online');
 
     thinkingStartedAtRef.current = Date.now();
 
@@ -772,16 +787,19 @@ export function AIChat() {
         );
       }
 
-      setCompletedThinkingSeconds(
-        Math.max(
-          1,
-          Math.round(
-            (Date.now() - thinkingStartedAtRef.current) / 1000
-          )
+      const responseSeconds = Math.max(
+        1,
+        Math.round(
+          (Date.now() - thinkingStartedAtRef.current) / 1000
         )
       );
+      const answerSource = data.answerSource === 'premade-memory'
+        ? 'found'
+        : 'online';
 
-      typeAnswer(answer);
+      setCompletedThinkingSeconds(responseSeconds);
+      setActiveAnswerSource(answerSource);
+      typeAnswer(answer, answerSource, responseSeconds);
     } catch (caught) {
       if (
         controller.signal.aborted
@@ -1016,6 +1034,12 @@ export function AIChat() {
                         {message.role ===
                         'assistant' ? (
                           <div className="font-sans">
+                            {message.answerSource && (
+                              <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-foreground-muted">
+                                <Sparkles className="h-3 w-3 text-accent" />
+                                Thought for {message.responseSeconds || 1} sec · {message.answerSource === 'found' ? 'Found' : 'Online'}
+                              </div>
+                            )}
                             {renderMarkdown(
                               message.content
                             )}
@@ -1036,7 +1060,7 @@ export function AIChat() {
                       <div className="max-w-[96%] rounded-2xl rounded-bl-md border border-border bg-card px-4 py-3 font-sans text-sm leading-6 text-foreground">
                         <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-foreground-muted">
                           <Sparkles className="h-3 w-3 text-accent" />
-                          Thought for {completedThinkingSeconds || 1} {completedThinkingSeconds === 1 ? 'second' : 'seconds'}
+                          Thought for {completedThinkingSeconds || 1} sec · {activeAnswerSource === 'found' ? 'Found' : 'Online'}
                         </div>
 
                         <div className="font-sans">
