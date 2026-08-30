@@ -1,9 +1,10 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { ref, onValue } from 'firebase/database';
 import { db, auth } from '@/lib/firebase';
 import { AdminLayout } from '@/components/admin/admin-layout';
+import { confirmAction, notifyAction } from '@/components/ui/confirm-action';
 import type { UserProfile } from '@/lib/types';
 import {
   Loader2,
@@ -130,7 +131,7 @@ export default function UsersAdminPage() {
 
       setSelectedUser(null);
     } catch (error) {
-      alert(
+      notifyAction(
         error instanceof Error
           ? error.message
           : 'Unable to ban user.'
@@ -141,12 +142,16 @@ export default function UsersAdminPage() {
   };
 
   const unban = async (uid: string) => {
-    if (!window.confirm('Remove this user’s ban?')) return;
+    if (!await confirmAction({
+      title: 'Remove this user’s ban?',
+      description: 'The user will regain access according to their account permissions.',
+      confirmLabel: 'Remove ban',
+    })) return;
 
     try {
       await callAction('unban', uid);
     } catch (error) {
-      alert(
+      notifyAction(
         error instanceof Error
           ? error.message
           : 'Unable to unban user.'
@@ -156,9 +161,12 @@ export default function UsersAdminPage() {
 
   const deleteUser = async (uid: string) => {
     if (
-      !window.confirm(
-        'Permanently delete this account from Firebase Authentication and the database? This cannot be undone.'
-      )
+      !await confirmAction({
+        title: 'Permanently delete this account?',
+        description: 'This removes the account and its associated records. This action cannot be undone.',
+        confirmLabel: 'Delete account',
+        destructive: true,
+      })
     ) {
       return;
     }
@@ -166,7 +174,7 @@ export default function UsersAdminPage() {
     try {
       await callAction('delete', uid);
     } catch (error) {
-      alert(
+      notifyAction(
         error instanceof Error
           ? error.message
           : 'Unable to delete user.'
@@ -183,11 +191,11 @@ export default function UsersAdminPage() {
 
       await navigator.clipboard.writeText(data.resetLink);
 
-      alert(
+      notifyAction(
         `Password reset link generated for ${data.email} and copied to clipboard.`
       );
     } catch (error) {
-      alert(
+      notifyAction(
         error instanceof Error
           ? error.message
           : 'Unable to generate reset link.'

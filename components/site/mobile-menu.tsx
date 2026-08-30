@@ -13,6 +13,7 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { NAV_LINKS } from '@/lib/constants';
+import { SHOP_URL } from '@/lib/constants';
 import { ThemeToggle } from './theme-toggle';
 
 interface MobileMenuProps {
@@ -21,6 +22,11 @@ interface MobileMenuProps {
 }
 
 const extraLinks = [
+  {
+    href: SHOP_URL,
+    label: 'Amazon Product Shop',
+    external: true,
+  },
   {
     href: '/seller',
     label: 'Seller Login or Apply',
@@ -226,17 +232,31 @@ export function MobileMenu({
                         duration: 0.35,
                       }}
                     >
-                      <Link
-                        href={link.href}
-                        onClick={onClose}
-                        className="group flex items-center justify-between rounded-2xl border border-border/70 bg-card/50 px-4 py-4 transition-all hover:bg-secondary/60"
-                      >
-                        <span className="font-sans text-[14px] font-semibold">
-                          {link.label}
-                        </span>
-
-                        <ArrowRight className="h-4 w-4 text-foreground-muted transition-transform duration-300 group-hover:translate-x-1" />
-                      </Link>
+                      {link.external ? (
+                        <a
+                          href={link.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={onClose}
+                          className="group flex items-center justify-between rounded-2xl border border-accent/25 bg-accent/10 px-4 py-4 transition-all hover:border-accent/40 hover:bg-accent/15"
+                        >
+                          <span className="font-sans text-[14px] font-semibold">
+                            {link.label}
+                          </span>
+                          <ArrowUpRight className="h-4 w-4 text-accent transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                        </a>
+                      ) : (
+                        <Link
+                          href={link.href}
+                          onClick={onClose}
+                          className="group flex items-center justify-between rounded-2xl border border-border/70 bg-card/50 px-4 py-4 transition-all hover:bg-secondary/60"
+                        >
+                          <span className="font-sans text-[14px] font-semibold">
+                            {link.label}
+                          </span>
+                          <ArrowRight className="h-4 w-4 text-foreground-muted transition-transform duration-300 group-hover:translate-x-1" />
+                        </Link>
+                      )}
                     </motion.div>
                   )
                 )}

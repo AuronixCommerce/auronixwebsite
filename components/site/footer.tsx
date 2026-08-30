@@ -19,9 +19,12 @@ import {
   MessageCircle,
   Twitter,
   Send,
+  ShoppingBag,
+  ArrowUpRight,
 } from 'lucide-react';
 import { onValue, ref } from 'firebase/database';
 import { db } from '@/lib/firebase';
+import { SHOP_URL } from '@/lib/constants';
 
 type PublicCompanySettings = {
   companyName?: string;
@@ -162,19 +165,8 @@ export function Footer() {
         data =
           await response.json();
       } else {
-        const raw =
-          await response.text();
-
-        console.error(
-          'Newsletter API returned non-JSON response:',
-          raw
-        );
-
         throw new Error(
-          response.status ===
-            404
-            ? 'Newsletter service is unavailable. The API route was not found.'
-            : `Newsletter service returned an unexpected response (${response.status}).`
+          'Newsletter service is temporarily unavailable. Please try again later.'
         );
       }
 
@@ -324,6 +316,17 @@ export function Footer() {
             </h3>
 
             <nav className="mt-4 space-y-3 text-sm text-foreground-muted">
+              <a
+                href={SHOP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 font-semibold text-accent hover:text-accent/80"
+              >
+                <ShoppingBag className="h-4 w-4" />
+                Amazon Product Shop
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </a>
+
               <Link
                 href="/seller"
                 className="block hover:text-foreground"
@@ -516,6 +519,15 @@ export function Footer() {
             >
               Seller Login or Apply
             </Link>
+
+            <a
+              href={SHOP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium hover:text-foreground"
+            >
+              Affiliate Product Shop
+            </a>
 
             <Link
               href="/seller/policy"

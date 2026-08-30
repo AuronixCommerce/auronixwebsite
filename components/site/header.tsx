@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ArrowRight,
   Menu,
+  ShoppingBag,
   Sparkles,
 } from 'lucide-react';
 
@@ -17,7 +18,7 @@ import {
 } from 'framer-motion';
 
 import { cn } from '@/lib/utils';
-import { NAV_LINKS } from '@/lib/constants';
+import { NAV_LINKS, SHOP_URL } from '@/lib/constants';
 import { MobileMenu } from './mobile-menu';
 import { ThemeToggle } from './theme-toggle';
 
@@ -340,6 +341,15 @@ export function Header() {
             {/* DESKTOP ACTIONS */}
             <div className="hidden items-center gap-2 xl:flex">
               <ThemeToggle />
+              <a
+                href={SHOP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-2.5 font-sans text-[11px] font-semibold text-foreground-muted transition hover:bg-white/[0.06] hover:text-foreground"
+              >
+                <ShoppingBag className="h-3.5 w-3.5" />
+                Shop
+              </a>
               <Link
                 href="/supplier"
                 className="rounded-full px-4 py-2.5 font-sans text-[11px] font-semibold text-foreground-muted transition hover:bg-white/[0.06] hover:text-foreground"

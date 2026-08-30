@@ -29,7 +29,7 @@ type FaqPair = readonly [question: string, answer: string];
 const GROUPS: ReadonlyArray<readonly [string, readonly FaqPair[]]> = [
   ['About Auronix Commerce', [
     ['What is Auronix Commerce LLC?', 'Auronix Commerce LLC supports structured eCommerce sourcing, supplier relationships, procurement, distribution, and marketplace operations.'],
-    ['Does Auronix Commerce operate an online retail store?', 'The corporate website explains Auronix services and partnership opportunities. It is not presented as a consumer checkout store.'],
+    ['Does Auronix Commerce operate an online retail store?', 'The corporate website explains Auronix services and partnerships. A separate product-discovery shop at shop.auronixcommerce.com links visitors to Amazon; Auronix does not directly sell, charge, ship, or manage customer orders.'],
     ['Who can contact Auronix Commerce?', 'Suppliers, sellers, brands, service partners, applicants, and people with a legitimate business or support inquiry may contact the team.'],
     ['Where can I verify company information?', 'Use the Company Verification page for the website’s published company-identification and verification information.'],
     ['How do I contact Auronix Commerce?', 'Use the Contact or Support page and choose the subject that most closely matches your inquiry.'],
@@ -43,7 +43,7 @@ const GROUPS: ReadonlyArray<readonly [string, readonly FaqPair[]]> = [
     ['Who can submit a seller application?', 'A person authorized to provide accurate information for the proposed seller or business may submit an application.'],
     ['Where do I start a seller application?', 'Choose Seller Access, select Create account or apply, and open the seller application page.'],
     ['How many steps are in the seller application?', 'The application uses five saved steps: WhatsApp verification, email verification, business details, profile information, and review.'],
-    ['Does each application step save automatically?', 'Completed application progress is saved to the database when the flow provides a successful save confirmation. Keep the private resume ID safely.'],
+    ['Does each application step save automatically?', 'Completed application progress is saved when the flow provides a successful save confirmation. Keep the private resume ID safely.'],
     ['Can I resume an unfinished seller application?', 'Yes. Choose Resume saved application and enter the private resume ID associated with that draft.'],
     ['What is the seller application resume ID?', 'It is a private reference generated for an application draft. It helps retrieve saved progress and should not be posted publicly.'],
     ['Can I submit two applications with the same email?', 'The system blocks sensible duplicates, including an existing seller account and active or pending applications for the same normalized email.'],
@@ -103,8 +103,8 @@ const GROUPS: ReadonlyArray<readonly [string, readonly FaqPair[]]> = [
     ['How do I mark a seller notification as read?', 'Open the notification or use the available read control. The dashboard stores the updated read state for the signed-in seller.'],
     ['Where do I ask for seller support?', 'Open Support in the seller dashboard and submit a clear issue with the affected area, approximate time, and safe diagnostic details.'],
     ['Why is a dashboard feature unavailable?', 'The feature may require an active account, a completed setup field, a specific permission, or may be under maintenance. Read the page message.'],
-    ['Can another seller see my dashboard records?', 'Seller APIs validate the signed-in account. Never share credentials, and report any suspected cross-account exposure immediately.'],
-    ['Does refreshing the dashboard delete my data?', 'No. Successfully saved records are stored in the database. Unsaved form text may be lost when the page is refreshed.'],
+    ['Can another seller see my dashboard records?', 'Protected seller areas verify the signed-in account. Never share credentials, and report any suspected cross-account exposure immediately.'],
+    ['Does refreshing the dashboard delete my data?', 'No. Successfully saved workspace records remain available. Unsaved form text may be lost when the page is refreshed.'],
     ['Which browser should I use for the seller dashboard?', 'Use a current version of Chrome, Edge, Firefox, or Safari with JavaScript, cookies, and secure storage enabled for the site.'],
   ]],
   ['Catalogs & Products', [
@@ -116,7 +116,7 @@ const GROUPS: ReadonlyArray<readonly [string, readonly FaqPair[]]> = [
     ['Can I leave required product information blank?', 'No. Server-side validation rejects incomplete or unsafe records even if a browser-side check is bypassed.'],
     ['How should I describe a product?', 'Use accurate, specific, non-misleading information. Do not add unsupported claims, fake ratings, invented certifications, or confidential data.'],
     ['What image links should I use?', 'Use accessible HTTPS image URLs you are authorized to use. Confirm the image loads and accurately represents the item.'],
-    ['Why does a catalog update show a conflict?', 'Another save or newer database state may have changed the record. Reload the latest data, review it, and apply the update again.'],
+    ['Why does a catalog update show a conflict?', 'Another save or newer saved version may have changed the record. Reload the latest version, review it, and apply the update again.'],
     ['Can Support edit my catalog through AI chat?', 'No. The public AI cannot perform protected seller mutations. Use authenticated dashboard controls or contact authorized Support.'],
   ]],
   ['Support & Notifications', [
@@ -142,6 +142,10 @@ const GROUPS: ReadonlyArray<readonly [string, readonly FaqPair[]]> = [
     ['How do I update a submitted supplier inquiry?', 'Contact Support with the original reference and the corrected non-secret information. Avoid creating repeated duplicate submissions.'],
   ]],
   ['Marketplace Operations', [
+    ['Where is the official Auronix product shop?', 'Visit shop.auronixcommerce.com to discover and compare products selected by Auronix Commerce. Purchase buttons continue to Amazon using affiliate links.'],
+    ['Does Auronix sell or ship products from its affiliate shop?', 'No. Auronix provides product discovery and affiliate links. Amazon handles checkout, payment, delivery, returns, refunds, warranties, and customer orders.'],
+    ['Does Auronix earn commission from the product shop?', 'Auronix Commerce may earn an affiliate commission from qualifying Amazon purchases, without directly handling the customer transaction.'],
+    ['Where do product purchase buttons lead?', 'Purchase buttons on the Auronix product-discovery shop lead to the corresponding Amazon product link. Visitors should review the destination and Amazon terms before purchasing.'],
     ['What are marketplace operations?', 'They are structured activities supporting product data, sourcing, supplier coordination, catalog readiness, and related eCommerce workflows.'],
     ['Does Auronix own every marketplace it works with?', 'No. Auronix does not claim ownership of third-party marketplaces, platforms, brands, or their services.'],
     ['Does Auronix guarantee marketplace approval?', 'No. Third-party platforms control their own accounts, eligibility, policies, listings, and enforcement decisions.'],
@@ -165,7 +169,7 @@ const GROUPS: ReadonlyArray<readonly [string, readonly FaqPair[]]> = [
   ]],
   ['Technical Troubleshooting', [
     ['What is the first step when a page does not work?', 'Copy unsaved text, refresh once, confirm connectivity, and retry in a current browser. Then read the closest inline error rather than repeatedly submitting.'],
-    ['Why does a page show maintenance after it was disabled?', 'Refresh after the admin setting is saved and verify both global and page-specific controls. Scheduled maintenance can also remain active independently.'],
+    ['Why does a page still show maintenance?', 'Refresh once after service is restored. If the maintenance notice remains, contact Support with the affected page address and the time you saw it.'],
     ['Why does a button remain disabled?', 'A required field may be incomplete, a request may already be running, or the current step may require successful verification first.'],
     ['Why does a loading state never finish?', 'The network request may be blocked or delayed. Check connectivity, allow site scripts, refresh once, and capture the visible error if it repeats.'],
     ['Why am I seeing a generic error instead of technical details?', 'Public errors intentionally avoid exposing secrets and internal infrastructure. Support logs can retain a safe diagnostic reference.'],
@@ -240,7 +244,7 @@ export const TROUBLESHOOTING_ARTICLES: TroubleshootingArticle[] = [
   ]},
   { slug: 'catalog-product-errors', title: 'Troubleshoot catalogs and products', summary: 'Fix missing fields, invalid relationships, draft states, and catalog-product save errors.', category: 'Catalogs & Products', audience: 'Signed-in sellers', sections: [
     { heading: 'Check ownership and status', body: 'Catalog and product requests are scoped to the authenticated seller. Confirm the selected record belongs to the current workspace.' },
-    { heading: 'Validate the record', body: 'Server validation remains authoritative.', steps: ['Complete every required field.', 'Select a valid catalog when the product requires one.', 'Use accurate text and authorized HTTPS image locations.', 'Review draft or published status.', 'Reload the newest database state before resolving a save conflict.'] },
+    { heading: 'Validate the record', body: 'The final submission checks determine whether the record can be saved.', steps: ['Complete every required field.', 'Select a valid catalog when the product requires one.', 'Use accurate text and authorized HTTPS image locations.', 'Review draft or published status.', 'Reload the newest saved version before resolving a save conflict.'] },
   ]},
   { slug: 'seller-notifications', title: 'Troubleshoot seller notifications', summary: 'Resolve missing notifications, unread states, and support-reply delivery questions.', category: 'Support & Notifications', audience: 'Signed-in sellers', sections: [
     { heading: 'Refresh notification state', body: 'Open Notifications from the authenticated seller navigation and allow the request to complete.' },
@@ -252,7 +256,7 @@ export const TROUBLESHOOTING_ARTICLES: TroubleshootingArticle[] = [
   ]},
   { slug: 'maintenance-page', title: 'Understand maintenance pages', summary: 'Distinguish global, page-specific, scheduled, and AI maintenance states.', category: 'Website', audience: 'All users', sections: [
     { heading: 'Why maintenance appears', body: 'Operations can enable global, page-specific, scheduled, or AI-only maintenance independently.' },
-    { heading: 'After maintenance is disabled', body: 'Save the admin control, verify no schedule remains active, and refresh the target page. Admin pages remain available for authorized recovery.' },
+    { heading: 'After service is restored', body: 'Refresh the affected page once. If the notice remains, contact Support with the page address and approximate time.' },
   ]},
   { slug: 'browser-site-data', title: 'Resolve browser and site-data problems', summary: 'Safely diagnose stale cookies, extensions, cached pages, and unsupported browsers.', category: 'Technical', audience: 'All users', sections: [
     { heading: 'Low-risk checks', body: 'Start with a normal refresh and a current browser before clearing data.', steps: ['Save any draft text.', 'Update the browser.', 'Retry in a private window.', 'Disable only extensions that modify site requests.', 'If private mode works, clear Auronix site data and sign in again.'] },

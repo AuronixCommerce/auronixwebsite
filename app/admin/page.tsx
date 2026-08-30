@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import {
   useEffect,
@@ -6,6 +6,7 @@ import {
 } from 'react';
 
 import Link from 'next/link';
+import { notifyAction } from '@/components/ui/confirm-action';
 
 import {
   Activity,
@@ -490,7 +491,7 @@ export default function AdminDashboardPage() {
       } catch (
         error
       ) {
-        alert(
+        notifyAction(
           error instanceof Error
             ? error.message
             : 'Unable to update admin availability.'

@@ -12,6 +12,7 @@ import type {
 } from 'react';
 
 import Link from 'next/link';
+import { confirmAction } from '@/components/ui/confirm-action';
 
 import {
   Activity,
@@ -501,14 +502,12 @@ export default function AdminAiNewsletterPagesPage() {
       title: string
     ) => {
       const confirmed =
-        window.confirm(
-          'Permanently delete "' +
-          (
-            title ||
-            'this AI page'
-          ) +
-          '"? This will delete the temporary URL and its activity history. The original newsletter campaign will remain.'
-        );
+        await confirmAction({
+          title: `Delete “${title || 'this campaign page'}”?`,
+          description: 'This permanently removes the temporary URL and its activity history. The original newsletter campaign will remain.',
+          confirmLabel: 'Delete page',
+          destructive: true,
+        });
 
       if (
         !confirmed

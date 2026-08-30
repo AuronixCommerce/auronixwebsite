@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import {
   useEffect,
@@ -31,6 +31,7 @@ import {
   User,
   XCircle,
 } from 'lucide-react';
+import { confirmAction, notifyAction, promptAction } from '@/components/ui/confirm-action';
 
 import {
   auth,
@@ -835,11 +836,11 @@ export default function AdminSellersPage() {
       }
 
       if (
-        !window.confirm(
-          `Approve ${getName(
-            selected
-          )} and create the seller account invitation?`
-        )
+        !await confirmAction({
+          title: `Approve ${getName(selected)}?`,
+          description: 'This approves the application and creates a secure seller account invitation.',
+          confirmLabel: 'Approve application',
+        })
       ) {
         return;
       }
@@ -887,11 +888,11 @@ export default function AdminSellersPage() {
           );
         }
 
-        alert(
+        notifyAction(
           'Seller approved and invitation sent.'
         );
       } catch (error) {
-        alert(
+        notifyAction(
           error instanceof Error
             ? error.message
             : 'Unable to approve seller.'
@@ -914,10 +915,14 @@ export default function AdminSellersPage() {
       }
 
       const reason =
-        window.prompt(
-          'Reason for rejection:',
-          'The application did not meet the current requirements.'
-        );
+        await promptAction({
+          title: `Reject ${getName(selected)}'s application?`,
+          description: 'Provide a professional reason that can be recorded with this decision.',
+          label: 'Rejection reason',
+          defaultValue: 'The application did not meet the current requirements.',
+          confirmLabel: 'Reject application',
+          destructive: true,
+        });
 
       if (
         reason === null
@@ -971,7 +976,7 @@ export default function AdminSellersPage() {
           );
         }
       } catch (error) {
-        alert(
+        notifyAction(
           error instanceof Error
             ? error.message
             : 'Unable to reject seller.'
@@ -994,11 +999,12 @@ export default function AdminSellersPage() {
       }
 
       if (
-        !window.confirm(
-          `Permanently delete ${getName(
-            selected
-          )}'s seller application?`
-        )
+        !await confirmAction({
+          title: `Delete ${getName(selected)}'s application?`,
+          description: 'The seller application will be permanently removed. This action cannot be undone.',
+          confirmLabel: 'Delete application',
+          destructive: true,
+        })
       ) {
         return;
       }
@@ -1050,7 +1056,7 @@ export default function AdminSellersPage() {
           null
         );
       } catch (error) {
-        alert(
+        notifyAction(
           error instanceof Error
             ? error.message
             : 'Unable to delete application.'
@@ -1122,7 +1128,7 @@ export default function AdminSellersPage() {
           );
         }
       } catch (error) {
-        alert(
+        notifyAction(
           error instanceof Error
             ? error.message
             : 'AI screening failed.'

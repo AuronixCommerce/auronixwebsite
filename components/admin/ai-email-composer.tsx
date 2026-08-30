@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 
 import { auth } from '@/lib/firebase';
+import { notifyAction } from '@/components/ui/confirm-action';
 
 interface AIEmailComposerProps {
   recipientName?: string;
@@ -57,7 +58,7 @@ export function AIEmailComposer({
 
   const generate = async () => {
     if (!instruction.trim()) {
-      alert(
+      notifyAction(
         'Tell AI what you want the email to say.'
       );
       return;
@@ -109,7 +110,7 @@ export function AIEmailComposer({
       setSubject(data.subject || '');
       setBody(data.body || '');
     } catch (error) {
-      alert(
+      notifyAction(
         error instanceof Error
           ? error.message
           : 'Unable to generate email.'
@@ -125,7 +126,7 @@ export function AIEmailComposer({
       !body.trim() ||
       !subject.trim()
     ) {
-      alert(
+      notifyAction(
         'Recipient, subject, and email body are required.'
       );
       return;
@@ -180,13 +181,13 @@ export function AIEmailComposer({
       setBody('');
       setInstruction('');
 
-      alert(
+      notifyAction(
         'Email sent successfully from Auronix Commerce Team.'
       );
 
       onSent?.();
     } catch (error) {
-      alert(
+      notifyAction(
         error instanceof Error
           ? error.message
           : 'Unable to send email.'

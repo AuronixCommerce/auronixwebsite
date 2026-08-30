@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -9,6 +9,7 @@ import {
 } from '@/lib/firebase-db';
 import type { BlogPost } from '@/lib/types';
 import { AdminLayout } from '@/components/admin/admin-layout';
+import { confirmAction, notifyAction } from '@/components/ui/confirm-action';
 import {
   Loader2,
   Plus,
@@ -120,12 +121,12 @@ export default function AdminBlogPage() {
 
   const savePost = async (publish: boolean) => {
     if (!form.title.trim()) {
-      alert('Title is required.');
+      notifyAction('Title is required.');
       return;
     }
 
     if (!form.content.trim()) {
-      alert('Content is required.');
+      notifyAction('Content is required.');
       return;
     }
 
@@ -187,7 +188,7 @@ export default function AdminBlogPage() {
       setEditingId(null);
       setForm(emptyForm);
     } catch (error) {
-      alert(
+      notifyAction(
         error instanceof Error
           ? error.message
           : 'Unable to save blog post.'
@@ -216,7 +217,7 @@ export default function AdminBlogPage() {
 
       await loadPosts();
     } catch (error) {
-      alert(
+      notifyAction(
         error instanceof Error
           ? error.message
           : 'Unable to update publication status.'
@@ -226,9 +227,12 @@ export default function AdminBlogPage() {
 
   const deletePost = async (id: string) => {
     if (
-      !window.confirm(
-        'Permanently delete this blog post?'
-      )
+      !await confirmAction({
+        title: 'Delete this blog post?',
+        description: 'The post will be permanently removed. This action cannot be undone.',
+        confirmLabel: 'Delete post',
+        destructive: true,
+      })
     ) {
       return;
     }
@@ -237,7 +241,7 @@ export default function AdminBlogPage() {
       await removeData(`blogPosts/${id}`);
       await loadPosts();
     } catch (error) {
-      alert(
+      notifyAction(
         error instanceof Error
           ? error.message
           : 'Unable to delete blog post.'

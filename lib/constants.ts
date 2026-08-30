@@ -1,3 +1,5 @@
+export const SHOP_URL = 'https://shop.auronixcommerce.com';
+
 export const NAV_LINKS = [
   { label: 'Solutions', href: '/solutions' },
   { label: 'Our Process', href: '/our-process' },

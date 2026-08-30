@@ -147,7 +147,7 @@ export const AURONIX_SITE_KNOWLEDGE: SiteKnowledgeEntry[] = [
     title: 'Marketplace Expertise',
     visibility: 'public',
     summary:
-      'The marketplace expertise page covers product and catalog operations, listing workflows, marketplace positioning, product selection, inventory coordination, operational consistency, and optimization.',
+      'The marketplace expertise page covers product and catalog operations, listing workflows, marketplace positioning, product selection, inventory coordination, operational consistency, and optimization. Auronix also operates a separate Amazon affiliate product-discovery shop at https://shop.auronixcommerce.com. Visitors can compare selected products there, then continue to Amazon for checkout. Auronix does not directly sell, charge, ship, fulfill, or manage customer orders, returns, refunds, or warranties and may earn a commission from qualifying purchases.',
     topics: [
       'marketplaces',
       'catalog',
@@ -156,6 +156,8 @@ export const AURONIX_SITE_KNOWLEDGE: SiteKnowledgeEntry[] = [
       'inventory',
       'optimization',
       'marketplace strategy',
+      'affiliate product shop',
+      'Amazon product discovery',
     ],
     related: [
       '/solutions',
@@ -937,7 +939,7 @@ export function getPageKnowledge(
   pathname: string
 ) {
   const exact =
-    AURONIX_SITE_KNOWLEDGE.find(
+    PUBLIC_SITE_KNOWLEDGE.find(
       (entry) =>
         entry.path === pathname
     );
@@ -989,26 +991,6 @@ export function getPageKnowledge(
           '/seller/dashboard'
       ) || null
     );
-  }
-
-  const dynamicAdmin =
-    pathname.startsWith(
-      '/admin/'
-    );
-
-  if (dynamicAdmin) {
-    return {
-      path: pathname,
-      title:
-        'Internal Administration Page',
-      visibility:
-        'private' as const,
-      summary:
-        'An internal Auronix administration route.',
-      topics: [
-        'internal administration',
-      ],
-    };
   }
 
   return null;

@@ -73,8 +73,11 @@ test('AI local memory creates one reload boundary and can be cleared', async ({ 
   await page.getByRole('button', { name: 'Open Auronix AI chat' }).click();
   await expect(page.getByRole('separator', { name: 'Previous chat ended' })).toHaveCount(1);
 
-  page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Clear saved AI chat memory' }).click();
+  await expect(page.getByRole('alertdialog')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Delete this chat history?' })).toBeVisible();
+  await page.getByRole('button', { name: 'Delete chat history' }).click();
+  await expect(page.getByRole('button', { name: 'Clearing chat…' })).toBeVisible();
   await expect(page.getByText('Saved seller answer')).toHaveCount(0);
   await expect(page.getByRole('separator', { name: 'Previous chat ended' })).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => localStorage.getItem('auronix-ai-local-memory-v1'))).toBe('[]');

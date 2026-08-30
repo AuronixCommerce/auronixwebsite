@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import {
@@ -13,6 +13,7 @@ import {
 
 import { auth } from '@/lib/firebase';
 import { AdminLayout } from '@/components/admin/admin-layout';
+import { notifyAction } from '@/components/ui/confirm-action';
 
 const DEFAULT_INSTRUCTIONS = `You are the Auronix Commerce LLC support assistant.
 
@@ -128,9 +129,9 @@ export default function AdminAIPage() {
         );
       }
 
-      alert('AI settings saved successfully.');
+      notifyAction('AI settings saved successfully.');
     } catch (error) {
-      alert(
+      notifyAction(
         error instanceof Error
           ? error.message
           : 'Unable to save AI settings.'

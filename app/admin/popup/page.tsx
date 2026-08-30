@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 
@@ -12,6 +12,7 @@ import {
 
 import { auth } from '@/lib/firebase';
 import { AdminLayout } from '@/components/admin/admin-layout';
+import { notifyAction } from '@/components/ui/confirm-action';
 
 type PopupData = {
   enabled: boolean;
@@ -191,11 +192,11 @@ export default function AdminPopupPage() {
         ...result,
       });
 
-      alert(
+      notifyAction(
         'Website popup updated successfully.'
       );
     } catch (error) {
-      alert(
+      notifyAction(
         error instanceof Error
           ? error.message
           : 'Unable to save popup.'

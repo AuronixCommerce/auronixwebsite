@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { onAuthChange } from '@/lib/auth';
 import { sellerWorkspaceRequest } from '@/lib/seller-workspace-client';
 import { SellerLayout } from '@/components/seller/seller-layout';
+import { confirmAction } from '@/components/ui/confirm-action';
 import { Loader2, Plus, Trash2, Package, X } from 'lucide-react';
 
 interface Product {
@@ -63,7 +64,7 @@ export default function SellerProductsPage() {
   };
 
   const deleteProduct = async (id: string) => {
-    if (!window.confirm('Delete this product?')) return;
+    if (!await confirmAction({ title: 'Delete this product?', description: 'This product will be permanently removed from your seller workspace.', confirmLabel: 'Delete product', destructive: true })) return;
     try { await sellerWorkspaceRequest(`?resource=product&id=${encodeURIComponent(id)}`, { method: 'DELETE' }); setProducts((current) => current.filter((item) => item.id !== id)); }
     catch (deleteError) { setError(deleteError instanceof Error ? deleteError.message : 'Unable to delete product.'); }
   };

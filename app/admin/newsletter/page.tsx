@@ -30,6 +30,7 @@ import {
 import {
   AdminLayout,
 } from '@/components/admin/admin-layout';
+import { confirmAction } from '@/components/ui/confirm-action';
 
 type NewsletterDraft = {
   subject: string;
@@ -360,9 +361,11 @@ export default function AdminNewsletterPage() {
       }
 
       const confirmed =
-        window.confirm(
-          `Send this newsletter to ${subscribers} active subscriber${subscribers === 1 ? '' : 's'}?`
-        );
+        await confirmAction({
+          title: 'Send this newsletter now?',
+          description: `This sends the campaign to ${subscribers} active subscriber${subscribers === 1 ? '' : 's'}.`,
+          confirmLabel: 'Send newsletter',
+        });
 
       if (
         !confirmed
@@ -471,11 +474,12 @@ export default function AdminNewsletterPage() {
     subject: string
   ) => {
     const confirmed =
-      window.confirm(
-        'Permanently delete "' +
-        subject +
-        '"? This will also delete its linked AI campaign page and temporary URL.'
-      );
+      await confirmAction({
+        title: `Delete “${subject}”?`,
+        description: 'This permanently removes the campaign, its linked campaign page, and temporary URL.',
+        confirmLabel: 'Delete campaign',
+        destructive: true,
+      });
 
     if (!confirmed) {
       return;
@@ -565,9 +569,12 @@ export default function AdminNewsletterPage() {
       }
 
       const confirmed =
-        window.confirm(
-          'Permanently delete all newsletter campaigns, AI generated pages, and temporary campaign links? This cannot be undone.'
-        );
+        await confirmAction({
+          title: 'Delete all newsletter campaigns?',
+          description: 'This permanently removes every campaign, generated campaign page, and temporary campaign link. This cannot be undone.',
+          confirmLabel: 'Delete everything',
+          destructive: true,
+        });
 
       if (!confirmed) {
         return;

@@ -25,7 +25,18 @@ import {
   AnimatePresence,
   motion,
 } from 'framer-motion';
+import { usePathname } from 'next/navigation';
 import { AuronixMark } from '@/components/site/auronix-mark';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 type Role = 'user' | 'assistant';
 
@@ -49,6 +60,12 @@ const QUICK_QUESTIONS = [
   'What is the seller application process?',
   'How can I contact Auronix?',
   'Can you explain your marketplace expertise?',
+  'Where can I explore Auronix product selections?',
+  'How does the Auronix Amazon affiliate shop work?',
+  'Where can I find seller troubleshooting guides?',
+  'How do I resume a saved seller application?',
+  'What partnership opportunities are available?',
+  'Where can I read Auronix policies?',
   'Is there any scheduled maintenance?',
 ];
 
@@ -423,6 +440,10 @@ export function AIChat() {
   const [activeAnswerSource, setActiveAnswerSource] =
     useState<'found' | 'online'>('online');
 
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
+
+  const [clearingMemory, setClearingMemory] = useState(false);
+
   const [localMemoryReady, setLocalMemoryReady] = useState(false);
 
   const [visibleAnswer, setVisibleAnswer] =
@@ -431,7 +452,7 @@ export function AIChat() {
   const [error, setError] = useState('');
 
   const [quickIndex, setQuickIndex] =
-    useState(0);
+    useState(-1);
 
   const scrollRef =
     useRef<HTMLDivElement | null>(null);
@@ -448,29 +469,33 @@ export function AIChat() {
 
   const thinkingStartedAtRef = useRef(0);
 
-  const pathname =
-    typeof window !== 'undefined'
-      ? window.location.pathname
-      : '/';
+  const pathname = usePathname() || '/';
 
   const quickQuestion = useMemo(
     () =>
-      QUICK_QUESTIONS[
-        quickIndex % QUICK_QUESTIONS.length
-      ],
+      quickIndex >= 0
+        ? QUICK_QUESTIONS[quickIndex]
+        : '',
     [quickIndex]
   );
 
   useEffect(() => {
+    const chooseNext = (previous: number) => {
+      if (QUICK_QUESTIONS.length <= 1) return 0;
+      let next = Math.floor(Math.random() * QUICK_QUESTIONS.length);
+      if (next === previous) next = (next + 1) % QUICK_QUESTIONS.length;
+      return next;
+    };
+
+    setQuickIndex((previous) => chooseNext(previous));
+
     const timer = window.setInterval(() => {
-      setQuickIndex(
-        (value) => value + 1
-      );
+      setQuickIndex((previous) => chooseNext(previous));
     }, 30000);
 
     return () =>
       window.clearInterval(timer);
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     try {
@@ -516,7 +541,7 @@ export function AIChat() {
     } finally {
       setLocalMemoryReady(true);
     }
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     if (!localMemoryReady) return;
@@ -614,17 +639,17 @@ export function AIChat() {
     setLoading(false);
   };
 
-  const clearChatMemory = () => {
-    if (!window.confirm('Clear this saved AI conversation from this browser?')) {
-      return;
-    }
-
+  const clearChatMemory = async () => {
+    if (clearingMemory) return;
+    setClearingMemory(true);
     abortRef.current?.abort();
 
     if (typingTimerRef.current) {
       clearInterval(typingTimerRef.current);
       typingTimerRef.current = null;
     }
+
+    await new Promise((resolve) => window.setTimeout(resolve, 650));
 
     currentAnswerRef.current = '';
     setMessages([]);
@@ -633,8 +658,16 @@ export function AIChat() {
     setError('');
     setThinkingSeconds(0);
     setCompletedThinkingSeconds(0);
+    setQuickIndex((previous) => {
+      if (QUICK_QUESTIONS.length <= 1) return 0;
+      let next = Math.floor(Math.random() * QUICK_QUESTIONS.length);
+      if (next === previous) next = (next + 1) % QUICK_QUESTIONS.length;
+      return next;
+    });
     setLoading(false);
     window.localStorage.removeItem(CHAT_STORAGE_KEY);
+    setClearingMemory(false);
+    setClearDialogOpen(false);
   };
 
   const typeAnswer = (
@@ -1011,13 +1044,14 @@ export function AIChat() {
               <div className="flex shrink-0 items-center gap-2">
                 <button
                   type="button"
-                  onClick={clearChatMemory}
+                  onClick={() => setClearDialogOpen(true)}
+                  disabled={clearingMemory}
                   aria-label="Clear saved AI chat memory"
                   title="Clear saved chat memory"
-                  className="flex h-10 items-center justify-center gap-1.5 rounded-full border border-border bg-secondary/60 px-3 font-sans text-xs font-semibold text-foreground-muted transition-colors hover:bg-secondary hover:text-foreground"
+                  className="flex h-10 items-center justify-center gap-1.5 rounded-full border border-border bg-secondary/60 px-3 font-sans text-xs font-semibold text-foreground-muted transition-colors hover:bg-secondary hover:text-foreground disabled:cursor-wait disabled:opacity-65"
                 >
-                  <Trash2 className="h-4 w-4" />
-                  Clear
+                  {clearingMemory ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  {clearingMemory ? 'Clearing…' : 'Clear'}
                 </button>
 
                 <button
@@ -1162,6 +1196,7 @@ export function AIChat() {
 
             <div className="shrink-0 border-t border-border px-3 py-2">
               <AnimatePresence mode="wait">
+                {quickQuestion && (
                 <motion.button
                   key={quickQuestion}
                   initial={{
@@ -1188,6 +1223,7 @@ export function AIChat() {
                   Quick question ·{' '}
                   {quickQuestion}
                 </motion.button>
+                )}
               </AnimatePresence>
             </div>
 
@@ -1244,6 +1280,40 @@ export function AIChat() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AlertDialog open={clearDialogOpen} onOpenChange={(nextOpen) => {
+        if (!clearingMemory) setClearDialogOpen(nextOpen);
+      }}>
+        <AlertDialogContent className="max-w-[min(92vw,420px)] rounded-[26px] border-border bg-background p-6 shadow-[0_28px_100px_rgba(0,0,0,0.34)]">
+          <AlertDialogHeader className="text-left">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-500/10 text-red-600 dark:text-red-300">
+              <Trash2 className="h-5 w-5" />
+            </div>
+            <AlertDialogTitle className="font-sans text-xl font-bold tracking-tight">
+              Delete this chat history?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="font-sans text-sm leading-6 text-foreground-muted">
+              This removes the saved Auronix AI conversation from this browser. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6 gap-2 sm:gap-2">
+            <AlertDialogCancel disabled={clearingMemory} className="h-11 rounded-xl border-border bg-secondary/60 px-5 font-sans font-semibold">
+              Keep chat
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={clearingMemory}
+              onClick={(event) => {
+                event.preventDefault();
+                void clearChatMemory();
+              }}
+              className="h-11 rounded-xl bg-red-600 px-5 font-sans font-semibold text-white hover:bg-red-700 disabled:cursor-wait disabled:opacity-70"
+            >
+              {clearingMemory ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              {clearingMemory ? 'Clearing chat…' : 'Delete chat history'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

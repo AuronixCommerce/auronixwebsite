@@ -1,9 +1,10 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { ref, onValue, push, set, update, remove } from 'firebase/database';
 import { db } from '@/lib/firebase';
 import { AdminLayout } from '@/components/admin/admin-layout';
+import { confirmAction, notifyAction } from '@/components/ui/confirm-action';
 import {
   Search,
   Plus,
@@ -114,7 +115,7 @@ export function AdminCrudPage({
 
     for (const field of fields) {
       if (field.required && !String(form[field.key] ?? '').trim()) {
-        alert(`${field.label} is required.`);
+        notifyAction(`${field.label} is required.`);
         return;
       }
     }
@@ -144,7 +145,7 @@ export function AdminCrudPage({
       setForm({});
     } catch (error) {
       console.error('Failed to save record:', error);
-      alert('Unable to save this record.');
+      notifyAction('Unable to save this record.');
     } finally {
       setSaving(false);
     }
@@ -153,9 +154,12 @@ export function AdminCrudPage({
   const deleteRecord = async (id: string) => {
     if (!db) return;
 
-    const confirmed = window.confirm(
-      'Are you sure you want to permanently delete this record?'
-    );
+    const confirmed = await confirmAction({
+      title: 'Delete this record?',
+      description: 'This permanently removes the selected record and cannot be undone.',
+      confirmLabel: 'Delete record',
+      destructive: true,
+    });
 
     if (!confirmed) return;
 
@@ -163,7 +167,7 @@ export function AdminCrudPage({
       await remove(ref(db, `${path}/${id}`));
     } catch (error) {
       console.error('Failed to delete record:', error);
-      alert('Unable to delete this record.');
+      notifyAction('Unable to delete this record.');
     }
   };
 

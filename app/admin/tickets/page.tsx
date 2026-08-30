@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -8,6 +8,7 @@ import {
 
 import { db, auth } from '@/lib/firebase';
 import { AdminLayout } from '@/components/admin/admin-layout';
+import { confirmAction, notifyAction } from '@/components/ui/confirm-action';
 
 import type { SupportTicket } from '@/lib/types';
 
@@ -269,7 +270,7 @@ export default function AdminTicketsPage() {
 
       setDraft(data.response || '');
     } catch (error) {
-      alert(
+      notifyAction(
         error instanceof Error
           ? error.message
           : 'Unable to generate AI response.'
@@ -320,9 +321,9 @@ export default function AdminTicketsPage() {
       }
 
       setDraft('');
-      alert('Response sent successfully.');
+      notifyAction('Response sent successfully.');
     } catch (error) {
-      alert(
+      notifyAction(
         error instanceof Error
           ? error.message
           : 'Unable to send response.'
@@ -343,9 +344,12 @@ export default function AdminTicketsPage() {
     }
 
     if (
-      !window.confirm(
-        'Permanently delete this support ticket? This cannot be undone.'
-      )
+      !await confirmAction({
+        title: 'Delete this support ticket?',
+        description: 'The ticket and its conversation history will be permanently removed. This cannot be undone.',
+        confirmLabel: 'Delete ticket',
+        destructive: true,
+      })
     ) {
       return;
     }
@@ -384,7 +388,7 @@ export default function AdminTicketsPage() {
         setDraft('');
       }
     } catch (error) {
-      alert(
+      notifyAction(
         error instanceof Error
           ? error.message
           : 'Unable to delete ticket.'
@@ -398,7 +402,7 @@ export default function AdminTicketsPage() {
     ticketId: string
   ) => {
     if (adminOnline) {
-      alert(
+      notifyAction(
         'Admin is currently online. Manual support is active.'
       );
       return;
@@ -428,13 +432,13 @@ export default function AdminTicketsPage() {
         );
       }
 
-      alert(
+      notifyAction(
         data.automated
           ? 'Automated support response sent.'
           : 'Automatic support was not used.'
       );
     } catch (error) {
-      alert(
+      notifyAction(
         error instanceof Error
           ? error.message
           : 'Automatic response failed.'

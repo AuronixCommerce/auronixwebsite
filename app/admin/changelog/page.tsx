@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 
@@ -13,6 +13,7 @@ import {
 
 import { auth } from '@/lib/firebase';
 import { AdminLayout } from '@/components/admin/admin-layout';
+import { confirmAction, notifyAction } from '@/components/ui/confirm-action';
 
 type Release = {
   id: string;
@@ -178,11 +179,11 @@ export default function AdminChangelogPage() {
 
       await load();
 
-      alert(
+      notifyAction(
         'Release published successfully.'
       );
     } catch (error) {
-      alert(
+      notifyAction(
         error instanceof Error
           ? error.message
           : 'Unable to create release.'
@@ -202,9 +203,12 @@ export default function AdminChangelogPage() {
     }
 
     if (
-      !window.confirm(
-        'Delete this release from the public changelog?'
-      )
+      !await confirmAction({
+        title: 'Delete this release?',
+        description: 'This release will be permanently removed from the public changelog.',
+        confirmLabel: 'Delete release',
+        destructive: true,
+      })
     ) {
       return;
     }
@@ -243,7 +247,7 @@ export default function AdminChangelogPage() {
 
       await load();
     } catch (error) {
-      alert(
+      notifyAction(
         error instanceof Error
           ? error.message
           : 'Unable to delete release.'
