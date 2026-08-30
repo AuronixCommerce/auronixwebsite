@@ -347,9 +347,8 @@ export const SELLER_STATUSES = [
   'archived',
 ] as const;
 
-  export const ADMIN_NAV = [
-    { label: 'Overview', href: '/admin', icon: 'LayoutDashboard' },
-    { label: 'Affiliate Shop', href: '/admin/shop', icon: 'ShoppingBag' },
+export const ADMIN_NAV = [
+  { label: 'Overview', href: '/admin', icon: 'LayoutDashboard' },
   { label: 'Seller Applications', href: '/admin/sellers', icon: 'UserCheck' },
   { label: 'Supplier Submissions', href: '/admin/suppliers', icon: 'Package' },
   { label: 'Contact Messages', href: '/admin/contact', icon: 'Mail' },

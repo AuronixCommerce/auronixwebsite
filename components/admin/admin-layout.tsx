@@ -13,13 +13,13 @@ import { AuronixMark } from '@/components/site/auronix-mark';
 import {
   LayoutDashboard, UserCheck, Package, Mail, Ticket, FileText,
   HelpCircle, Briefcase, Users, Scale, Sparkles, Building2,
-  UsersRound, Settings, LogOut, Loader2, Search, Bell, ScrollText, ShieldCheck, ShoppingBag,
+  UsersRound, Settings, LogOut, Loader2, Search, Bell, ScrollText, ShieldCheck,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, any> = {
   LayoutDashboard, UserCheck, Package, Mail, Ticket, FileText,
   HelpCircle, Briefcase, Users, Scale, Sparkles, Building2,
-  UsersRound, Settings, ScrollText, ShieldCheck, ShoppingBag,
+  UsersRound, Settings, ScrollText, ShieldCheck,
 };
 
 export function AdminLayout({ children }: { children: ReactNode }) {

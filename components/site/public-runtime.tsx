@@ -16,7 +16,6 @@ import {
   PublicSiteChrome,
 } from '@/components/site/public-site-chrome';
 import { ThemeToggle } from '@/components/site/theme-toggle';
-import { ShopShell } from '@/components/shop/shop-shell';
 
 export function PublicRuntime({
   children,
@@ -26,10 +25,6 @@ export function PublicRuntime({
 }) {
   const pathname =
     usePathname();
-
-  if (pathname === '/shop' || pathname.startsWith('/shop/')) {
-    return <ShopShell>{children}</ShopShell>;
-  }
 
   /*
    * ADMIN IS COMPLETELY OUTSIDE

@@ -23,23 +23,6 @@ export function middleware(
     pathname
   );
 
-  const hostname =
-    request.headers.get('host')?.split(':')[0].toLowerCase();
-
-  const shopIsPrimary =
-    process.env.SHOP_PRIMARY_HOST === 'true';
-
-  if (
-    (hostname === 'shop.auronixcommerce.com' || shopIsPrimary) &&
-    !pathname.startsWith('/shop') &&
-    !pathname.startsWith('/api/')
-  ) {
-    const shopUrl = request.nextUrl.clone();
-    shopUrl.pathname = pathname === '/' ? '/shop' : `/shop${pathname}`;
-    requestHeaders.set('x-auronix-pathname', shopUrl.pathname);
-    return NextResponse.rewrite(shopUrl, { request: { headers: requestHeaders } });
-  }
-
   /*
    * Admin, API and internal routes
    * are not public maintenance targets.

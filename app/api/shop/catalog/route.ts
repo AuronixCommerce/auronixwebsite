@@ -1,3 +1,0 @@
-import { NextResponse } from 'next/server'; import { adminDb } from '@/lib/firebase-admin';
-export const dynamic='force-dynamic';
-export async function GET(){try{const[p,c]=await Promise.all([adminDb.ref('affiliateShop/products').get(),adminDb.ref('affiliateShop/categories').get()]);const products=Object.entries(p.val()||{}).map(([id,v])=>({id,...(v as object)})).filter((x:any)=>x.status==='published');const categories=Object.entries(c.val()||{}).map(([id,v])=>({id,...(v as object)})).filter((x:any)=>x.published!==false);return NextResponse.json({products,categories},{headers:{'Cache-Control':'public, s-maxage=60, stale-while-revalidate=300'}});}catch(e){console.error(e);return NextResponse.json({products:[],categories:[],unavailable:true},{status:503});}}

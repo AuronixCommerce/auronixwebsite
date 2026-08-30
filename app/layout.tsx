@@ -166,10 +166,6 @@ export default async function RootLayout({
       '/admin/'
     );
 
-  const isShop =
-    pathname === '/shop' ||
-    pathname.startsWith('/shop/');
-
   const isAutomatedTest =
     process.env.E2E_TEST === '1';
 
@@ -190,7 +186,6 @@ export default async function RootLayout({
   if (
     !isAdmin &&
     !isAutomatedTest &&
-    !isShop &&
     !pathname.startsWith(
       '/api/'
     ) &&
