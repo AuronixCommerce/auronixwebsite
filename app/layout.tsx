@@ -170,6 +170,9 @@ export default async function RootLayout({
     pathname === '/shop' ||
     pathname.startsWith('/shop/');
 
+  const isAutomatedTest =
+    process.env.E2E_TEST === '1';
+
   /*
    * ==========================================================
    * MAINTENANCE CHECK
@@ -186,6 +189,7 @@ export default async function RootLayout({
 
   if (
     !isAdmin &&
+    !isAutomatedTest &&
     !isShop &&
     !pathname.startsWith(
       '/api/'

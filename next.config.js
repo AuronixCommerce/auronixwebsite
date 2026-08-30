@@ -4,6 +4,14 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   images: { unoptimized: true },
+  async redirects() {
+    const logo = 'https://pub-6d8ed6ce9591489c885eda64cf2ea10f.r2.dev/AuronixCommerceLLC/AuronixNewLogo.jpeg';
+    return ['/favicon.ico', '/apple-touch-icon.png', '/apple-touch-icon-precomposed.png'].map((source) => ({
+      source,
+      destination: logo,
+      permanent: true,
+    }));
+  },
   async headers() {
     return [
       {
