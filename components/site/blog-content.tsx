@@ -103,7 +103,7 @@ export function BlogContent() {
 
       {loading ? (
         <div className="ac-content-panel p-14 flex flex-col items-center justify-center">
-          <Spinner className="w-7 h-7 animate-spin text-foreground-muted" />
+          <Spinner className="w-7 h-7 text-foreground-muted" />
 
           <p className="mt-4 text-sm text-foreground-muted">
             Loading articles...

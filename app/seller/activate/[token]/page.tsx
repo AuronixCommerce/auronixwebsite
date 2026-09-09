@@ -178,7 +178,7 @@ export default function SellerActivatePage() {
                 >
                   {loading ? (
                     <>
-                      <Spinner className="w-4 h-4 animate-spin" />
+                      <Spinner className="w-4 h-4" />
                       Creating account…
                     </>
                   ) : (

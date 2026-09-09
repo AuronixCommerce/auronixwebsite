@@ -283,7 +283,7 @@ export default function BecomeSupplierPage() {
               >
                 {submitting ? (
                   <>
-                    <Spinner className="w-4 h-4 mr-2 animate-spin" />
+                    <Spinner className="w-4 h-4 mr-2" />
                     Submitting…
                   </>
                 ) : (

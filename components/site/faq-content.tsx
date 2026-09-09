@@ -138,7 +138,7 @@ export function FAQContent() {
 
       {loading ? (
         <div className="ac-content-panel p-12 flex justify-center">
-          <Spinner className="w-7 h-7 animate-spin" />
+          <Spinner className="w-7 h-7" />
         </div>
       ) : filteredFAQs.length === 0 ? (
         <div className="ac-content-panel p-12 text-center">

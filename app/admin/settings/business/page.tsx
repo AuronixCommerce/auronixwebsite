@@ -82,7 +82,7 @@ export default function BusinessSettingsPage() {
 
         {loading ? (
           <div className="p-12 flex justify-center">
-            <Spinner className="w-6 h-6 animate-spin" />
+            <Spinner className="w-6 h-6" />
           </div>
         ) : (
           <div className="ac-content-panel p-6 space-y-8">
@@ -128,7 +128,7 @@ export default function BusinessSettingsPage() {
               className="inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium disabled:opacity-50"
             >
               {saving ? (
-                <Spinner className="w-4 h-4 animate-spin" />
+                <Spinner className="w-4 h-4" />
               ) : (
                 <Save className="w-4 h-4" />
               )}

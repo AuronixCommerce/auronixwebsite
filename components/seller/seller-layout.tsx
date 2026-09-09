@@ -1,4 +1,5 @@
 'use client';
+import { NotificationCount } from './notification-count';
 import { WorkspaceNav } from '@/components/design/workspace-nav';
 import { Spinner } from '@/components/design/primitives';
 
@@ -18,6 +19,7 @@ const NAV = [
   { label: 'Profile', href: '/seller/profile', icon: User },
   { label: 'Products', href: '/seller/dashboard/products', icon: Package },
   { label: 'Catalogs', href: '/seller/dashboard/catalogs', icon: FileText },
+  { label: 'AI support', href: '/seller/support/chat', icon: LifeBuoy },
   { label: 'Support', href: '/seller/support', icon: LifeBuoy },
   { label: 'Notifications', href: '/seller/notifications', icon: Bell },
   { label: 'Settings', href: '/seller/settings', icon: Settings },
@@ -59,7 +61,7 @@ export function SellerLayout({ children }: { children: ReactNode }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Spinner className="w-8 h-8 animate-spin text-foreground-muted" />
+        <Spinner className="w-8 h-8 text-foreground-muted" />
       </div>
     );
   }
@@ -92,7 +94,7 @@ export function SellerLayout({ children }: { children: ReactNode }) {
                 )}
               >
                 <Icon className="w-4 h-4" />
-                {item.label}
+                {item.label}{item.href==='/seller/notifications'&&<NotificationCount/>}
               </Link>
             );
           })}

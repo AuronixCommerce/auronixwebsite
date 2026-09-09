@@ -1,6 +1,7 @@
 ﻿import './globals.css';
 import './mobile-responsive.css';
 import './interface.css';
+import './support-interface.css';
 
 import type {
   Metadata,

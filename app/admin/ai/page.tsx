@@ -162,7 +162,7 @@ export default function AdminAIPage() {
 
         {loading ? (
           <div className="ac-content-panel p-10 flex justify-center">
-            <Spinner className="w-6 h-6 animate-spin" />
+            <Spinner className="w-6 h-6" />
           </div>
         ) : (
           <>
@@ -244,7 +244,7 @@ export default function AdminAIPage() {
                 className="inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-5 py-3 text-sm font-medium disabled:opacity-50"
               >
                 {saving ? (
-                  <Spinner className="w-4 h-4 animate-spin" />
+                  <Spinner className="w-4 h-4" />
                 ) : (
                   <Save className="w-4 h-4" />
                 )}

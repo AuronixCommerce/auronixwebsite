@@ -235,7 +235,7 @@ export default function UsersAdminPage() {
         <div className="ac-content-panel overflow-hidden">
           {loading ? (
             <div className="p-12 flex justify-center">
-              <Spinner className="w-6 h-6 animate-spin" />
+              <Spinner className="w-6 h-6" />
             </div>
           ) : filteredUsers.length === 0 ? (
             <div className="p-12 text-center text-sm text-foreground-muted">
@@ -359,7 +359,7 @@ export default function UsersAdminPage() {
                 className="rounded-xl bg-red-600 text-white px-5 py-2.5 text-sm font-medium disabled:opacity-50 inline-flex items-center gap-2"
               >
                 {working && (
-                  <Spinner className="w-4 h-4 animate-spin" />
+                  <Spinner className="w-4 h-4" />
                 )}
 
                 {banMode === 'temporary'

@@ -1,4 +1,6 @@
 'use client';
+import Link from 'next/link';
+import { TicketThread } from '@/components/support/ticket-thread';
 import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useState } from 'react';
@@ -87,6 +89,8 @@ export default function SellerSupportPage() {
     };
   }, []);
 
+  const refreshTickets = async () => { const workspace = await sellerWorkspaceRequest(); setTickets(workspace.tickets as SellerTicket[]); };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -164,6 +168,7 @@ export default function SellerSupportPage() {
 
   return (
     <SellerLayout>
+      <div className="ac-seller-help-options"><Link href="/seller/support/chat"><strong>Talk it through with Auronix AI</strong><span>Guidance for your next step →</span></Link><Link href="/seller/notifications"><strong>Your updates</strong><span>Account, catalog and support notifications →</span></Link></div>
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight mb-2">
@@ -261,7 +266,7 @@ export default function SellerSupportPage() {
           <Button type="submit" disabled={submitting}>
             {submitting ? (
               <>
-                <Spinner className="w-4 h-4 mr-2 animate-spin" />
+                <Spinner className="w-4 h-4 mr-2" />
                 Creating…
               </>
             ) : (
@@ -305,6 +310,7 @@ export default function SellerSupportPage() {
                 </span>
               </div>
 
+              <TicketThread ticket={ticket} onRefresh={refreshTickets}/>
               <p className="text-sm text-foreground-muted line-clamp-3">
                 {ticket.message}
               </p>

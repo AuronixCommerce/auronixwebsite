@@ -146,7 +146,7 @@ export default function NewsletterSignup() {
           className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
         >
           {loading ? (
-            <Spinner className="h-4 w-4 animate-spin" />
+            <Spinner className="h-4 w-4" />
           ) : (
             <Send className="h-4 w-4" />
           )}

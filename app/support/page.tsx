@@ -104,6 +104,7 @@ export default function SupportPage() {
         description="Search our FAQ, contact support, or create a ticket. We are here to help with any questions or issues."
       />
 
+      <div className="ac-container ac-support-choices"><Link href="/support/chat"><LifeBuoy size={24}/><h2>Talk it through with AI</h2><p>Clear guidance, one question at a time.</p><ArrowRight size={19}/></Link><Link href="/support/contact"><Ticket size={24}/><h2>Message the support team</h2><p>A dedicated conversation for your question.</p><ArrowRight size={19}/></Link></div>
       <Section className="border-t border-border">
         <div className="mb-10 max-w-3xl"><GlobalSearch label="Search answers, services, and support"/></div><div className="grid lg:grid-cols-3 gap-5">
           {/* FAQ link */}
@@ -242,7 +243,7 @@ export default function SupportPage() {
                     <Button type="submit" disabled={submitting} className="w-full">
                       {submitting ? (
                         <>
-                          <Spinner className="w-4 h-4 mr-2 animate-spin" />
+                          <Spinner className="w-4 h-4 mr-2" />
                           Creating…
                         </>
                       ) : (

@@ -826,7 +826,7 @@ export default function AdminNewsletterPage() {
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {generating ? (
-                  <Spinner className="h-4 w-4 animate-spin" />
+                  <Spinner className="h-4 w-4" />
                 ) : (
                   <Bot className="h-4 w-4" />
                 )}
@@ -1003,7 +1003,7 @@ export default function AdminNewsletterPage() {
                   className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {sending ? (
-                    <Spinner className="h-4 w-4 animate-spin" />
+                    <Spinner className="h-4 w-4" />
                   ) : (
                     <Send className="h-4 w-4" />
                   )}

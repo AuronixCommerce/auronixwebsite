@@ -433,7 +433,7 @@ export default function AdminChangelogPage() {
                   className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
                 >
                   {saving ? (
-                    <Spinner className="h-4 w-4 animate-spin" />
+                    <Spinner className="h-4 w-4" />
                   ) : (
                     <Save className="h-4 w-4" />
                   )}
@@ -449,7 +449,7 @@ export default function AdminChangelogPage() {
 
         {loading ? (
           <div className="flex justify-center py-16">
-            <Spinner className="h-6 w-6 animate-spin" />
+            <Spinner className="h-6 w-6" />
           </div>
         ) : releases.length === 0 ? (
           <div className="ac-content-panel p-10 text-center">

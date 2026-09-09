@@ -1,6 +1,6 @@
 'use client';
 
-import { AnimatedNumber } from '@/components/design/primitives';
+import { AnimatedNumber, Spinner } from '@/components/design/primitives';
 import { useEffect, useState } from 'react';
 import { SellerLayout } from '@/components/seller/seller-layout';
 import { onAuthChange } from '@/lib/auth';
@@ -59,7 +59,7 @@ export default function SellerDashboardPage() {
         <h1 className="text-2xl font-semibold tracking-tight mb-2">Welcome back{profile?.name ? `, ${profile.name}` : ''}.</h1>
         <p className="text-sm text-foreground-muted">Live account, verification, and workspace status.</p>
         </div>
-        <button type="button" onClick={manualRefresh} disabled={syncing} className="inline-flex items-center justify-center gap-2 ac-content-panel px-4 py-2.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"><RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />Refresh status</button>
+        <button type="button" onClick={manualRefresh} disabled={syncing} className="inline-flex items-center justify-center gap-2 ac-content-panel px-4 py-2.5 text-sm font-medium hover:bg-secondary disabled:opacity-50">{syncing ? <Spinner className="h-4 w-4"/> : <RefreshCw className="h-4 w-4"/>}Refresh status</button>
       </div>
 
       <div className="mb-8 ac-content-panel p-6">

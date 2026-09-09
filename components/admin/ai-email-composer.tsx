@@ -242,7 +242,7 @@ export function AIEmailComposer({
           className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
         >
           {generating ? (
-            <Spinner className="w-4 h-4 animate-spin" />
+            <Spinner className="w-4 h-4" />
           ) : (
             <Sparkles className="w-4 h-4" />
           )}
@@ -300,7 +300,7 @@ export function AIEmailComposer({
             className="inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium disabled:opacity-50"
           >
             {sending ? (
-              <Spinner className="w-4 h-4 animate-spin" />
+              <Spinner className="w-4 h-4" />
             ) : (
               <Send className="w-4 h-4" />
             )}

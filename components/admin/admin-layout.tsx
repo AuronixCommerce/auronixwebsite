@@ -66,7 +66,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background-subtle">
-        <Spinner className="w-8 h-8 animate-spin text-foreground-muted" />
+        <Spinner className="w-8 h-8 text-foreground-muted" />
       </div>
     );
   }

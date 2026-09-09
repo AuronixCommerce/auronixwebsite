@@ -682,13 +682,7 @@ export default function AdminAiNewsletterPagesPage() {
               className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-semibold hover:bg-secondary disabled:opacity-50"
             >
 
-              <RefreshCw
-                className={
-                  loading
-                    ? 'h-4 w-4 animate-spin'
-                    : 'h-4 w-4'
-                }
-              />
+              {loading ? <Spinner className="h-4 w-4"/> : <RefreshCw className="h-4 w-4"/>}
 
               Refresh
 
@@ -829,7 +823,7 @@ export default function AdminAiNewsletterPagesPage() {
             {loading ? (
               <div className="flex min-h-[430px] items-center justify-center gap-2 text-sm text-foreground-muted">
 
-                <Spinner className="h-5 w-5 animate-spin" />
+                <Spinner className="h-5 w-5" />
 
                 Loading AI pages...
 
@@ -1260,7 +1254,7 @@ export default function AdminAiNewsletterPagesPage() {
 
                     {deleting ===
                     selected.token ? (
-                      <Spinner className="h-4 w-4 animate-spin" />
+                      <Spinner className="h-4 w-4" />
                     ) : (
                       <Trash2 className="h-4 w-4" />
                     )}

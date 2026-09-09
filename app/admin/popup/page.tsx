@@ -215,7 +215,7 @@ export default function AdminPopupPage() {
     return (
       <AdminLayout>
         <div className="flex min-h-[500px] items-center justify-center">
-          <Spinner className="h-6 w-6 animate-spin" />
+          <Spinner className="h-6 w-6" />
         </div>
       </AdminLayout>
     );
@@ -499,7 +499,7 @@ export default function AdminPopupPage() {
                   className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
                 >
                   {saving ? (
-                    <Spinner className="h-4 w-4 animate-spin" />
+                    <Spinner className="h-4 w-4" />
                   ) : (
                     <Save className="h-4 w-4" />
                   )}

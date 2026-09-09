@@ -1257,7 +1257,7 @@ export default function AdminSellersPage() {
             >
               {autoScreening ? (
                 <>
-                  <Spinner className="h-3.5 w-3.5 animate-spin" />
+                  <Spinner className="h-3.5 w-3.5" />
                   Screening applications...
                 </>
               ) : (
@@ -1386,7 +1386,7 @@ export default function AdminSellersPage() {
           <div className="overflow-hidden ac-content-panel">
             {loading ? (
               <div className="flex min-h-[450px] items-center justify-center">
-                <Spinner className="h-6 w-6 animate-spin" />
+                <Spinner className="h-6 w-6" />
               </div>
             ) : filtered.length === 0 ? (
               <div className="p-12 text-center">
@@ -1594,7 +1594,7 @@ export default function AdminSellersPage() {
                       className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-50"
                     >
                       {actionLoading ? (
-                        <Spinner className="h-4 w-4 animate-spin" />
+                        <Spinner className="h-4 w-4" />
                       ) : (
                         <Sparkles className="h-4 w-4" />
                       )}

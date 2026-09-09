@@ -301,7 +301,7 @@ export function SellerAIScreeningCard({
           className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium transition hover:bg-secondary disabled:opacity-50"
         >
           {loading ? (
-            <Spinner className="h-4 w-4 animate-spin" />
+            <Spinner className="h-4 w-4" />
           ) : (
             <Sparkles className="h-4 w-4" />
           )}

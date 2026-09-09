@@ -606,7 +606,7 @@ export default function AdminDashboardPage() {
               }`}
             >
               {updatingAvailability ? (
-                <Spinner className="h-4 w-4 animate-spin" />
+                <Spinner className="h-4 w-4" />
               ) : availability ? (
                 <WifiOff className="h-4 w-4" />
               ) : (
@@ -889,7 +889,7 @@ export default function AdminDashboardPage() {
 
         {loading && (
           <div className="flex items-center justify-center gap-2 py-4 text-xs text-foreground-muted">
-            <Spinner className="h-4 w-4 animate-spin" />
+            <Spinner className="h-4 w-4" />
             Syncing dashboard data...
           </div>
         )}

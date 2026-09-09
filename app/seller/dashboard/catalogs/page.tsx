@@ -89,7 +89,7 @@ export default function SellerCatalogsPage() {
 
         {loading ? (
           <div className="ac-content-panel p-12 flex justify-center">
-            <Spinner className="w-6 h-6 animate-spin" />
+            <Spinner className="w-6 h-6" />
           </div>
         ) : catalogs.length === 0 ? (
           <div className="ac-content-panel p-12 text-center">

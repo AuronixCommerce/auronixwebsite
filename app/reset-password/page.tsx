@@ -163,7 +163,7 @@ export default function ResetPasswordPage() {
         <div className="ac-content-panel p-8">
           {loading ? (
             <div className="py-10 text-center">
-              <Spinner className="w-7 h-7 animate-spin mx-auto" />
+              <Spinner className="w-7 h-7 mx-auto" />
 
               <p className="text-sm text-foreground-muted mt-3">
                 Verifying reset link…
@@ -281,7 +281,7 @@ export default function ResetPasswordPage() {
                 >
                   {saving ? (
                     <>
-                      <Spinner className="w-4 h-4 animate-spin" />
+                      <Spinner className="w-4 h-4" />
                       Updating password…
                     </>
                   ) : (

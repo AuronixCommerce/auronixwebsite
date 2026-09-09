@@ -118,7 +118,7 @@ export default function WhatsNewPage() {
         <div className="mx-auto max-w-5xl px-5 py-16 sm:px-6 lg:px-8">
           {loading ? (
             <div className="flex justify-center py-20">
-              <Spinner className="h-6 w-6 animate-spin" />
+              <Spinner className="h-6 w-6" />
             </div>
           ) : releases.length === 0 ? (
             <div className="rounded-3xl border border-border bg-card p-12 text-center">

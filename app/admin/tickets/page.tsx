@@ -536,7 +536,7 @@ export default function AdminTicketsPage() {
           <div className="ac-content-panel overflow-hidden">
             {loading ? (
               <div className="p-12 flex justify-center">
-                <Spinner className="w-6 h-6 animate-spin" />
+                <Spinner className="w-6 h-6" />
               </div>
             ) : filtered.length === 0 ? (
               <div className="p-12 text-center text-sm text-foreground-muted">
@@ -655,7 +655,7 @@ export default function AdminTicketsPage() {
                     className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 text-red-600 px-3 py-2 text-sm hover:bg-red-500/10 disabled:opacity-50"
                   >
                     {deleting ? (
-                      <Spinner className="w-4 h-4 animate-spin" />
+                      <Spinner className="w-4 h-4" />
                     ) : (
                       <Trash2 className="w-4 h-4" />
                     )}
@@ -756,7 +756,7 @@ export default function AdminTicketsPage() {
                       className="inline-flex items-center gap-2 rounded-xl border border-border px-3.5 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-50"
                     >
                       {generating ? (
-                        <Spinner className="w-4 h-4 animate-spin" />
+                        <Spinner className="w-4 h-4" />
                       ) : (
                         <Sparkles className="w-4 h-4" />
                       )}
@@ -793,7 +793,7 @@ export default function AdminTicketsPage() {
                     className="inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium disabled:opacity-50"
                   >
                     {sending ? (
-                      <Spinner className="w-4 h-4 animate-spin" />
+                      <Spinner className="w-4 h-4" />
                     ) : (
                       <Send className="w-4 h-4" />
                     )}

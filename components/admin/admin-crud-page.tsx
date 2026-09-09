@@ -223,7 +223,7 @@ export function AdminCrudPage({
         <div className="ac-content-panel overflow-hidden">
           {loading ? (
             <div className="p-12 flex items-center justify-center">
-              <Spinner className="w-6 h-6 animate-spin text-foreground-muted" />
+              <Spinner className="w-6 h-6 text-foreground-muted" />
             </div>
           ) : filteredRecords.length === 0 ? (
             <div className="p-12 text-center">
@@ -407,7 +407,7 @@ export function AdminCrudPage({
                   className="rounded-xl bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium inline-flex items-center gap-2 disabled:opacity-50"
                 >
                   {saving ? (
-                    <Spinner className="w-4 h-4 animate-spin" />
+                    <Spinner className="w-4 h-4" />
                   ) : (
                     <Save className="w-4 h-4" />
                   )}

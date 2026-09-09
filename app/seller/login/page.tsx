@@ -245,7 +245,7 @@ export default function SellerLoginPage() {
           >
             {loading ? (
               <>
-                <Spinner className="w-4 h-4 animate-spin" />
+                <Spinner className="w-4 h-4" />
                 Signing in…
               </>
             ) : (

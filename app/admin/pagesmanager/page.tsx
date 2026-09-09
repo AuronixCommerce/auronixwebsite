@@ -1508,7 +1508,7 @@ export default function AdminPagesManagerPage() {
                     className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-xs font-semibold hover:bg-secondary disabled:opacity-50"
                   >
                     {aiLoading ? (
-                      <Spinner className="h-4 w-4 animate-spin" />
+                      <Spinner className="h-4 w-4" />
                     ) : (
                       <Sparkles className="h-4 w-4" />
                     )}
@@ -1527,7 +1527,7 @@ export default function AdminPagesManagerPage() {
                     className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
                   >
                     {saving ? (
-                      <Spinner className="h-4 w-4 animate-spin" />
+                      <Spinner className="h-4 w-4" />
                     ) : (
                       <CheckCircle2 className="h-4 w-4" />
                     )}
@@ -1725,7 +1725,7 @@ export default function AdminPagesManagerPage() {
                     className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-xs font-semibold hover:bg-secondary disabled:opacity-50"
                   >
                     {aiLoading ? (
-                      <Spinner className="h-4 w-4 animate-spin" />
+                      <Spinner className="h-4 w-4" />
                     ) : (
                       <Sparkles className="h-4 w-4" />
                     )}
@@ -1744,7 +1744,7 @@ export default function AdminPagesManagerPage() {
                     className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
                   >
                     {saving ? (
-                      <Spinner className="h-4 w-4 animate-spin" />
+                      <Spinner className="h-4 w-4" />
                     ) : (
                       <CheckCircle2 className="h-4 w-4" />
                     )}
@@ -2054,7 +2054,7 @@ export default function AdminPagesManagerPage() {
                     className="mt-3 inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-xs font-semibold hover:bg-secondary disabled:opacity-50"
                   >
                     {aiLoading ? (
-                      <Spinner className="h-4 w-4 animate-spin" />
+                      <Spinner className="h-4 w-4" />
                     ) : (
                       <Sparkles className="h-4 w-4" />
                     )}
@@ -2210,7 +2210,7 @@ export default function AdminPagesManagerPage() {
                       className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-xs font-semibold hover:bg-secondary disabled:opacity-50"
                     >
                       {aiLoading ? (
-                        <Spinner className="h-4 w-4 animate-spin" />
+                        <Spinner className="h-4 w-4" />
                       ) : (
                         <Sparkles className="h-4 w-4" />
                       )}
@@ -2563,7 +2563,7 @@ export default function AdminPagesManagerPage() {
                     className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
                   >
                     {saving ? (
-                      <Spinner className="h-4 w-4 animate-spin" />
+                      <Spinner className="h-4 w-4" />
                     ) : (
                       <CheckCircle2 className="h-4 w-4" />
                     )}
@@ -2582,7 +2582,7 @@ export default function AdminPagesManagerPage() {
 
         {loading && (
           <div className="flex items-center justify-center gap-2 py-5 text-xs text-foreground-muted">
-            <Spinner className="h-4 w-4 animate-spin" />
+            <Spinner className="h-4 w-4" />
             Loading page controls...
           </div>
         )}
