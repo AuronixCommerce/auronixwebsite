@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import { useState } from 'react';
 
@@ -198,7 +199,7 @@ export function AIEmailComposer({
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card overflow-hidden">
+    <div className="ac-content-panel overflow-hidden">
       <div className="px-5 py-4 border-b border-border flex items-center gap-3">
         <div className="w-9 h-9 rounded-xl bg-accent/10 flex items-center justify-center">
           <Bot className="w-4 h-4 text-accent" />
@@ -241,7 +242,7 @@ export function AIEmailComposer({
           className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
         >
           {generating ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Spinner className="w-4 h-4 animate-spin" />
           ) : (
             <Sparkles className="w-4 h-4" />
           )}
@@ -299,7 +300,7 @@ export function AIEmailComposer({
             className="inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium disabled:opacity-50"
           >
             {sending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Spinner className="w-4 h-4 animate-spin" />
             ) : (
               <Send className="w-4 h-4" />
             )}

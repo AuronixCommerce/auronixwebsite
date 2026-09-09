@@ -95,7 +95,7 @@ export default function PartnersPage() {
           <StaggerGroup className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {filtered.map((partner) => (
               <StaggerItem key={partner.id}>
-                <div className="group rounded-2xl border border-border bg-card p-7 h-full hover:shadow-premium-lg transition-all">
+                <div className="group ac-content-panel p-7 h-full hover:shadow-premium-lg transition-all">
                   <div className="flex items-start justify-between mb-5">
                     <div className="w-12 h-12 rounded-xl bg-primary/5 border border-border flex items-center justify-center">
                       {partner.logoUrl ? (

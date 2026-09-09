@@ -1,5 +1,6 @@
 ﻿import './globals.css';
 import './mobile-responsive.css';
+import './interface.css';
 
 import type {
   Metadata,
@@ -9,9 +10,7 @@ import {
   headers,
 } from 'next/headers';
 
-import {
-  Inter,
-} from 'next/font/google';
+
 
 import {
   Toaster,
@@ -41,21 +40,7 @@ import { CookieConsent } from '@/components/site/cookie-consent';
 import { ConfirmActionHost, PromptActionHost } from '@/components/ui/confirm-action';
 import { DEFAULT_KEYWORDS, SEO_LOGO_IMAGE, SEO_SITE_NAME, SEO_SITE_URL, SEO_SOCIAL_IMAGE } from '@/lib/seo';
 
-const inter =
-  Inter({
-    subsets: [
-      'latin',
-    ],
-
-    variable:
-      '--font-inter',
-
-    display:
-      'swap',
-
-    preload:
-      true,
-  });
+const inter = { variable: 'ac-system-font' };
 
 export const metadata: Metadata = {
   metadataBase:

@@ -1,4 +1,5 @@
 ﻿'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import {
   FormEvent,
@@ -1050,7 +1051,7 @@ export function AIChat() {
                   title="Clear saved chat memory"
                   className="flex h-10 items-center justify-center gap-1.5 rounded-full border border-border bg-secondary/60 px-3 font-sans text-xs font-semibold text-foreground-muted transition-colors hover:bg-secondary hover:text-foreground disabled:cursor-wait disabled:opacity-65"
                 >
-                  {clearingMemory ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  {clearingMemory ? <Spinner className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                   {clearingMemory ? 'Clearing…' : 'Clear'}
                 </button>
 
@@ -1075,7 +1076,7 @@ export function AIChat() {
                 !visibleAnswer &&
                 !error && (
                   <div className="flex min-h-full flex-col justify-end">
-                    <div className="rounded-2xl border border-border bg-card p-4">
+                    <div className="ac-content-panel p-4">
                       <div className="flex items-center gap-2 font-sans text-sm font-bold">
                         <MessageCircle className="h-4 w-4 text-accent" />
                         How can I help?
@@ -1177,9 +1178,9 @@ export function AIChat() {
                 {loading &&
                   !visibleAnswer && (
                     <div className="flex justify-start">
-                      <div className="rounded-2xl border border-border bg-card px-4 py-3">
+                      <div className="ac-content-panel px-4 py-3">
                         <div className="flex items-center gap-2 font-sans text-sm text-foreground-muted">
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Spinner className="h-4 w-4 animate-spin" />
                           Thinking… {thinkingSeconds}s
                         </div>
                       </div>
@@ -1308,7 +1309,7 @@ export function AIChat() {
               }}
               className="h-11 rounded-xl bg-red-600 px-5 font-sans font-semibold text-white hover:bg-red-700 disabled:cursor-wait disabled:opacity-70"
             >
-              {clearingMemory ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              {clearingMemory ? <Spinner className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
               {clearingMemory ? 'Clearing chat…' : 'Delete chat history'}
             </AlertDialogAction>
           </AlertDialogFooter>

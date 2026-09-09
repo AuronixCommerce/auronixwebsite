@@ -1,4 +1,5 @@
 ﻿'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useState } from 'react';
 import { onAuthChange } from '@/lib/auth';
@@ -93,11 +94,11 @@ export default function SellerProductsPage() {
         </div>
 
         {loading ? (
-          <div className="rounded-2xl border border-border bg-card p-12 flex justify-center">
-            <Loader2 className="w-6 h-6 animate-spin" />
+          <div className="ac-content-panel p-12 flex justify-center">
+            <Spinner className="w-6 h-6 animate-spin" />
           </div>
         ) : products.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-card p-12 text-center">
+          <div className="ac-content-panel p-12 text-center">
             <Package className="w-8 h-8 mx-auto text-foreground-muted mb-3" />
             <h2 className="font-semibold">No products yet</h2>
             <p className="text-sm text-foreground-muted mt-1">
@@ -109,7 +110,7 @@ export default function SellerProductsPage() {
             {products.map((product) => (
               <div
                 key={product.id}
-                className="rounded-2xl border border-border bg-card p-5"
+                className="ac-content-panel p-5"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -151,7 +152,7 @@ export default function SellerProductsPage() {
 
         {showForm && (
           <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-6">
+            <div className="w-full max-w-xl ac-content-panel p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="font-semibold">Add Product</h2>
 

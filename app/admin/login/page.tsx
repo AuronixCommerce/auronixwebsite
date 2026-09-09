@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import { useState } from 'react';
 import { auth } from '@/lib/firebase';
@@ -180,7 +181,7 @@ export default function AdminLoginPage() {
 
         <form
           onSubmit={handleSubmit}
-          className="space-y-5 rounded-2xl border border-border bg-card p-8"
+          className="space-y-5 ac-content-panel p-8"
         >
           {!mfaRequired && <div>
             <Label
@@ -230,7 +231,7 @@ export default function AdminLoginPage() {
           >
             {loading ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Spinner className="w-4 h-4 mr-2 animate-spin" />
                 {mfaRequired ? 'Verifying…' : 'Signing in…'}
               </>
             ) : (

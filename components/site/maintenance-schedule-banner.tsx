@@ -249,7 +249,7 @@ export function MaintenanceScheduleBanner({
 
   return (
     <div className="fixed bottom-[86px] right-4 z-[9990] w-[min(420px,calc(100vw-32px))]">
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-card/95 p-4 shadow-2xl backdrop-blur-2xl">
+      <div className="relative overflow-hidden ac-content-panel/95 p-4 shadow-2xl backdrop-blur-2xl">
 
         <button
           type="button"

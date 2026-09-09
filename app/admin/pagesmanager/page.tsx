@@ -1,4 +1,5 @@
 ﻿'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import {
   useEffect,
@@ -1321,7 +1322,7 @@ export default function AdminPagesManagerPage() {
         </div>
 
         {notice && (
-          <div className="rounded-2xl border border-border bg-card p-4 text-sm">
+          <div className="ac-content-panel p-4 text-sm">
             {notice}
           </div>
         )}
@@ -1507,7 +1508,7 @@ export default function AdminPagesManagerPage() {
                     className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-xs font-semibold hover:bg-secondary disabled:opacity-50"
                   >
                     {aiLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Spinner className="h-4 w-4 animate-spin" />
                     ) : (
                       <Sparkles className="h-4 w-4" />
                     )}
@@ -1526,7 +1527,7 @@ export default function AdminPagesManagerPage() {
                     className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
                   >
                     {saving ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Spinner className="h-4 w-4 animate-spin" />
                     ) : (
                       <CheckCircle2 className="h-4 w-4" />
                     )}
@@ -1724,7 +1725,7 @@ export default function AdminPagesManagerPage() {
                     className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-xs font-semibold hover:bg-secondary disabled:opacity-50"
                   >
                     {aiLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Spinner className="h-4 w-4 animate-spin" />
                     ) : (
                       <Sparkles className="h-4 w-4" />
                     )}
@@ -1743,7 +1744,7 @@ export default function AdminPagesManagerPage() {
                     className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
                   >
                     {saving ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Spinner className="h-4 w-4 animate-spin" />
                     ) : (
                       <CheckCircle2 className="h-4 w-4" />
                     )}
@@ -1778,7 +1779,7 @@ export default function AdminPagesManagerPage() {
               )
             }
             placeholder="Search pages..."
-            className="h-12 w-full rounded-2xl border border-border bg-card pl-11 pr-4 text-sm"
+            className="h-12 w-full ac-content-panel pl-11 pr-4 text-sm"
           />
 
         </div>
@@ -2053,7 +2054,7 @@ export default function AdminPagesManagerPage() {
                     className="mt-3 inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-xs font-semibold hover:bg-secondary disabled:opacity-50"
                   >
                     {aiLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Spinner className="h-4 w-4 animate-spin" />
                     ) : (
                       <Sparkles className="h-4 w-4" />
                     )}
@@ -2209,7 +2210,7 @@ export default function AdminPagesManagerPage() {
                       className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-xs font-semibold hover:bg-secondary disabled:opacity-50"
                     >
                       {aiLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Spinner className="h-4 w-4 animate-spin" />
                       ) : (
                         <Sparkles className="h-4 w-4" />
                       )}
@@ -2562,7 +2563,7 @@ export default function AdminPagesManagerPage() {
                     className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
                   >
                     {saving ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Spinner className="h-4 w-4 animate-spin" />
                     ) : (
                       <CheckCircle2 className="h-4 w-4" />
                     )}
@@ -2581,7 +2582,7 @@ export default function AdminPagesManagerPage() {
 
         {loading && (
           <div className="flex items-center justify-center gap-2 py-5 text-xs text-foreground-muted">
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Spinner className="h-4 w-4 animate-spin" />
             Loading page controls...
           </div>
         )}

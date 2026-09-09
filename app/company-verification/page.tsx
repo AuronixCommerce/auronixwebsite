@@ -1,5 +1,6 @@
 'use client';
 
+import { CopyDetail } from '@/components/design/primitives';
 import { useEffect, useState } from 'react';
 import { SiteLayout } from '@/components/site/site-layout';
 import { PageHeader } from '@/components/site/page-header';
@@ -46,10 +47,10 @@ export default function CompanyVerificationPage() {
         ) : error ? (
           <ErrorState />
         ) : (
-          <StaggerGroup className="grid sm:grid-cols-2 gap-5 max-w-4xl">
+          <StaggerGroup className="ac-verification-grid">
             {/* Company Information */}
             <StaggerItem>
-              <div className="rounded-2xl border border-border bg-card p-8 h-full">
+              <div className="ac-content-panel p-8 h-full">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 rounded-xl bg-primary/5 border border-border flex items-center justify-center">
                     <Building2 className="w-5 h-5 text-foreground" />
@@ -59,7 +60,7 @@ export default function CompanyVerificationPage() {
                 <dl className="space-y-4">
                   <div>
                     <dt className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Company Name</dt>
-                    <dd className="text-sm text-foreground mt-1">{COMPANY.name}</dd>
+                    <dd className="text-sm text-foreground mt-1">{COMPANY.name}<CopyDetail value={COMPANY.name}/></dd>
                   </div>
                   <div>
                     <dt className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Tagline</dt>
@@ -75,7 +76,7 @@ export default function CompanyVerificationPage() {
 
             {/* Business Details */}
             <StaggerItem>
-              <div className="rounded-2xl border border-border bg-card p-8 h-full">
+              <div className="ac-content-panel p-8 h-full">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 rounded-xl bg-primary/5 border border-border flex items-center justify-center">
                     <FileText className="w-5 h-5 text-foreground" />
@@ -85,7 +86,7 @@ export default function CompanyVerificationPage() {
                 <dl className="space-y-4">
                   <div>
                     <dt className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Legal Name</dt>
-                    <dd className="text-sm text-foreground mt-1">{companyInfo?.legalName || COMPANY.name}</dd>
+                    <dd className="text-sm text-foreground mt-1">{companyInfo?.legalName || COMPANY.name}<CopyDetail value={companyInfo?.legalName || COMPANY.name}/></dd>
                   </div>
                   <div>
                     <dt className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Entity Type</dt>
@@ -104,7 +105,7 @@ export default function CompanyVerificationPage() {
 
             {/* Legal Information */}
             <StaggerItem>
-              <div className="rounded-2xl border border-border bg-card p-8 h-full">
+              <div className="ac-content-panel p-8 h-full">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 rounded-xl bg-primary/5 border border-border flex items-center justify-center">
                     <Scale className="w-5 h-5 text-foreground" />
@@ -140,7 +141,7 @@ export default function CompanyVerificationPage() {
 
             {/* Contact Information */}
             <StaggerItem>
-              <div className="rounded-2xl border border-border bg-card p-8 h-full">
+              <div className="ac-content-panel p-8 h-full">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 rounded-xl bg-primary/5 border border-border flex items-center justify-center">
                     <Mail className="w-5 h-5 text-foreground" />
@@ -151,7 +152,7 @@ export default function CompanyVerificationPage() {
                   <div>
                     <dt className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Email</dt>
                     <dd className="text-sm text-foreground mt-1">
-                      <a href={`mailto:${contactEmail}`} className="hover:text-accent transition-colors">{contactEmail}</a>
+                      <a href={`mailto:${contactEmail}`} className="hover:text-accent transition-colors">{contactEmail}</a><CopyDetail value={contactEmail}/>
                     </dd>
                   </div>
                   {phone && (
@@ -162,7 +163,7 @@ export default function CompanyVerificationPage() {
                   )}
                   <div>
                     <dt className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Website</dt>
-                    <dd className="text-sm text-foreground mt-1">{COMPANY.website}</dd>
+                    <dd className="text-sm text-foreground mt-1">{COMPANY.website}<CopyDetail value={COMPANY.website}/></dd>
                   </div>
                 </dl>
               </div>
@@ -174,7 +175,7 @@ export default function CompanyVerificationPage() {
       {/* Verification note */}
       <Section className="border-t border-border bg-background-subtle">
         <Reveal className="max-w-3xl">
-          <div className="flex items-start gap-4 rounded-2xl border border-border bg-card p-8">
+          <div className="flex items-start gap-4 ac-content-panel p-8">
             <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
               <ShieldCheck className="w-5 h-5 text-accent" />
             </div>

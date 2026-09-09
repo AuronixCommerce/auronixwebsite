@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useState } from 'react';
 
@@ -296,7 +297,7 @@ export default function AdminChangelogPage() {
         </div>
 
         {showForm && (
-          <div className="rounded-2xl border border-border bg-card p-6">
+          <div className="ac-content-panel p-6">
             <div className="grid gap-5">
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field
@@ -432,7 +433,7 @@ export default function AdminChangelogPage() {
                   className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
                 >
                   {saving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Spinner className="h-4 w-4 animate-spin" />
                   ) : (
                     <Save className="h-4 w-4" />
                   )}
@@ -448,10 +449,10 @@ export default function AdminChangelogPage() {
 
         {loading ? (
           <div className="flex justify-center py-16">
-            <Loader2 className="h-6 w-6 animate-spin" />
+            <Spinner className="h-6 w-6 animate-spin" />
           </div>
         ) : releases.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-card p-10 text-center">
+          <div className="ac-content-panel p-10 text-center">
             <h2 className="font-semibold">
               No releases yet.
             </h2>
@@ -466,7 +467,7 @@ export default function AdminChangelogPage() {
               (release) => (
                 <div
                   key={release.id}
-                  className="rounded-2xl border border-border bg-card p-6"
+                  className="ac-content-panel p-6"
                 >
                   <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                     <div>

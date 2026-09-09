@@ -1,4 +1,6 @@
 'use client';
+import { WorkspaceNav } from '@/components/design/workspace-nav';
+import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
@@ -57,13 +59,13 @@ export function SellerLayout({ children }: { children: ReactNode }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-foreground-muted" />
+        <Spinner className="w-8 h-8 animate-spin text-foreground-muted" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background-subtle flex">
+    <div className="ac-admin-shell ac-seller-shell min-h-screen bg-background-subtle flex">
       {/* Sidebar */}
       <aside className="hidden lg:flex w-64 flex-col border-r border-border bg-card fixed inset-y-0 left-0 z-40">
         <div className="px-6 py-5 border-b border-border">
@@ -113,34 +115,12 @@ export function SellerLayout({ children }: { children: ReactNode }) {
           <AuronixMark className="h-7 w-7 shadow-none" />
           <span className="text-[13px] font-semibold tracking-tight">AURONIX</span>
         </Link>
-        <button onClick={handleSignOut} className="text-foreground-muted hover:text-foreground">
+        <button aria-label="Logout" onClick={handleSignOut} className="text-foreground-muted hover:text-foreground">
           <LogOut className="w-5 h-5" />
         </button>
       </div>
 
-      {/* Mobile nav */}
-      <div className="lg:hidden fixed top-14 inset-x-0 z-30 bg-card border-b border-border overflow-x-auto">
-        <div className="flex gap-1 px-3 py-2">
-          {NAV.map((item) => {
-            const Icon = item.icon;
-            const active = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors',
-                  active ? 'bg-primary text-primary-foreground' : 'text-foreground-muted hover:text-foreground hover:bg-secondary'
-                )}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
+<div className="ac-workspace-mobile lg:hidden"><WorkspaceNav items={NAV} title="Seller"/></div>
       {/* Main content */}
       <main className="flex-1 lg:ml-64 pt-14 lg:pt-0 min-h-screen">
         <div className="p-6 lg:p-10 max-w-5xl">

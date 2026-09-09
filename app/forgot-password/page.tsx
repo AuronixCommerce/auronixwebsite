@@ -1,4 +1,5 @@
 ﻿'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import { FormEvent, useState } from 'react';
 import { Loader2, MailCheck, ArrowLeft } from 'lucide-react';
@@ -83,7 +84,7 @@ export default function ForgotPasswordPage() {
           </Link>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-8 shadow-premium-lg">
+        <div className="ac-content-panel p-8 shadow-premium-lg">
           {sent ? (
             <div className="text-center py-6">
               <div className="mx-auto w-14 h-14 rounded-2xl bg-green-500/10 flex items-center justify-center">
@@ -170,7 +171,7 @@ export default function ForgotPasswordPage() {
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Spinner className="w-4 h-4 animate-spin" />
                       Sending reset link…
                     </>
                   ) : (

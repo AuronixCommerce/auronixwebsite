@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -499,7 +500,7 @@ export default function AdminTicketsPage() {
                 )
               }
               placeholder="Search tickets..."
-              className="w-full h-11 rounded-xl border border-border bg-card pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-accent/20"
+              className="w-full h-11 ac-content-panel pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-accent/20"
             />
           </div>
 
@@ -510,7 +511,7 @@ export default function AdminTicketsPage() {
                 event.target.value as typeof filter
               )
             }
-            className="h-11 rounded-xl border border-border bg-card px-3 text-sm outline-none"
+            className="h-11 ac-content-panel px-3 text-sm outline-none"
           >
             <option value="all">
               All Tickets
@@ -532,10 +533,10 @@ export default function AdminTicketsPage() {
 
         <div className="grid lg:grid-cols-[360px_1fr] gap-5">
           {/* Ticket list */}
-          <div className="rounded-2xl border border-border bg-card overflow-hidden">
+          <div className="ac-content-panel overflow-hidden">
             {loading ? (
               <div className="p-12 flex justify-center">
-                <Loader2 className="w-6 h-6 animate-spin" />
+                <Spinner className="w-6 h-6 animate-spin" />
               </div>
             ) : filtered.length === 0 ? (
               <div className="p-12 text-center text-sm text-foreground-muted">
@@ -607,7 +608,7 @@ export default function AdminTicketsPage() {
           </div>
 
           {/* Ticket detail */}
-          <div className="rounded-2xl border border-border bg-card p-6 min-h-[600px]">
+          <div className="ac-content-panel p-6 min-h-[600px]">
             {!selected ? (
               <div className="h-full min-h-[520px] flex items-center justify-center text-center">
                 <div>
@@ -654,7 +655,7 @@ export default function AdminTicketsPage() {
                     className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 text-red-600 px-3 py-2 text-sm hover:bg-red-500/10 disabled:opacity-50"
                   >
                     {deleting ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Spinner className="w-4 h-4 animate-spin" />
                     ) : (
                       <Trash2 className="w-4 h-4" />
                     )}
@@ -755,7 +756,7 @@ export default function AdminTicketsPage() {
                       className="inline-flex items-center gap-2 rounded-xl border border-border px-3.5 py-2 text-sm font-medium hover:bg-secondary disabled:opacity-50"
                     >
                       {generating ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Spinner className="w-4 h-4 animate-spin" />
                       ) : (
                         <Sparkles className="w-4 h-4" />
                       )}
@@ -792,7 +793,7 @@ export default function AdminTicketsPage() {
                     className="inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium disabled:opacity-50"
                   >
                     {sending ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Spinner className="w-4 h-4 animate-spin" />
                     ) : (
                       <Send className="w-4 h-4" />
                     )}

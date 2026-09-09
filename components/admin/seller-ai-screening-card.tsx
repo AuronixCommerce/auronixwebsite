@@ -1,4 +1,5 @@
 ﻿'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import {
   useState,
@@ -271,7 +272,7 @@ export function SellerAIScreeningCard({
     Bot;
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-border bg-card">
+    <section className="overflow-hidden ac-content-panel">
       <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
@@ -300,7 +301,7 @@ export function SellerAIScreeningCard({
           className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium transition hover:bg-secondary disabled:opacity-50"
         >
           {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Spinner className="h-4 w-4 animate-spin" />
           ) : (
             <Sparkles className="h-4 w-4" />
           )}

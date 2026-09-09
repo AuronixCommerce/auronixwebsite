@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useMemo, useState } from 'react';
 import { ref, onValue, push, set, update, remove } from 'firebase/database';
@@ -205,24 +206,24 @@ export function AdminCrudPage({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={`Search ${title.toLowerCase()}…`}
-              className="w-full h-11 rounded-xl border border-border bg-card pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-accent/20"
+              className="w-full h-11 ac-content-panel pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-accent/20"
             />
           </div>
 
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="h-11 px-4 rounded-xl border border-border bg-card text-sm font-medium hover:bg-secondary transition-colors inline-flex items-center justify-center gap-2"
+            className="h-11 px-4 ac-content-panel text-sm font-medium hover:bg-secondary transition-colors inline-flex items-center justify-center gap-2"
           >
             <RefreshCw className="w-4 h-4" />
             Refresh
           </button>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card overflow-hidden">
+        <div className="ac-content-panel overflow-hidden">
           {loading ? (
             <div className="p-12 flex items-center justify-center">
-              <Loader2 className="w-6 h-6 animate-spin text-foreground-muted" />
+              <Spinner className="w-6 h-6 animate-spin text-foreground-muted" />
             </div>
           ) : filteredRecords.length === 0 ? (
             <div className="p-12 text-center">
@@ -318,7 +319,7 @@ export function AdminCrudPage({
 
       {showForm && (
         <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-card shadow-2xl">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto ac-content-panel shadow-2xl">
             <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-border bg-card">
               <div>
                 <h2 className="font-semibold">
@@ -406,7 +407,7 @@ export function AdminCrudPage({
                   className="rounded-xl bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium inline-flex items-center gap-2 disabled:opacity-50"
                 >
                   {saving ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Spinner className="w-4 h-4 animate-spin" />
                   ) : (
                     <Save className="w-4 h-4" />
                   )}

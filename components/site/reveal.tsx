@@ -1,115 +1,48 @@
-'use client';
-
-import { motion, type Variants } from 'framer-motion';
-import { type ReactNode } from 'react';
-
-interface RevealProps {
+"use client";
+import { useEffect, useRef, type ReactNode } from "react";
+import { cn } from "@/lib/utils";
+interface Props {
   children: ReactNode;
   delay?: number;
   y?: number;
   className?: string;
 }
-
-export function Reveal({
-  children,
-  delay = 0,
-  y = 24,
-  className,
-}: RevealProps) {
-  return (
-    <motion.div
-      className={className}
-      initial={{ opacity: 0, y }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-80px' }}
-      transition={{
-        duration: 0.6,
-        delay,
-        ease: [0.22, 1, 0.36, 1],
-      }}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-export function StaggerGroup({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  const containerVariants: Variants = {
-    hidden: {},
-    visible: {
-      transition: {
-        staggerChildren: 0.08,
+export function Reveal({ children, delay = 0, className }: Props) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+      return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.animate(
+            [
+              { transform: "translateY(16px)", opacity: 0.65 },
+              { transform: "translateY(0)", opacity: 1 },
+            ],
+            {
+              duration: 450,
+              delay: Math.min(delay * 1000, 160),
+              easing: "cubic-bezier(.22,1,.36,1)",
+            },
+          );
+          observer.disconnect();
+        }
       },
-    },
-  };
-
+      { threshold: 0.08 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [delay]);
   return (
-    <motion.div
-      className={className}
-      variants={containerVariants}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: '-80px' }}
-    >
+    <div ref={ref} className={className}>
       {children}
-    </motion.div>
+    </div>
   );
 }
-
-export function StaggerItem({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  const itemVariants: Variants = {
-    hidden: {
-      opacity: 0,
-      y: 20,
-    },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        ease: [0.22, 1, 0.36, 1],
-      },
-    },
-  };
-
-  return (
-    <motion.div
-      className={className}
-      variants={itemVariants}
-    >
-      {children}
-    </motion.div>
-  );
+export function StaggerGroup({ children, className }: Props) {
+  return <div className={cn("ac-stagger", className)}>{children}</div>;
 }
-
-export function FadeIn({
-  children,
-  delay = 0,
-  className,
-}: RevealProps) {
-  return (
-    <motion.div
-      className={className}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{
-        duration: 0.4,
-        delay,
-      }}
-    >
-      {children}
-    </motion.div>
-  );
-}
+export const StaggerItem = Reveal;
+export const FadeIn = Reveal;

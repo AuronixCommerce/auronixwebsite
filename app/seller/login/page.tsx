@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
@@ -164,7 +165,7 @@ export default function SellerLoginPage() {
 
         <form
           onSubmit={handleSubmit}
-          className="rounded-2xl border border-border bg-card p-8 space-y-5"
+          className="ac-content-panel p-8 space-y-5"
         >
           <div>
             <label
@@ -244,7 +245,7 @@ export default function SellerLoginPage() {
           >
             {loading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Spinner className="w-4 h-4 animate-spin" />
                 Signing in…
               </>
             ) : (

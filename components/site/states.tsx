@@ -1,10 +1,11 @@
+import { Spinner } from '@/components/design/primitives';
 import { cn } from '@/lib/utils';
 
 export function LoadingState({ className }: { className?: string }) {
   return (
     <div className={cn('flex items-center justify-center py-20', className)}>
       <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 rounded-full border-2 border-border border-t-accent animate-spin" />
+        <Spinner className="w-8 h-8" />
         <span className="text-sm text-foreground-muted">Loading…</span>
       </div>
     </div>
@@ -68,7 +69,7 @@ export function ErrorState({
 
 export function SkeletonCard() {
   return (
-    <div className="rounded-xl border border-border bg-card p-6 space-y-3 overflow-hidden relative">
+    <div className="ac-content-panel p-6 space-y-3 overflow-hidden relative">
       <div className="h-4 w-24 bg-secondary rounded animate-pulse" />
       <div className="h-6 w-3/4 bg-secondary rounded animate-pulse" />
       <div className="h-4 w-full bg-secondary rounded animate-pulse" />

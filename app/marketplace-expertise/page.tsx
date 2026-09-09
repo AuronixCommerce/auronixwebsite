@@ -76,7 +76,7 @@ export default function MarketplaceExpertisePage() {
       {/* Note about relationships */}
       <Section className="border-t border-border bg-background-subtle">
         <Reveal className="max-w-3xl">
-          <div className="rounded-2xl border border-border bg-card p-8 lg:p-12">
+          <div className="ac-content-panel p-8 lg:p-12">
             <h3 className="text-xl font-semibold tracking-tight mb-4">
               About marketplace relationships
             </h3>

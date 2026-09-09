@@ -80,7 +80,7 @@ export function LegalPage({ slug, title, eyebrow, description }: LegalPageProps)
         ) : (
           <div className="grid gap-8 lg:grid-cols-12 lg:gap-12">
             <div className="lg:hidden">
-              <button type="button" onClick={() => setMobileMenuOpen(true)} aria-haspopup="dialog" aria-expanded={mobileMenuOpen} className="flex min-h-12 w-full items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 text-left shadow-sm transition hover:border-accent/35 hover:bg-secondary/40">
+              <button type="button" onClick={() => setMobileMenuOpen(true)} aria-haspopup="dialog" aria-expanded={mobileMenuOpen} className="flex min-h-12 w-full items-center justify-between ac-content-panel px-4 py-3 text-left shadow-sm transition hover:border-accent/35 hover:bg-secondary/40">
                 <span className="flex min-w-0 items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent"><Menu className="h-4 w-4" /></span><span className="min-w-0"><span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground-muted">On this page</span><span className="block truncate text-sm font-semibold">{sections[activeSection]?.heading || 'Browse contents'}</span></span></span><span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium text-foreground-muted">{activeSection + 1} / {sections.length}</span>
               </button>
             </div>

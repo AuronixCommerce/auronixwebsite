@@ -1,4 +1,5 @@
 ﻿'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useState } from 'react';
 import { onAuthChange } from '@/lib/auth';
@@ -34,13 +35,13 @@ export default function SellerProfilePage() {
         </div>
 
         {loading ? (
-          <div className="rounded-2xl border border-border bg-card p-12 flex justify-center">
-            <Loader2 className="w-6 h-6 animate-spin" />
+          <div className="ac-content-panel p-12 flex justify-center">
+            <Spinner className="w-6 h-6 animate-spin" />
           </div>
         ) : error ? (
           <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6 text-sm text-red-700 dark:text-red-300">{error}</div>
         ) : (
-          <div className="rounded-2xl border border-border bg-card p-6">
+          <div className="ac-content-panel p-6">
             <div className="flex items-center gap-4 pb-6 border-b border-border">
               <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
                 <UserRound className="w-6 h-6 text-primary" />

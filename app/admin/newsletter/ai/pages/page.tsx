@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import {
   useCallback,
@@ -706,7 +707,7 @@ export default function AdminAiNewsletterPagesPage() {
         </div>
 
         {notice && (
-          <div className="rounded-2xl border border-border bg-card p-4 text-sm">
+          <div className="ac-content-panel p-4 text-sm">
             {notice}
           </div>
         )}
@@ -790,7 +791,7 @@ export default function AdminAiNewsletterPagesPage() {
                 )
             }
             placeholder="Search campaign, title, token, type, or destination..."
-            className="h-12 w-full rounded-2xl border border-border bg-card pl-11 pr-4 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/10"
+            className="h-12 w-full ac-content-panel pl-11 pr-4 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/10"
           />
 
         </div>
@@ -828,7 +829,7 @@ export default function AdminAiNewsletterPagesPage() {
             {loading ? (
               <div className="flex min-h-[430px] items-center justify-center gap-2 text-sm text-foreground-muted">
 
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <Spinner className="h-5 w-5 animate-spin" />
 
                 Loading AI pages...
 
@@ -1181,7 +1182,7 @@ export default function AdminAiNewsletterPagesPage() {
                             key={
                               activity.id
                             }
-                            className="rounded-xl border border-border bg-card p-3"
+                            className="ac-content-panel p-3"
                           >
 
                             <div className="flex items-center justify-between gap-3">
@@ -1259,7 +1260,7 @@ export default function AdminAiNewsletterPagesPage() {
 
                     {deleting ===
                     selected.token ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Spinner className="h-4 w-4 animate-spin" />
                     ) : (
                       <Trash2 className="h-4 w-4" />
                     )}
@@ -1295,7 +1296,7 @@ function Stat({
   value: number;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className="ac-content-panel p-5">
 
       <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary">
         {icon}

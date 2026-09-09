@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import {
   useEffect,
@@ -707,9 +708,9 @@ export default function AdminNewsletterPage() {
 
           <div className="grid grid-cols-2 gap-3">
 
-            <div className="col-span-2 grid grid-cols-3 gap-3"><Link href="/admin/newsletter/subscribers" className="inline-flex items-center justify-center rounded-xl border border-border bg-card px-3 py-2.5 text-center text-xs font-semibold transition hover:bg-secondary">Manage subscribers</Link><Link href="/admin/newsletter/reasons" className="inline-flex items-center justify-center rounded-xl border border-border bg-card px-3 py-2.5 text-center text-xs font-semibold transition hover:bg-secondary">Unsubscribe reasons</Link><Link href="/admin/newsletter/analytics" className="inline-flex items-center justify-center rounded-xl border border-border bg-card px-3 py-2.5 text-center text-xs font-semibold transition hover:bg-secondary">Analytics</Link></div>
+            <div className="col-span-2 grid grid-cols-3 gap-3"><Link href="/admin/newsletter/subscribers" className="inline-flex items-center justify-center ac-content-panel px-3 py-2.5 text-center text-xs font-semibold transition hover:bg-secondary">Manage subscribers</Link><Link href="/admin/newsletter/reasons" className="inline-flex items-center justify-center ac-content-panel px-3 py-2.5 text-center text-xs font-semibold transition hover:bg-secondary">Unsubscribe reasons</Link><Link href="/admin/newsletter/analytics" className="inline-flex items-center justify-center ac-content-panel px-3 py-2.5 text-center text-xs font-semibold transition hover:bg-secondary">Analytics</Link></div>
 
-            <div className="rounded-2xl border border-border bg-card p-4">
+            <div className="ac-content-panel p-4">
               <Users className="h-4 w-4 text-foreground-muted" />
 
               <div className="mt-3 text-2xl font-semibold">
@@ -721,7 +722,7 @@ export default function AdminNewsletterPage() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-border bg-card p-4">
+            <div className="ac-content-panel p-4">
               <Mail className="h-4 w-4 text-foreground-muted" />
 
               <div className="mt-3 text-2xl font-semibold">
@@ -738,7 +739,7 @@ export default function AdminNewsletterPage() {
 
         {/* NOTICE */}
         {notice && (
-          <div className="rounded-2xl border border-border bg-card p-4 text-sm">
+          <div className="ac-content-panel p-4 text-sm">
             {notice}
           </div>
         )}
@@ -747,7 +748,7 @@ export default function AdminNewsletterPage() {
         <div className="grid gap-6 xl:grid-cols-[380px_1fr]">
 
           {/* AI PANEL */}
-          <section className="rounded-2xl border border-border bg-card p-6">
+          <section className="ac-content-panel p-6">
 
             <div className="flex items-start gap-3">
 
@@ -825,7 +826,7 @@ export default function AdminNewsletterPage() {
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {generating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Spinner className="h-4 w-4 animate-spin" />
                 ) : (
                   <Bot className="h-4 w-4" />
                 )}
@@ -839,7 +840,7 @@ export default function AdminNewsletterPage() {
           </section>
 
           {/* EDITOR */}
-          <section className="rounded-2xl border border-border bg-card p-6">
+          <section className="ac-content-panel p-6">
 
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
@@ -1002,7 +1003,7 @@ export default function AdminNewsletterPage() {
                   className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {sending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Spinner className="h-4 w-4 animate-spin" />
                   ) : (
                     <Send className="h-4 w-4" />
                   )}
@@ -1019,7 +1020,7 @@ export default function AdminNewsletterPage() {
         </div>
 
         {/* CAMPAIGNS */}
-        <section className="rounded-2xl border border-border bg-card">
+        <section className="ac-content-panel">
 
           <div className="border-b border-border p-5">
 

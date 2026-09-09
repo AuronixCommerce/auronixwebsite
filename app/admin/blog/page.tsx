@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -285,14 +286,14 @@ export default function AdminBlogPage() {
               setSearch(e.target.value)
             }
             placeholder="Search articles…"
-            className="w-full h-11 rounded-xl border border-border bg-card pl-10 pr-4 text-sm"
+            className="w-full h-11 ac-content-panel pl-10 pr-4 text-sm"
           />
         </div>
 
-        <div className="rounded-2xl border border-border bg-card overflow-hidden">
+        <div className="ac-content-panel overflow-hidden">
           {loading ? (
             <div className="p-12 flex justify-center">
-              <Loader2 className="w-6 h-6 animate-spin" />
+              <Spinner className="w-6 h-6 animate-spin" />
             </div>
           ) : filtered.length === 0 ? (
             <div className="p-12 text-center text-sm text-foreground-muted">
@@ -392,7 +393,7 @@ export default function AdminBlogPage() {
 
       {editorOpen && (
         <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-2xl border border-border bg-card p-6 shadow-2xl">
+          <div className="w-full max-w-4xl max-h-[92vh] overflow-y-auto ac-content-panel p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-xl font-semibold">
@@ -558,7 +559,7 @@ export default function AdminBlogPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-5 py-2.5 text-sm font-medium hover:bg-secondary disabled:opacity-50"
               >
                 {saving ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Spinner className="w-4 h-4 animate-spin" />
                 ) : (
                   <Save className="w-4 h-4" />
                 )}
@@ -573,7 +574,7 @@ export default function AdminBlogPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium disabled:opacity-50"
               >
                 {saving ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Spinner className="w-4 h-4 animate-spin" />
                 ) : (
                   <Eye className="w-4 h-4" />
                 )}

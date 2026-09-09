@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useState } from 'react';
 
@@ -214,7 +215,7 @@ export default function AdminPopupPage() {
     return (
       <AdminLayout>
         <div className="flex min-h-[500px] items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin" />
+          <Spinner className="h-6 w-6 animate-spin" />
         </div>
       </AdminLayout>
     );
@@ -240,7 +241,7 @@ export default function AdminPopupPage() {
 
         <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
           {/* Editor */}
-          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+          <div className="overflow-hidden ac-content-panel">
             <div className="flex items-center justify-between border-b border-border p-6">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary">
@@ -498,7 +499,7 @@ export default function AdminPopupPage() {
                   className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
                 >
                   {saving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Spinner className="h-4 w-4 animate-spin" />
                   ) : (
                     <Save className="h-4 w-4" />
                   )}
@@ -521,7 +522,7 @@ export default function AdminPopupPage() {
           </div>
 
           {/* Preview */}
-          <div className="rounded-2xl border border-border bg-card p-6">
+          <div className="ac-content-panel p-6">
             <div className="flex items-center gap-2">
               <Eye className="h-4 w-4 text-accent" />
 

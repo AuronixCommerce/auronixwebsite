@@ -1,4 +1,5 @@
 ﻿'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -159,10 +160,10 @@ export default function ResetPasswordPage() {
           </Link>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-8">
+        <div className="ac-content-panel p-8">
           {loading ? (
             <div className="py-10 text-center">
-              <Loader2 className="w-7 h-7 animate-spin mx-auto" />
+              <Spinner className="w-7 h-7 animate-spin mx-auto" />
 
               <p className="text-sm text-foreground-muted mt-3">
                 Verifying reset link…
@@ -280,7 +281,7 @@ export default function ResetPasswordPage() {
                 >
                   {saving ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Spinner className="w-4 h-4 animate-spin" />
                       Updating password…
                     </>
                   ) : (

@@ -1,4 +1,5 @@
 ﻿'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import { FormEvent, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -91,7 +92,7 @@ export default function SellerActivatePage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-8">
+        <div className="ac-content-panel p-8">
           {success ? (
             <div className="text-center py-6">
               <CheckCircle2 className="w-12 h-12 mx-auto text-green-600 mb-4" />
@@ -171,7 +172,7 @@ export default function SellerActivatePage() {
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Spinner className="w-4 h-4 animate-spin" />
                       Creating account…
                     </>
                   ) : (

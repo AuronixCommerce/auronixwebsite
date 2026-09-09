@@ -1,6 +1,10 @@
 'use client';
+import { Spinner } from '@/components/design/primitives';
 
-import { useState } from 'react';
+import { FormField } from '@/components/design/primitives';
+import { SupplierJourney } from '@/components/design/journey';
+import { ProgressIndicator } from '@/components/design/primitives';
+import { useEffect, useState } from 'react';
 import { SiteLayout } from '@/components/site/site-layout';
 import { PageHeader } from '@/components/site/page-header';
 import { Section } from '@/components/site/section';
@@ -40,6 +44,10 @@ export default function BecomeSupplierPage() {
     message: '',
     consent: false,
   });
+
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
+  useEffect(() => { try { const raw = sessionStorage.getItem('auronix-supplier-preferences'); if (raw) { const saved = JSON.parse(raw); setForm(previous => ({...previous, country: typeof saved.country === 'string' ? saved.country : '', distributionModel: typeof saved.distributionModel === 'string' ? saved.distributionModel : ''})); } } catch {} setPreferencesLoaded(true); }, []);
+  useEffect(() => { if(!preferencesLoaded) return; try { if(success) sessionStorage.removeItem('auronix-supplier-preferences'); else sessionStorage.setItem('auronix-supplier-preferences', JSON.stringify({country: form.country, distributionModel: form.distributionModel})); } catch {} }, [form.country, form.distributionModel, preferencesLoaded, success]);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -100,7 +108,7 @@ export default function BecomeSupplierPage() {
     return (
       <SiteLayout>
         <Section className="min-h-[60vh] flex items-center">
-          <Reveal className="max-w-lg mx-auto text-center">
+          <Reveal className="ac-success max-w-lg mx-auto text-center">
             <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-6">
               <CheckCircle2 className="w-10 h-10 text-green-600" />
             </div>
@@ -135,9 +143,9 @@ export default function BecomeSupplierPage() {
       />
 
       <Section className="border-t border-border">
-        <div className="max-w-2xl">
+        <div className="ac-form-layout"><SupplierJourney current={1}/>
           <Reveal>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="ac-form-panel space-y-6"><ProgressIndicator value={[form.companyName,form.contactName,form.email,form.phone,form.categories,form.consent].filter(Boolean).length/6*100} label="Required information"/>
               {/* Company info */}
               <div className="grid sm:grid-cols-2 gap-5">
                 <FormField label="Company Name" required error={errors.companyName}>
@@ -275,7 +283,7 @@ export default function BecomeSupplierPage() {
               >
                 {submitting ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Spinner className="w-4 h-4 mr-2 animate-spin" />
                     Submitting…
                   </>
                 ) : (
@@ -290,28 +298,5 @@ export default function BecomeSupplierPage() {
         </div>
       </Section>
     </SiteLayout>
-  );
-}
-
-function FormField({
-  label,
-  required,
-  error,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <Label className="mb-2 block">
-        {label}
-        {required && <span className="text-destructive ml-0.5">*</span>}
-      </Label>
-      {children}
-      {error && <p className="text-sm text-destructive mt-1.5">{error}</p>}
-    </div>
   );
 }

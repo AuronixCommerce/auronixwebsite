@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useState } from 'react';
 import {
@@ -160,8 +161,8 @@ export default function AdminAIPage() {
         </div>
 
         {loading ? (
-          <div className="rounded-2xl border border-border bg-card p-10 flex justify-center">
-            <Loader2 className="w-6 h-6 animate-spin" />
+          <div className="ac-content-panel p-10 flex justify-center">
+            <Spinner className="w-6 h-6 animate-spin" />
           </div>
         ) : (
           <>
@@ -207,7 +208,7 @@ export default function AdminAIPage() {
               />
             </div>
 
-            <div className="rounded-2xl border border-border bg-card overflow-hidden">
+            <div className="ac-content-panel overflow-hidden">
               <div className="p-6 border-b border-border">
                 <h2 className="font-semibold">
                   AI Instructions
@@ -243,7 +244,7 @@ export default function AdminAIPage() {
                 className="inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-5 py-3 text-sm font-medium disabled:opacity-50"
               >
                 {saving ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Spinner className="w-4 h-4 animate-spin" />
                 ) : (
                   <Save className="w-4 h-4" />
                 )}
@@ -272,7 +273,7 @@ function ToggleCard({
   onChange: (value: boolean) => void;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div className="ac-content-panel p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-4">
           <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-foreground-muted">

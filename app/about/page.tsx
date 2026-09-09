@@ -106,7 +106,7 @@ export default function AboutPage() {
             { title: 'Structured Process', description: 'From discovery to scale, every phase follows a defined, repeatable process.' },
           ].map((item) => (
             <StaggerItem key={item.title}>
-              <div className="rounded-2xl border border-border bg-card p-7 h-full hover:shadow-premium transition-shadow">
+              <div className="ac-content-panel p-7 h-full hover:shadow-premium transition-shadow">
                 <h3 className="text-lg font-semibold tracking-tight mb-3">{item.title}</h3>
                 <p className="text-sm text-foreground-muted leading-relaxed">{item.description}</p>
               </div>

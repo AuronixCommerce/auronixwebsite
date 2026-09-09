@@ -1,4 +1,5 @@
 ﻿'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import {
   FormEvent,
@@ -215,10 +216,10 @@ export function Footer() {
   };
 
   return (
-    <footer className="border-t border-border bg-background text-foreground">
+    <footer className="ac-footer border-t border-border text-foreground">
       <div className="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:px-8">
 
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+        <div className="ac-footer-grid">
 
           {/* BRAND */}
           <div>
@@ -239,7 +240,7 @@ export function Footer() {
 
             {socials.length > 0 && (
               <div className="mt-5 flex flex-wrap gap-2" aria-label="Auronix Commerce social profiles">
-                {socials.map(item => { const Icon = item.icon; return <a key={item.key} href={item.href} target="_blank" rel="noopener noreferrer" aria-label={`Auronix Commerce on ${item.label}`} title={item.label} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-foreground-muted transition hover:-translate-y-0.5 hover:border-accent/35 hover:bg-accent/10 hover:text-accent"><Icon className="h-4 w-4" /></a>; })}
+                {socials.map(item => { const Icon = item.icon; return <a key={item.key} href={item.href} target="_blank" rel="noopener noreferrer" aria-label={`Auronix Commerce on ${item.label}`} title={item.label} className="inline-flex h-10 w-10 items-center justify-center ac-content-panel text-foreground-muted transition hover:-translate-y-0.5 hover:border-accent/35 hover:bg-accent/10 hover:text-accent"><Icon className="h-4 w-4" /></a>; })}
               </div>
             )}
           </div>
@@ -468,7 +469,7 @@ export function Footer() {
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Spinner className="h-4 w-4 animate-spin" />
                 ) : (
                   <Send className="h-4 w-4" />
                 )}
@@ -553,6 +554,6 @@ export function Footer() {
         </div>
 
       </div>
-    </footer>
+    <div aria-hidden="true" className="ac-footer-signature">AURONIX</div></footer>
   );
 }

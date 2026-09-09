@@ -1,4 +1,5 @@
 ﻿'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useState } from 'react';
 import { ref, onValue, set } from 'firebase/database';
@@ -81,10 +82,10 @@ export default function BusinessSettingsPage() {
 
         {loading ? (
           <div className="p-12 flex justify-center">
-            <Loader2 className="w-6 h-6 animate-spin" />
+            <Spinner className="w-6 h-6 animate-spin" />
           </div>
         ) : (
-          <div className="rounded-2xl border border-border bg-card p-6 space-y-8">
+          <div className="ac-content-panel p-6 space-y-8">
             <Group title="Company">
               <Field label="Company Name" value={form.companyName} onChange={(v) => updateField('companyName', v)} />
               <Field label="Legal Name" value={form.legalName} onChange={(v) => updateField('legalName', v)} />
@@ -127,7 +128,7 @@ export default function BusinessSettingsPage() {
               className="inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium disabled:opacity-50"
             >
               {saving ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Spinner className="w-4 h-4 animate-spin" />
               ) : (
                 <Save className="w-4 h-4" />
               )}

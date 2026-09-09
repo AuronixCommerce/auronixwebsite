@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import {
   useEffect,
@@ -605,7 +606,7 @@ export default function AdminDashboardPage() {
               }`}
             >
               {updatingAvailability ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Spinner className="h-4 w-4 animate-spin" />
               ) : availability ? (
                 <WifiOff className="h-4 w-4" />
               ) : (
@@ -790,7 +791,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* PAGE CONTROL STATUS */}
-        <div className="rounded-2xl border border-border bg-card p-6">
+        <div className="ac-content-panel p-6">
 
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
 
@@ -823,7 +824,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* NEWSLETTER */}
-        <div className="rounded-2xl border border-border bg-card p-6">
+        <div className="ac-content-panel p-6">
 
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
 
@@ -868,7 +869,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* SYSTEM */}
-        <div className="rounded-2xl border border-border bg-card p-6">
+        <div className="ac-content-panel p-6">
 
           <h2 className="font-semibold">
             System overview
@@ -888,7 +889,7 @@ export default function AdminDashboardPage() {
 
         {loading && (
           <div className="flex items-center justify-center gap-2 py-4 text-xs text-foreground-muted">
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Spinner className="h-4 w-4 animate-spin" />
             Syncing dashboard data...
           </div>
         )}
@@ -914,7 +915,7 @@ function Stat({
   return (
     <Link
       href={href}
-      className="rounded-2xl border border-border bg-card p-5 transition-colors hover:bg-secondary/40"
+      className="ac-content-panel p-5 transition-colors hover:bg-secondary/40"
     >
       <div className="flex items-center justify-between">
 
@@ -950,7 +951,7 @@ function QuickAction({
   return (
     <Link
       href={href}
-      className="rounded-2xl border border-border bg-card p-5 transition-colors hover:bg-secondary/40"
+      className="ac-content-panel p-5 transition-colors hover:bg-secondary/40"
     >
       <div className="flex items-center justify-between gap-4">
 

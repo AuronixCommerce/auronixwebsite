@@ -1,4 +1,5 @@
 ﻿'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useState } from 'react';
 import { ref, onValue, update } from 'firebase/database';
@@ -105,9 +106,9 @@ export default function LegalAdminPage() {
           ))}
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-6 space-y-5">
+        <div className="ac-content-panel p-6 space-y-5">
           {loading ? (
-            <Loader2 className="w-6 h-6 animate-spin" />
+            <Spinner className="w-6 h-6 animate-spin" />
           ) : (
             <>
               <div>
@@ -143,7 +144,7 @@ export default function LegalAdminPage() {
                 className="inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium disabled:opacity-50"
               >
                 {saving ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Spinner className="w-4 h-4 animate-spin" />
                 ) : (
                   <Save className="w-4 h-4" />
                 )}
@@ -154,7 +155,7 @@ export default function LegalAdminPage() {
         </div>
 
         {!loading && body.trim() && (
-          <div className="rounded-2xl border border-border bg-card p-6">
+          <div className="ac-content-panel p-6">
             <div className="mb-5 flex items-center justify-between gap-4">
               <div>
                 <h2 className="font-semibold">Live public preview</h2>

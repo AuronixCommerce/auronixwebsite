@@ -21,7 +21,7 @@ export default function SellerLandingPage() {
         <div className="grid lg:grid-cols-2 gap-12">
           <Reveal>
             <Link href="/seller/apply">
-              <div className="group rounded-2xl border border-border bg-card p-10 h-full hover:shadow-premium-lg transition-all">
+              <div className="group ac-content-panel p-10 h-full hover:shadow-premium-lg transition-all">
                 <div className="w-14 h-14 rounded-2xl bg-primary/5 border border-border flex items-center justify-center mb-6 group-hover:bg-accent/10 group-hover:border-accent/20 transition-colors">
                   <Store className="w-6 h-6 text-foreground group-hover:text-accent transition-colors" />
                 </div>
@@ -39,7 +39,7 @@ export default function SellerLandingPage() {
 
           <Reveal delay={0.05}>
             <Link href="/seller/login">
-              <div className="group rounded-2xl border border-border bg-card p-10 h-full hover:shadow-premium-lg transition-all">
+              <div className="group ac-content-panel p-10 h-full hover:shadow-premium-lg transition-all">
                 <div className="w-14 h-14 rounded-2xl bg-primary/5 border border-border flex items-center justify-center mb-6 group-hover:bg-accent/10 group-hover:border-accent/20 transition-colors">
                   <ShieldCheck className="w-6 h-6 text-foreground group-hover:text-accent transition-colors" />
                 </div>
@@ -89,7 +89,7 @@ export default function SellerLandingPage() {
             const Icon = item.icon;
             return (
               <Reveal key={item.title} delay={i * 0.05}>
-                <div className="rounded-2xl border border-border bg-card p-8 h-full">
+                <div className="ac-content-panel p-8 h-full">
                   <div className="w-12 h-12 rounded-xl bg-primary/5 border border-border flex items-center justify-center mb-5">
                     <Icon className="w-5 h-5 text-foreground" />
                   </div>

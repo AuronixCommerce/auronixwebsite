@@ -1,4 +1,5 @@
 ﻿'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useState } from 'react';
 import { onAuthChange } from '@/lib/auth';
@@ -77,11 +78,11 @@ export default function SellerSettingsPage() {
         </div>
 
         {loading ? (
-          <div className="rounded-2xl border border-border bg-card p-12 flex justify-center">
-            <Loader2 className="w-6 h-6 animate-spin" />
+          <div className="ac-content-panel p-12 flex justify-center">
+            <Spinner className="w-6 h-6 animate-spin" />
           </div>
         ) : (
-          <div className="rounded-2xl border border-border bg-card p-6 space-y-5">
+          <div className="ac-content-panel p-6 space-y-5">
             {error && <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-sm text-red-700 dark:text-red-300">{error}</div>}
             {message && <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-4 text-sm text-green-700 dark:text-green-300">{message}</div>}
             <Field
@@ -122,7 +123,7 @@ export default function SellerSettingsPage() {
               className="inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium disabled:opacity-50"
             >
               {saving ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Spinner className="w-4 h-4 animate-spin" />
               ) : (
                 <Save className="w-4 h-4" />
               )}

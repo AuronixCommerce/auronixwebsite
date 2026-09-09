@@ -1,4 +1,5 @@
 ﻿'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -96,20 +97,20 @@ export function BlogContent() {
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search articles..."
           aria-label="Search articles"
-          className="w-full h-14 rounded-2xl border border-border bg-card pl-12 pr-5 text-sm text-foreground outline-none focus:ring-2 focus:ring-accent/20"
+          className="w-full h-14 ac-content-panel pl-12 pr-5 text-sm text-foreground outline-none focus:ring-2 focus:ring-accent/20"
         />
       </div>
 
       {loading ? (
-        <div className="rounded-2xl border border-border bg-card p-14 flex flex-col items-center justify-center">
-          <Loader2 className="w-7 h-7 animate-spin text-foreground-muted" />
+        <div className="ac-content-panel p-14 flex flex-col items-center justify-center">
+          <Spinner className="w-7 h-7 animate-spin text-foreground-muted" />
 
           <p className="mt-4 text-sm text-foreground-muted">
             Loading articles...
           </p>
         </div>
       ) : filteredPosts.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-card p-14 text-center">
+        <div className="ac-content-panel p-14 text-center">
           <div className="mx-auto w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center">
             <FileText className="w-6 h-6 text-foreground-muted" />
           </div>
@@ -139,7 +140,7 @@ export function BlogContent() {
           {filteredPosts.map((post) => (
             <article
               key={post.id}
-              className="group rounded-2xl border border-border bg-card overflow-hidden"
+              className="group ac-content-panel overflow-hidden"
             >
               {post.image ? (
                 <Link

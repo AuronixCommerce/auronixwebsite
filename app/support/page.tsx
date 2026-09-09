@@ -1,5 +1,8 @@
 'use client';
+import { Spinner } from '@/components/design/primitives';
 
+import { GlobalSearch } from '@/components/design/search-trigger';
+import { FormField } from '@/components/design/primitives';
 import { useState } from 'react';
 import { SiteLayout } from '@/components/site/site-layout';
 import { PageHeader } from '@/components/site/page-header';
@@ -102,11 +105,11 @@ export default function SupportPage() {
       />
 
       <Section className="border-t border-border">
-        <div className="grid lg:grid-cols-3 gap-5">
+        <div className="mb-10 max-w-3xl"><GlobalSearch label="Search answers, services, and support"/></div><div className="grid lg:grid-cols-3 gap-5">
           {/* FAQ link */}
           <Reveal>
             <Link href="/faq">
-              <div className="group rounded-2xl border border-border bg-card p-8 h-full hover:shadow-premium-lg transition-all">
+              <div className="group ac-content-panel p-8 h-full hover:shadow-premium-lg transition-all">
                 <div className="w-12 h-12 rounded-xl bg-primary/5 border border-border flex items-center justify-center mb-5 group-hover:bg-accent/10 group-hover:border-accent/20 transition-colors">
                   <Search className="w-5 h-5 text-foreground group-hover:text-accent transition-colors" />
                 </div>
@@ -125,7 +128,7 @@ export default function SupportPage() {
           {/* Contact link */}
           <Reveal delay={0.05}>
             <Link href="/contact">
-              <div className="group rounded-2xl border border-border bg-card p-8 h-full hover:shadow-premium-lg transition-all">
+              <div className="group ac-content-panel p-8 h-full hover:shadow-premium-lg transition-all">
                 <div className="w-12 h-12 rounded-xl bg-primary/5 border border-border flex items-center justify-center mb-5 group-hover:bg-accent/10 group-hover:border-accent/20 transition-colors">
                   <LifeBuoy className="w-5 h-5 text-foreground group-hover:text-accent transition-colors" />
                 </div>
@@ -146,7 +149,7 @@ export default function SupportPage() {
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <button className="text-left w-full">
-                  <div className="group rounded-2xl border border-border bg-card p-8 h-full hover:shadow-premium-lg transition-all">
+                  <div className="group ac-content-panel p-8 h-full hover:shadow-premium-lg transition-all">
                     <div className="w-12 h-12 rounded-xl bg-primary/5 border border-border flex items-center justify-center mb-5 group-hover:bg-accent/10 group-hover:border-accent/20 transition-colors">
                       <Ticket className="w-5 h-5 text-foreground group-hover:text-accent transition-colors" />
                     </div>
@@ -239,7 +242,7 @@ export default function SupportPage() {
                     <Button type="submit" disabled={submitting} className="w-full">
                       {submitting ? (
                         <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          <Spinner className="w-4 h-4 mr-2 animate-spin" />
                           Creating…
                         </>
                       ) : (
@@ -257,28 +260,5 @@ export default function SupportPage() {
         </div>
       </Section>
     </SiteLayout>
-  );
-}
-
-function FormField({
-  label,
-  required,
-  error,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <Label className="mb-2 block">
-        {label}
-        {required && <span className="text-destructive ml-0.5">*</span>}
-      </Label>
-      {children}
-      {error && <p className="text-sm text-destructive mt-1.5">{error}</p>}
-    </div>
   );
 }

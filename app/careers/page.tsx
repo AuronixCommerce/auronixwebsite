@@ -1,4 +1,6 @@
-﻿"use client";
+'use client';
+import { Spinner } from '@/components/design/primitives';
+
 
 import { useEffect, useState } from "react";
 import {
@@ -268,7 +270,7 @@ export default function CareersPage() {
           {loading ? (
             <div className="mt-14 flex justify-center">
               <div className="inline-flex items-center gap-3 rounded-full border border-border bg-card px-5 py-3 text-sm text-foreground-muted">
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Spinner className="w-4 h-4 animate-spin" />
                 Loading opportunities...
               </div>
             </div>

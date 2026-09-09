@@ -9,8 +9,8 @@ interface SectionProps {
 
 export function Section({ children, className, id }: SectionProps) {
   return (
-    <section id={id} className={cn('py-20 lg:py-32', className)}>
-      <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">{children}</div>
+    <section id={id} className={cn('ac-section', className)}>
+      <div className="ac-container">{children}</div>
     </section>
   );
 }
@@ -33,14 +33,14 @@ export function SectionHeading({
   return (
     <div
       className={cn(
-        'max-w-3xl',
+        'ac-section-heading',
         align === 'center' && 'mx-auto text-center',
         className
       )}
     >
       {eyebrow && (
-        <span className="inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.12em] uppercase text-accent mb-4">
-          <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+        <span className="ac-eyebrow">
+
           {eyebrow}
         </span>
       )}

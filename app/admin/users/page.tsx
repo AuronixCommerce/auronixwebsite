@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useMemo, useState } from 'react';
 import { ref, onValue } from 'firebase/database';
@@ -227,14 +228,14 @@ export default function UsersAdminPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name, email, business, role, or UID…"
-            className="w-full h-11 rounded-xl border border-border bg-card pl-10 pr-4 text-sm"
+            className="w-full h-11 ac-content-panel pl-10 pr-4 text-sm"
           />
         </div>
 
-        <div className="rounded-2xl border border-border bg-card overflow-hidden">
+        <div className="ac-content-panel overflow-hidden">
           {loading ? (
             <div className="p-12 flex justify-center">
-              <Loader2 className="w-6 h-6 animate-spin" />
+              <Spinner className="w-6 h-6 animate-spin" />
             </div>
           ) : filteredUsers.length === 0 ? (
             <div className="p-12 text-center text-sm text-foreground-muted">
@@ -279,7 +280,7 @@ export default function UsersAdminPage() {
 
       {selectedUser && (
         <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-2xl">
+          <div className="w-full max-w-lg ac-content-panel p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold">
@@ -358,7 +359,7 @@ export default function UsersAdminPage() {
                 className="rounded-xl bg-red-600 text-white px-5 py-2.5 text-sm font-medium disabled:opacity-50 inline-flex items-center gap-2"
               >
                 {working && (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Spinner className="w-4 h-4 animate-spin" />
                 )}
 
                 {banMode === 'temporary'

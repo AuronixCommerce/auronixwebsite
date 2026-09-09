@@ -60,7 +60,7 @@ export default function WhyWorkWithUsPage() {
         <StaggerGroup className="mt-14 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {WHY_WORK.map((item) => (
             <StaggerItem key={item.title}>
-              <div className="rounded-2xl border border-border bg-card p-7 h-full">
+              <div className="ac-content-panel p-7 h-full">
                 <h3 className="text-base font-semibold tracking-tight mb-3">{item.title}</h3>
                 <p className="text-sm text-foreground-muted leading-relaxed">{item.description}</p>
               </div>

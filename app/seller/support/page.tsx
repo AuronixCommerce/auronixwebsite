@@ -1,4 +1,5 @@
 'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useState } from 'react';
 import { SellerLayout } from '@/components/seller/seller-layout';
@@ -186,7 +187,7 @@ export default function SellerSupportPage() {
       {showForm && (
         <form
           onSubmit={handleSubmit}
-          className="max-w-xl space-y-5 rounded-2xl border border-border bg-card p-6 mb-8"
+          className="max-w-xl space-y-5 ac-content-panel p-6 mb-8"
         >
           <div>
             <Label htmlFor="subject" className="mb-2 block">
@@ -260,7 +261,7 @@ export default function SellerSupportPage() {
           <Button type="submit" disabled={submitting}>
             {submitting ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Spinner className="w-4 h-4 mr-2 animate-spin" />
                 Creating…
               </>
             ) : (
@@ -280,7 +281,7 @@ export default function SellerSupportPage() {
           {tickets.map((ticket) => (
             <div
               key={ticket.id}
-              className="rounded-xl border border-border bg-card p-5"
+              className="ac-content-panel p-5"
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
                 <h3 className="text-sm font-semibold">

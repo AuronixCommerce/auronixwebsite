@@ -1,4 +1,5 @@
 ﻿'use client';
+import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -19,8 +20,8 @@ export function FAQContent() {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [activeId, setActiveId] =
-    useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  useEffect(() => { const sync = () => {const id = decodeURIComponent(window.location.hash).replace(/^#faq-/, '');if(id) setActiveId(id);};sync();window.addEventListener('hashchange',sync);return()=>window.removeEventListener('hashchange',sync);}, []);
 
   useEffect(() => {
     let mounted = true;
@@ -122,7 +123,7 @@ export function FAQContent() {
             setSearch(e.target.value)
           }
           placeholder={`Search ${faqs.length}+ answers…`}
-          className="w-full h-14 rounded-2xl border border-border bg-card pl-12 pr-5 text-sm outline-none focus:ring-2 focus:ring-accent/20"
+          className="w-full h-14 ac-content-panel pl-12 pr-5 text-sm outline-none focus:ring-2 focus:ring-accent/20"
         />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1" aria-label="FAQ categories">
@@ -136,11 +137,11 @@ export function FAQContent() {
       </div>
 
       {loading ? (
-        <div className="rounded-2xl border border-border bg-card p-12 flex justify-center">
-          <Loader2 className="w-7 h-7 animate-spin" />
+        <div className="ac-content-panel p-12 flex justify-center">
+          <Spinner className="w-7 h-7 animate-spin" />
         </div>
       ) : filteredFAQs.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-card p-12 text-center">
+        <div className="ac-content-panel p-12 text-center">
           <HelpCircle className="w-8 h-8 mx-auto text-foreground-muted" />
 
           <h2 className="mt-4 font-semibold">
@@ -166,7 +167,7 @@ export function FAQContent() {
                   {category}
                 </div>
 
-                <div className="rounded-2xl border border-border bg-card overflow-hidden">
+                <div className="ac-content-panel overflow-hidden">
                   {categoryFAQs.map((faq) => {
                     const open =
                       activeId === faq.id;
@@ -174,10 +175,13 @@ export function FAQContent() {
                     return (
                       <div
                         key={faq.id}
+                        id={`faq-${faq.id}`}
                         className="border-b border-border last:border-b-0"
                       >
                         <button
                           type="button"
+                          aria-expanded={open}
+                          aria-controls={`answer-${faq.id}`}
                           onClick={() =>
                             setActiveId(
                               open
@@ -201,7 +205,7 @@ export function FAQContent() {
                         </button>
 
                         {open && (
-                          <div className="px-5 sm:px-6 pb-6">
+                          <div id={`answer-${faq.id}`} className="px-5 sm:px-6 pb-6">
                             <p className="text-sm sm:text-base text-foreground-muted leading-relaxed whitespace-pre-wrap">
                               {faq.answer}
                             </p>

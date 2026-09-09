@@ -4,6 +4,7 @@ import {
   usePathname,
 } from 'next/navigation';
 
+import { SearchHost } from '@/components/design/search-trigger';
 import {
   Header,
 } from './header';
@@ -50,9 +51,11 @@ export function PublicSiteChrome({
 
   return (
     <>
+      <a className="ac-skip" href="#main-content">Skip to content</a>
       <Header />
+      <SearchHost />
 
-      <main className="min-h-screen pt-16">
+      <main id="main-content" tabIndex={-1} className="ac-shell">
         {children}
       </main>
 

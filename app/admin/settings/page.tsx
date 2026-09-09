@@ -45,7 +45,7 @@ export default function SettingsAdminPage() {
               <Link
                 key={card.href}
                 href={card.href}
-                className="group rounded-2xl border border-border bg-card p-6 hover:border-border-strong hover:shadow-premium-lg transition-all"
+                className="group ac-content-panel p-6 hover:border-border-strong hover:shadow-premium-lg transition-all"
               >
                 <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center">
                   <Icon className="w-5 h-5" />

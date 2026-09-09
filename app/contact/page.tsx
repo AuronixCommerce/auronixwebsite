@@ -1,5 +1,7 @@
 'use client';
+import { Spinner } from '@/components/design/primitives';
 
+import { FormField } from '@/components/design/primitives';
 import { useState } from 'react';
 import { SiteLayout } from '@/components/site/site-layout';
 import { PageHeader } from '@/components/site/page-header';
@@ -191,7 +193,7 @@ export default function ContactPage() {
                 <Button type="submit" disabled={submitting} size="lg">
                   {submitting ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Spinner className="w-4 h-4 mr-2 animate-spin" />
                       Sending…
                     </>
                   ) : (
@@ -242,28 +244,5 @@ export default function ContactPage() {
         </div>
       </Section>
     </SiteLayout>
-  );
-}
-
-function FormField({
-  label,
-  required,
-  error,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <Label className="mb-2 block">
-        {label}
-        {required && <span className="text-destructive ml-0.5">*</span>}
-      </Label>
-      {children}
-      {error && <p className="text-sm text-destructive mt-1.5">{error}</p>}
-    </div>
   );
 }
