@@ -76,3 +76,6 @@
 .ac-page-loading{position:fixed;inset:0;z-index:75;min-height:0;background:hsl(var(--background)/.96)}
 
 .ac-support-connecting small{font-size:.75rem;color:hsl(var(--foreground-muted))}
+.ac-cursor-field{position:fixed;inset:0;z-index:90;pointer-events:none;overflow:hidden}
+.ac-cursor-field canvas{display:block;width:100%;height:100%}
+@media(hover:none),(pointer:coarse){.ac-cursor-field{display:none}}

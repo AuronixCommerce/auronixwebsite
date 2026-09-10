@@ -16,6 +16,7 @@ import {
   PublicSiteChrome,
 } from '@/components/site/public-site-chrome';
 import { ThemeToggle } from '@/components/site/theme-toggle';
+import { CursorField } from '@/components/design/cursor-field';
 
 export function PublicRuntime({
   children,
@@ -67,6 +68,8 @@ export function PublicRuntime({
       </PublicSiteChrome>
 
       <SiteAnnouncementPopup />
+
+      <CursorField />
 
       {pathname !== '/support/chat' && !pathname.startsWith('/seller/') && <AIChat />}
     </>

@@ -29,7 +29,7 @@ export function SupportWorkspace({ seller = false }: { seller?: boolean }) {
         <Link href={seller ? '/seller/support' : '/support'}><ArrowLeft size={18}/>Support center</Link>
         <Link href={seller ? '/seller/support' : '/support/contact'}>Contact the team<ArrowRight size={16}/></Link>
       </nav>
-      {phase === 'connected' ? <Conversation seller={seller} agentName={agentName}/> : phase === 'connecting' ? (<section className="ac-support-connecting" role="status"><Spinner className="h-8 w-8"/><p>Connecting you with {agentName}…</p><small>{agentName} · Automated Support Agent</small></section>) : (
+      {phase === 'connected' ? <Conversation seller={seller} agentName={agentName}/> : phase === 'connecting' ? (<section className="ac-support-connecting" role="status"><Spinner className="h-8 w-8"/><p>Hi, I’m Auronix AI. I’m connecting you to a support agent…</p><small>Please wait a moment</small></section>) : (
         <section className="ac-support-start">
           <span className="ac-support-avatar"><Headphones size={27}/></span>
           <p className="ac-eyebrow">AURONIX SUPPORT</p>

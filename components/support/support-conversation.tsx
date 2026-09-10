@@ -432,7 +432,7 @@ export function SupportConversation({ seller = false, agentName = 'Alex' }: { se
 
   const [input, setInput] = useState('');
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [thinkingSeconds, setThinkingSeconds] =
     useState(0);
@@ -464,13 +464,15 @@ export function SupportConversation({ seller = false, agentName = 'Alex' }: { se
     useRef<AbortController | null>(null);
 
   const typingTimerRef =
-    useRef<ReturnType<typeof setInterval> | null>(
+    useRef<number | null>(
       null
     );
 
   const currentAnswerRef = useRef('');
 
   const thinkingStartedAtRef = useRef(0);
+
+  const introStartedRef = useRef(false);
 
   const pathname = usePathname() || '/';
 
@@ -546,6 +548,23 @@ export function SupportConversation({ seller = false, agentName = 'Alex' }: { se
       setLocalMemoryReady(true);
     }
   }, [pathname, seller]);
+
+  useEffect(() => {
+    if (!localMemoryReady) return;
+    if (introStartedRef.current) return;
+    introStartedRef.current = true;
+    if (messages.length > 0) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1200;
+    const timer = window.setTimeout(() => {
+      setMessages([{ id: makeId(), role: 'assistant', content: `Hi, I’m ${agentName}. How may I help you today?` }]);
+      setLoading(false);
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [agentName, localMemoryReady, messages.length]);
 
   useEffect(() => {
     if (!localMemoryReady || seller) return;
@@ -679,76 +698,19 @@ export function SupportConversation({ seller = false, agentName = 'Alex' }: { se
     answerSource: 'found' | 'online',
     responseSeconds: number
   ) => {
-    if (typingTimerRef.current) {
-      clearInterval(
-        typingTimerRef.current
-      );
-    }
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setMessages(existing=>[...existing,{id:makeId(),role:'assistant',content:answer,answerSource,responseSeconds}]); setVisibleAnswer(''); setLoading(false); return; }
-
+    if (typingTimerRef.current) clearInterval(typingTimerRef.current);
     currentAnswerRef.current = answer;
-
     setVisibleAnswer('');
-
-    let cursor = 0;
-
-    typingTimerRef.current =
-      setInterval(() => {
-        if (cursor >= answer.length) {
-          if (typingTimerRef.current) {
-            clearInterval(
-              typingTimerRef.current
-            );
-
-            typingTimerRef.current = null;
-          }
-
-          setMessages((existing) => [
-            ...existing,
-            {
-              id: makeId(),
-              role: 'assistant',
-              content: answer,
-              answerSource,
-              responseSeconds,
-            },
-          ]);
-
-          currentAnswerRef.current = '';
-
-          setVisibleAnswer('');
-
-          setLoading(false);
-
-          return;
-        }
-
-        const remaining =
-          answer.length - cursor;
-
-        let amount = 1;
-
-        if (
-          answer[cursor] === '\n' ||
-          answer[cursor] === ' '
-        ) {
-          amount = 1;
-        } else if (remaining > 180) {
-          amount = 3;
-        } else if (remaining > 80) {
-          amount = 2;
-        }
-
-        cursor = Math.min(
-          answer.length,
-          cursor + amount
-        );
-
-        setVisibleAnswer(
-          answer.slice(0, cursor)
-        );
-      }, 38);
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const delay = reducedMotion ? 0 : Math.min(1800, 750 + answer.length * 3);
+    typingTimerRef.current = window.setTimeout(() => {
+      setMessages((existing) => [...existing, {
+        id: makeId(), role: 'assistant', content: answer, answerSource, responseSeconds,
+      }]);
+      typingTimerRef.current = null;
+      currentAnswerRef.current = '';
+      setLoading(false);
+    }, delay);
   };
 
   const sendMessage = async (
@@ -927,11 +889,11 @@ export function SupportConversation({ seller = false, agentName = 'Alex' }: { se
     <>
       <section className="ac-conversation" aria-label={seller ? 'Seller AI support' : 'Auronix AI support'}>
         <header className="ac-conversation-header">
-          <div className="ac-assistant-identity"><ChatBrandMark className="h-11 w-11"/><div><strong>{agentName} · Support Agent</strong><span>{seller ? 'Seller guidance' : 'Support chat'} · Automated by Auronix AI</span></div></div>
+          <div className="ac-assistant-identity"><ChatBrandMark className="h-11 w-11"/><div><strong>{agentName} · Support Agent</strong><span>{seller ? 'Seller guidance' : 'Support chat'} · Auronix AI support</span></div></div>
           <div className="ac-chat-actions"><Link href={seller ? '/seller/support' : '/support/contact'} className="ac-chat-team"><LifeBuoy size={17}/> Contact support</Link><button type="button" className="ac-icon-button" aria-label="Clear saved AI chat memory" disabled={clearingMemory} onClick={()=>setClearDialogOpen(true)}><Trash2 size={18}/></button></div>
         </header>
         <div className="ac-chat-scroll" ref={scrollRef} role="log" aria-label="Conversation" aria-live="polite" aria-relevant="additions">
-          {messages.length===0&&!visibleAnswer&&!error&&<div className="ac-chat-welcome"><span className="ac-eyebrow">AURONIX SUPPORT</span><h2>Hi, how can I help?</h2><p>{seller ? 'Ask about your seller workspace, catalogs, verification or support. For account-specific help, contact the support team.' : 'I’m Auronix’s AI support assistant. Tell me what you need help with, or choose a topic below.'}</p><div className="ac-chat-suggestions">{(seller?['How do I update my catalog?','Where is my application status?','How do I contact seller support?']:['How can I become a supplier?','What does Auronix Commerce do?','Where can I verify the company?']).map(question=><button type="button" key={question} onClick={()=>askQuick(question)}>{question}<ArrowRight size={16}/></button>)}</div></div>}
+          {messages.length===0&&!loading&&!visibleAnswer&&!error&&<div className="ac-chat-welcome"><span className="ac-eyebrow">AURONIX SUPPORT</span><h2>Hi, how can I help?</h2><p>{seller ? 'Ask about your seller workspace, catalogs, verification or support. For account-specific help, contact the support team.' : 'I’m Auronix’s AI support assistant. Tell me what you need help with, or choose a topic below.'}</p><div className="ac-chat-suggestions">{(seller?['How do I update my catalog?','Where is my application status?','How do I contact seller support?']:['How can I become a supplier?','What does Auronix Commerce do?','Where can I verify the company?']).map(question=><button type="button" key={question} onClick={()=>askQuick(question)}>{question}<ArrowRight size={16}/></button>)}</div></div>}
           <div className="ac-chat-messages">{messages.map(message=>message.sessionBoundary?<div key={message.id} className="ac-chat-boundary" role="separator" aria-label="Previous chat ended">Previous chat ended · New chat</div>:<article key={message.id} className="ac-message" data-role={message.role}><div className="ac-message-label">{message.role==='user'?'You':agentName}</div><div className="ac-message-content">{message.role==='assistant'?renderMarkdown(message.content):<p className="whitespace-pre-wrap">{message.content}</p>}</div>{message.role==='assistant'&&<MessageCopy content={message.content}/>}</article>)}</div>
           {loading&&<article className="ac-message" data-role="assistant"><div className="ac-message-label">{agentName}</div>{visibleAnswer?<div className="ac-message-content">{renderMarkdown(visibleAnswer,true)}</div>:<div className="ac-chat-thinking" role="status"><Spinner className="w-5 h-5"/> {agentName} is typing…</div>}</article>}
           {error&&<div className="ac-chat-error" role="alert"><strong>We couldn’t complete that reply.</strong><p>{error}</p><button type="button" onClick={()=>{const last=[...messages].reverse().find(m=>m.role==='user');if(last)setInput(last.content);setError('');}}>Edit and try again</button></div>}
