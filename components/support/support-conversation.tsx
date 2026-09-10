@@ -423,7 +423,7 @@ function renderMarkdown(
   return output;
 }
 
-export function SupportConversation({ seller = false, agentName = 'Alex' }: { seller?: boolean; agentName?: string }) {
+export function SupportConversation({ seller = false, agentName = 'Alex', ticketReference = '' }: { seller?: boolean; agentName?: string; ticketReference?: string }) {
   const [open, setOpen] = useState(true);
 
   const [messages, setMessages] = useState<
@@ -560,11 +560,13 @@ export function SupportConversation({ seller = false, agentName = 'Alex' }: { se
     setLoading(true);
     const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1200;
     const timer = window.setTimeout(() => {
-      setMessages([{ id: makeId(), role: 'assistant', content: `Hi, I’m ${agentName}. How may I help you today?` }]);
+      setMessages([{ id: makeId(), role: 'assistant', content: ticketReference
+        ? `Hi, I’m ${agentName}. I have your ticket reference ${ticketReference}. How may I help you today?`
+        : `Hi, I’m ${agentName}. How may I help you today?` }]);
       setLoading(false);
     }, delay);
     return () => window.clearTimeout(timer);
-  }, [agentName, localMemoryReady, messages.length]);
+  }, [agentName, localMemoryReady, messages.length, ticketReference]);
 
   useEffect(() => {
     if (!localMemoryReady || seller) return;

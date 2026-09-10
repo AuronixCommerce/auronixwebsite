@@ -307,6 +307,20 @@ export function Footer() {
               >
                 Help & Troubleshooting
               </Link>
+
+              <Link
+                href="/support/chat"
+                className="block font-medium text-accent hover:underline"
+              >
+                Support Chat
+              </Link>
+
+              <Link
+                href="/support/contact"
+                className="block hover:text-foreground"
+              >
+                Contact Support
+              </Link>
             </nav>
           </div>
 

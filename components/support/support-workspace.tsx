@@ -15,6 +15,7 @@ const SUPPORT_NAMES = ['Alex','Maya','Noah','Sofia','Daniel','Emma','James','Oli
 export function SupportWorkspace({ seller = false }: { seller?: boolean }) {
   const [phase, setPhase] = useState<'start'|'connecting'|'connected'>('start');
   const [agentName] = useState(() => SUPPORT_NAMES[Math.floor(Math.random() * SUPPORT_NAMES.length)]);
+  const [ticketReference, setTicketReference] = useState('');
   useEffect(() => {
     const viewport = window.visualViewport;
     const resize = () => document.documentElement.style.setProperty('--ac-support-vh', `${viewport?.height ?? window.innerHeight}px`);
@@ -23,13 +24,26 @@ export function SupportWorkspace({ seller = false }: { seller?: boolean }) {
     return () => { viewport?.removeEventListener('resize', resize); document.documentElement.style.removeProperty('--ac-support-vh'); };
   }, []);
   useEffect(() => { if (phase !== 'connecting') return; const timer = window.setTimeout(() => setPhase('connected'), 1600); return () => window.clearTimeout(timer); }, [phase]);
+  useEffect(() => {
+    try {
+      const stored = window.sessionStorage.getItem('auronix-support-handoff');
+      if (!stored) return;
+      const handoff = JSON.parse(stored);
+      if (typeof handoff?.ticketId !== 'string') return;
+      setTicketReference(handoff.ticketId);
+      setPhase('connecting');
+      window.sessionStorage.removeItem('auronix-support-handoff');
+    } catch {
+      // A handoff is optional; visitors can always start a fresh support chat.
+    }
+  }, []);
   return (
     <div className="ac-support-room">
       <nav className="ac-support-room-nav" aria-label="Support navigation">
         <Link href={seller ? '/seller/support' : '/support'}><ArrowLeft size={18}/>Support center</Link>
         <Link href={seller ? '/seller/support' : '/support/contact'}>Contact the team<ArrowRight size={16}/></Link>
       </nav>
-      {phase === 'connected' ? <Conversation seller={seller} agentName={agentName}/> : phase === 'connecting' ? (<section className="ac-support-connecting" role="status"><Spinner className="h-8 w-8"/><p>Hi, I’m Auronix AI. I’m connecting you to a support agent…</p><small>Please wait a moment</small></section>) : (
+      {phase === 'connected' ? <Conversation seller={seller} agentName={agentName} ticketReference={ticketReference}/> : phase === 'connecting' ? (<section className="ac-support-connecting" role="status"><Spinner className="h-8 w-8"/><p>Hi, I’m Auronix AI. I’m connecting you to a support agent…</p><small>{ticketReference ? `Ticket ${ticketReference}` : 'Please wait a moment'}</small></section>) : (
         <section className="ac-support-start">
           <span className="ac-support-avatar"><Headphones size={27}/></span>
           <p className="ac-eyebrow">AURONIX SUPPORT</p>

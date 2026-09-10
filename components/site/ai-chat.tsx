@@ -15,6 +15,7 @@ import {
   ExternalLink,
   Loader2,
   MessageCircle,
+  Ticket,
   Send,
   Sparkles,
   Square,
@@ -26,8 +27,10 @@ import {
   AnimatePresence,
   motion,
 } from 'framer-motion';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { AuronixMark } from '@/components/site/auronix-mark';
+import { getTimestamp, pushData } from '@/lib/firebase-db';
+import { TICKET_CATEGORIES } from '@/lib/constants';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,6 +53,12 @@ type ChatMessage = {
   sessionBoundary?: boolean;
   endedAt?: number;
 };
+
+type TicketStep = 'idle' | 'name' | 'email' | 'category' | 'subject' | 'message' | 'creating';
+type TicketDraft = { name: string; email: string; category: string; subject: string; message: string };
+
+const EMPTY_TICKET: TicketDraft = { name: '', email: '', category: '', subject: '', message: '' };
+const TICKET_INTENT = /\b(create|open|submit|raise|make)\b.{0,24}\b(ticket|support request)\b/i;
 
 const CHAT_STORAGE_KEY = 'auronix-ai-local-memory-v1';
 const MAX_LOCAL_MESSAGES = 60;
@@ -422,6 +431,7 @@ function renderMarkdown(
 }
 
 export function AIChat() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   useEffect(() => {
     if (!open) return;
@@ -473,6 +483,9 @@ export function AIChat() {
     useState('');
 
   const [error, setError] = useState('');
+
+  const [ticketStep, setTicketStep] = useState<TicketStep>('idle');
+  const [ticketDraft, setTicketDraft] = useState<TicketDraft>(EMPTY_TICKET);
 
   const [quickIndex, setQuickIndex] =
     useState(-1);
@@ -770,6 +783,89 @@ export function AIChat() {
       }, 22);
   };
 
+  const ticketPrompt = (content: string): ChatMessage => ({
+    id: makeId(),
+    role: 'assistant',
+    content,
+  });
+
+  const beginTicketFlow = (baseMessages = messages) => {
+    if (loading) return;
+    setError('');
+    setTicketDraft(EMPTY_TICKET);
+    setTicketStep('name');
+    setMessages([...baseMessages, ticketPrompt('I can create a support ticket for you. What is your full name?')]);
+  };
+
+  const continueTicketFlow = async (value: string, baseMessages: ChatMessage[]) => {
+    const answer = value.trim();
+    const askAgain = (content: string) => setMessages([...baseMessages, ticketPrompt(content)]);
+
+    if (ticketStep === 'name') {
+      if (answer.length < 2) return askAgain('Please enter your full name so I can attach it to the ticket.');
+      setTicketDraft((draft) => ({ ...draft, name: answer }));
+      setTicketStep('email');
+      return askAgain('What email address should the support team use for replies?');
+    }
+
+    if (ticketStep === 'email') {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(answer)) return askAgain('That email address does not look complete. Please enter a valid email address.');
+      setTicketDraft((draft) => ({ ...draft, email: answer }));
+      setTicketStep('category');
+      return askAgain(`Choose a category: ${TICKET_CATEGORIES.join(', ')}.`);
+    }
+
+    if (ticketStep === 'category') {
+      const category = TICKET_CATEGORIES.find((item) => item.toLowerCase() === answer.toLowerCase());
+      if (!category) return askAgain(`Please choose one of these categories: ${TICKET_CATEGORIES.join(', ')}.`);
+      setTicketDraft((draft) => ({ ...draft, category }));
+      setTicketStep('subject');
+      return askAgain('Give your request a short subject.');
+    }
+
+    if (ticketStep === 'subject') {
+      if (answer.length < 3) return askAgain('Please enter a short subject with at least three characters.');
+      setTicketDraft((draft) => ({ ...draft, subject: answer }));
+      setTicketStep('message');
+      return askAgain('Finally, describe what happened and what you need help with.');
+    }
+
+    if (ticketStep !== 'message') return;
+    if (answer.length < 10) return askAgain('Please add a little more detail so the team can understand the issue.');
+
+    const completedTicket = { ...ticketDraft, message: answer };
+    setTicketDraft(completedTicket);
+    setTicketStep('creating');
+    setLoading(true);
+    try {
+      const now = getTimestamp();
+      const ticketId = await pushData('tickets', {
+        ...completedTicket,
+        status: 'open',
+        createdAt: now,
+        updatedAt: now,
+      });
+      window.sessionStorage.setItem('auronix-support-handoff', JSON.stringify({ ticketId, subject: completedTicket.subject }));
+      setMessages([...baseMessages, ticketPrompt(`Your support ticket has been created. Reference: ${ticketId}. Opening support chat now…`)]);
+      setTicketStep('idle');
+      setLoading(false);
+      window.setTimeout(() => router.push('/support/chat'), 500);
+    } catch (caught) {
+      setTicketStep('message');
+      setLoading(false);
+      askAgain(caught instanceof Error ? caught.message : 'I could not create the ticket. Please try again.');
+    }
+  };
+
+  const submitTicketValue = (value: string) => {
+    if (loading || ticketStep === 'idle' || ticketStep === 'creating') return;
+    const userMessage: ChatMessage = { id: makeId(), role: 'user', content: value };
+    const nextMessages = [...messages, userMessage];
+    setMessages(nextMessages);
+    setInput('');
+    void continueTicketFlow(value, nextMessages);
+  };
+
   const sendMessage = async (
     event?: FormEvent
   ) => {
@@ -796,6 +892,16 @@ export function AIChat() {
     ];
 
     setMessages(nextMessages);
+
+    if (ticketStep !== 'idle') {
+      await continueTicketFlow(text, nextMessages);
+      return;
+    }
+
+    if (TICKET_INTENT.test(text)) {
+      beginTicketFlow(nextMessages);
+      return;
+    }
 
     setLoading(true);
 
@@ -1070,6 +1176,17 @@ export function AIChat() {
               <div className="flex shrink-0 items-center gap-2">
                 <button
                   type="button"
+                  onClick={() => beginTicketFlow()}
+                  disabled={loading || ticketStep !== 'idle'}
+                  aria-label="Create a support ticket"
+                  title="Create a support ticket"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-secondary/60 text-foreground-muted transition-colors hover:bg-secondary hover:text-foreground disabled:opacity-40"
+                >
+                  <Ticket className="h-4 w-4" />
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => setClearDialogOpen(true)}
                   disabled={clearingMemory}
                   aria-label="Clear saved AI chat memory"
@@ -1100,7 +1217,7 @@ export function AIChat() {
               {messages.length === 0 &&
                 !visibleAnswer &&
                 !error && (
-                  <div className="flex min-h-full flex-col justify-end">
+                <div className="flex min-h-full flex-col justify-end">
                     <div className="ac-content-panel p-4">
                       <div className="flex items-center gap-2 font-sans text-sm font-bold">
                         <MessageCircle className="h-4 w-4 text-accent" />
@@ -1110,6 +1227,9 @@ export function AIChat() {
                       <p className="mt-2 font-sans text-sm leading-6 text-foreground-muted">
                         Ask about Auronix Commerce, suppliers, sellers, partnerships, policies, or any public page.
                       </p>
+                      <button type="button" className="ac-ai-ticket-action" onClick={() => beginTicketFlow()}>
+                        <Ticket className="h-4 w-4" /> Create a support ticket
+                      </button>
                     </div>
                   </div>
                 )}
@@ -1218,6 +1338,14 @@ export function AIChat() {
                   </div>
                 )}
               </div>
+
+              {ticketStep === 'category' && (
+                <div className="ac-ai-ticket-categories" aria-label="Ticket categories">
+                  {TICKET_CATEGORIES.map((category) => (
+                    <button type="button" key={category} onClick={() => submitTicketValue(category)}>{category}</button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="shrink-0 border-t border-border px-3 py-2">

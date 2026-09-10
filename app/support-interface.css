@@ -79,3 +79,7 @@
 .ac-cursor-field{position:fixed;inset:0;z-index:90;pointer-events:none;overflow:hidden}
 .ac-cursor-field canvas{display:block;width:100%;height:100%}
 @media(hover:none),(pointer:coarse){.ac-cursor-field{display:none}}
+.ac-ai-ticket-action{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:44px;margin-top:14px;border-radius:14px;background:hsl(var(--primary));color:hsl(var(--primary-foreground));font-size:.78rem;font-weight:650}
+.ac-ai-ticket-categories{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.ac-ai-ticket-categories button{min-height:40px;padding:8px 13px;border:1px solid hsl(var(--border));border-radius:999px;background:hsl(var(--secondary)/.65);font-size:.75rem;font-weight:600}
+.ac-ai-ticket-categories button:hover{border-color:hsl(var(--accent)/.45);color:hsl(var(--accent))}
