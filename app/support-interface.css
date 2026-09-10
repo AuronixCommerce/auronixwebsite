@@ -74,3 +74,5 @@
 @media(max-width:767px){.ac-support-standalone .ac-conversation{height:calc(var(--ac-support-vh,100dvh) - 76px)}.ac-seller-shell .ac-support-room .ac-conversation{height:calc(var(--ac-support-vh,100dvh) - 200px)}}
 @media(max-width:380px){.auronix-ai-window .ac-popup-clear-label{display:none}.auronix-ai-window>div:first-child{padding:12px}.auronix-ai-window button[aria-label="Clear saved AI chat memory"]{width:44px;padding:0;gap:0}.auronix-ai-window button[aria-label="Close Auronix AI chat"]{width:44px;height:44px}}
 .ac-page-loading{position:fixed;inset:0;z-index:75;min-height:0;background:hsl(var(--background)/.96)}
+
+.ac-support-connecting small{font-size:.75rem;color:hsl(var(--foreground-muted))}
