@@ -23,6 +23,7 @@ export function PublicSiteChrome({
 
   const isPrivateArea =
     pathname === null ||
+    pathname === '/support/chat' ||
     pathname.startsWith(
       '/admin'
     ) ||
@@ -37,7 +38,8 @@ export function PublicSiteChrome({
     pathname.startsWith('/seller/dashboard') ||
     pathname === '/seller/profile' ||
     pathname === '/seller/settings' ||
-    pathname === '/seller/support';
+    pathname.startsWith('/seller/support') ||
+    pathname === '/seller/notifications';
 
   if (
     isPrivateArea

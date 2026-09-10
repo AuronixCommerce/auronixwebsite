@@ -1,7 +1,42 @@
 'use client';
-import { CommerceScene } from '@/components/design/commerce-scene';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { ArrowUpRight, MessageCircle, BookOpen, ShieldCheck, Headphones, Bell } from 'lucide-react';
-import { AIChat } from '@/components/site/ai-chat';
-export function SupportWorkspace({seller=false}:{seller?:boolean}) {const path=usePathname();const links=seller?[{href:'/seller/support/chat',label:'AI guidance',icon:MessageCircle},{href:'/seller/support',label:'Your conversations',icon:Headphones},{href:'/seller/notifications',label:'Updates',icon:Bell}]:[{href:'/support/chat',label:'AI guidance',icon:MessageCircle},{href:'/support/contact',label:'Contact the team',icon:Headphones},{href:'/help',label:'Help center',icon:BookOpen}];return <div className="ac-support-workspace"><aside className="ac-support-sidebar"><Link href={seller?'/seller/dashboard':'/support'} className="ac-support-back">{seller?'Seller workspace':'Support center'}<ArrowUpRight size={17}/></Link><h1>{seller?'Seller support.':'Here to help.'}</h1><p>Find your next step with confidence.</p><nav aria-label="Support navigation">{links.map(({href,label,icon:Icon})=><Link key={href} href={href} aria-current={path===href?'page':undefined}><Icon size={18}/>{label}<ArrowUpRight size={14}/></Link>)}</nav><CommerceScene compact/><div className="ac-support-note"><ShieldCheck size={20}/><strong>Your information stays yours.</strong><p>Use the support team for account-specific questions. AI guidance cannot change your account or approve an application.</p></div></aside><AIChat mode="page" seller={seller}/></div>;}
+import dynamic from 'next/dynamic';
+import { ArrowLeft, ArrowRight, Headphones, ShieldCheck } from 'lucide-react';
+import { Spinner } from '@/components/design/primitives';
+
+const Conversation = dynamic(
+  () => import('./support-conversation').then(module => module.SupportConversation),
+  { loading: () => <div className="ac-support-connecting" role="status"><Spinner className="h-6 w-6"/><p>Starting your automated support chat…</p></div>, ssr: false },
+);
+
+export function SupportWorkspace({ seller = false }: { seller?: boolean }) {
+  const [connected, setConnected] = useState(false);
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const resize = () => document.documentElement.style.setProperty('--ac-support-vh', `${viewport?.height ?? window.innerHeight}px`);
+    resize();
+    viewport?.addEventListener('resize', resize);
+    return () => { viewport?.removeEventListener('resize', resize); document.documentElement.style.removeProperty('--ac-support-vh'); };
+  }, []);
+  return (
+    <div className="ac-support-room">
+      <nav className="ac-support-room-nav" aria-label="Support navigation">
+        <Link href={seller ? '/seller/support' : '/support'}><ArrowLeft size={18}/>Support center</Link>
+        <Link href={seller ? '/seller/support' : '/support/contact'}>Contact the team<ArrowRight size={16}/></Link>
+      </nav>
+      {connected ? <Conversation seller={seller}/> : (
+        <section className="ac-support-start">
+          <span className="ac-support-avatar"><Headphones size={27}/></span>
+          <p className="ac-eyebrow">AURONIX SUPPORT</p>
+          <h1>Let’s get you sorted.</h1>
+          <p>Start with our AI support assistant. Tell us what’s happening and we’ll help you find your next step.</p>
+          <button className="ac-button" onClick={() => setConnected(true)}>Start support chat<ArrowRight size={18}/></button>
+          <Link href={seller ? '/seller/support' : '/support/contact'}>Need help from the team?</Link>
+          <small><ShieldCheck size={15}/>Automated support · No passwords or payment details</small>
+        </section>
+      )}
+    </div>
+  );
+}

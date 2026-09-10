@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 
 export function LoadingState({ className }: { className?: string }) {
   return (
-    <div className={cn('flex items-center justify-center py-20', className)}>
+    <div className={cn('ac-content-loading flex items-center justify-center py-20', className)}>
       <div className="flex flex-col items-center gap-3">
         <Spinner className="w-8 h-8" />
         <span className="text-sm text-foreground-muted">Loading…</span>

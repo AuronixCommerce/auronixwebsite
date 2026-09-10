@@ -27,6 +27,8 @@ import {
   motion,
 } from 'framer-motion';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { Copy, Check, LifeBuoy, ShieldCheck } from 'lucide-react';
 import { AuronixMark } from '@/components/site/auronix-mark';
 import {
   AlertDialog,
@@ -51,7 +53,7 @@ type ChatMessage = {
   endedAt?: number;
 };
 
-const CHAT_STORAGE_KEY = 'auronix-ai-local-memory-v1';
+const CHAT_STORAGE_KEY = 'auronix-support-local-memory-v1';
 const MAX_LOCAL_MESSAGES = 60;
 
 const QUICK_QUESTIONS = [
@@ -421,30 +423,8 @@ function renderMarkdown(
   return output;
 }
 
-export function AIChat() {
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    if (!open) return;
-    const viewport = window.visualViewport;
-    const root = document.documentElement;
-    const resize = () => {
-      root.style.setProperty('--ac-chat-viewport-height', `${viewport?.height ?? window.innerHeight}px`);
-      root.style.setProperty('--ac-chat-viewport-top', `${viewport?.offsetTop ?? 0}px`);
-    };
-    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false); };
-    resize();
-    viewport?.addEventListener('resize', resize);
-    viewport?.addEventListener('scroll', resize);
-    document.addEventListener('keydown', escape);
-    return () => {
-      viewport?.removeEventListener('resize', resize);
-      viewport?.removeEventListener('scroll', resize);
-      document.removeEventListener('keydown', escape);
-      root.style.removeProperty('--ac-chat-viewport-height');
-      root.style.removeProperty('--ac-chat-viewport-top');
-    };
-  }, [open]);
-
+export function SupportConversation({ seller = false }: { seller?: boolean }) {
+  const [open, setOpen] = useState(true);
 
   const [messages, setMessages] = useState<
     ChatMessage[]
@@ -522,6 +502,7 @@ export function AIChat() {
 
   useEffect(() => {
     try {
+      if (seller) return;
       const stored = window.localStorage.getItem(CHAT_STORAGE_KEY);
       const parsed = stored ? JSON.parse(stored) : [];
       if (Array.isArray(parsed)) {
@@ -564,10 +545,10 @@ export function AIChat() {
     } finally {
       setLocalMemoryReady(true);
     }
-  }, [pathname]);
+  }, [pathname, seller]);
 
   useEffect(() => {
-    if (!localMemoryReady) return;
+    if (!localMemoryReady || seller) return;
     try {
       window.localStorage.setItem(
         CHAT_STORAGE_KEY,
@@ -576,7 +557,7 @@ export function AIChat() {
     } catch {
       // Ignore browser quota or privacy-mode storage failures.
     }
-  }, [messages, localMemoryReady]);
+  }, [messages, localMemoryReady, seller]);
 
   useEffect(() => {
     if (!loading || visibleAnswer) {
@@ -688,7 +669,7 @@ export function AIChat() {
       return next;
     });
     setLoading(false);
-    window.localStorage.removeItem(CHAT_STORAGE_KEY);
+    if (!seller) window.localStorage.removeItem(CHAT_STORAGE_KEY);
     setClearingMemory(false);
     setClearDialogOpen(false);
   };
@@ -704,7 +685,7 @@ export function AIChat() {
       );
     }
 
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setMessages(existing => [...existing, { id: makeId(), role: 'assistant', content: answer, answerSource, responseSeconds }]); setVisibleAnswer(''); setLoading(false); return; }
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setMessages(existing=>[...existing,{id:makeId(),role:'assistant',content:answer,answerSource,responseSeconds}]); setVisibleAnswer(''); setLoading(false); return; }
 
     currentAnswerRef.current = answer;
 
@@ -767,7 +748,7 @@ export function AIChat() {
         setVisibleAnswer(
           answer.slice(0, cursor)
         );
-      }, 22);
+      }, 38);
   };
 
   const sendMessage = async (
@@ -935,7 +916,7 @@ export function AIChat() {
     window.setTimeout(() => {
       const form =
         document.querySelector<HTMLFormElement>(
-          '[data-auronix-ai-form]'
+          '[data-auronix-support-form]'
         );
 
       form?.requestSubmit();
@@ -944,371 +925,19 @@ export function AIChat() {
 
   return (
     <>
-      <AnimatePresence>
-        {!open && (
-          <motion.button
-            initial={{
-              opacity: 0,
-              scale: 0.82,
-              y: 8,
-            }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-              y: 0,
-            }}
-            exit={{
-              opacity: 0,
-              scale: 0.82,
-              y: 8,
-            }}
-            whileHover={{
-              scale: 1.06,
-              y: -2,
-            }}
-            whileTap={{
-              scale: 0.94,
-            }}
-            type="button"
-            onClick={() => setOpen(true)}
-            aria-label="Open Auronix AI chat"
-            className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-[80] flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-primary text-primary-foreground shadow-[0_14px_50px_rgba(0,0,0,0.25)]"
-          >
-            <motion.div
-              animate={{
-                scale: [
-                  0.92,
-                  1.15,
-                  0.92,
-                ],
-                opacity: [
-                  0.16,
-                  0.32,
-                  0.16,
-                ],
-              }}
-              transition={{
-                duration: 2.7,
-                repeat: Infinity,
-                ease:
-                  'easeInOut',
-              }}
-              className="absolute inset-1 rounded-full bg-white/20 blur-md"
-            />
-
-            <ChatBrandMark className="h-10 w-10" />
-          </motion.button>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 20,
-              scale: 0.97,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-              scale: 1,
-            }}
-            exit={{
-              opacity: 0,
-              y: 20,
-              scale: 0.97,
-            }}
-            transition={{
-              type:
-                'spring',
-              stiffness: 280,
-              damping: 28,
-            }}
-            role="dialog" aria-label="Auronix AI chat"
-            className="auronix-ai-window fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 right-3 z-[80] mx-auto flex h-[min(680px,calc(100dvh-1.5rem))] max-w-[430px] flex-col overflow-hidden rounded-[26px] border border-border bg-background/96 font-sans text-foreground shadow-[0_25px_100px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:bottom-5 sm:left-auto sm:right-5 sm:h-[min(680px,calc(100vh-2.5rem))]"
-          >
-            <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <div className="relative flex h-10 w-10 shrink-0 items-center justify-center">
-                  <motion.div
-                    animate={{
-                      scale: [
-                        0.9,
-                        1.08,
-                        0.9,
-                      ],
-                      opacity: [
-                        0.7,
-                        1,
-                        0.7,
-                      ],
-                    }}
-                    transition={{
-                      duration: 2.8,
-                      repeat: Infinity,
-                      ease:
-                        'easeInOut',
-                    }}
-                    className="absolute inset-1 rounded-full bg-accent/10 blur-sm"
-                  />
-                  <ChatBrandMark className="h-9 w-9" />
-                </div>
-
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 font-sans text-sm font-bold">
-                    Auronix AI
-                    <Sparkles className="h-3.5 w-3.5 shrink-0 text-accent" />
-                  </div>
-
-                  <div className="font-sans text-[10px] text-foreground-muted">
-                    Commerce assistant
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setClearDialogOpen(true)}
-                  disabled={clearingMemory}
-                  aria-label="Clear saved AI chat memory"
-                  title="Clear saved chat memory"
-                  className="flex h-10 items-center justify-center gap-1.5 rounded-full border border-border bg-secondary/60 px-3 font-sans text-xs font-semibold text-foreground-muted transition-colors hover:bg-secondary hover:text-foreground disabled:cursor-wait disabled:opacity-65"
-                >
-                  {clearingMemory ? <Spinner className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
-                  <span className="ac-popup-clear-label">{clearingMemory ? 'Clearing…' : 'Clear'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setOpen(false)
-                  }
-                  aria-label="Close Auronix AI chat"
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-secondary/60 transition-colors hover:bg-secondary"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-
-            <div
-              ref={scrollRef}
-              className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4"
-            >
-              {messages.length === 0 &&
-                !visibleAnswer &&
-                !error && (
-                  <div className="flex min-h-full flex-col justify-end">
-                    <div className="ac-content-panel p-4">
-                      <div className="flex items-center gap-2 font-sans text-sm font-bold">
-                        <MessageCircle className="h-4 w-4 text-accent" />
-                        How can I help?
-                      </div>
-
-                      <p className="mt-2 font-sans text-sm leading-6 text-foreground-muted">
-                        Ask about Auronix Commerce, suppliers, sellers, partnerships, policies, or any public page.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-              <div className="space-y-4">
-                {messages.map(
-                  (message) => message.sessionBoundary ? (
-                    <div key={message.id} className="flex items-center gap-3 py-1" role="separator" aria-label="Previous chat ended">
-                      <span className="h-px flex-1 bg-border" />
-                      <span className="shrink-0 rounded-full border border-border bg-secondary/50 px-3 py-1 font-sans text-[10px] font-medium text-foreground-muted">
-                        Previous chat ended · New chat
-                      </span>
-                      <span className="h-px flex-1 bg-border" />
-                    </div>
-                  ) : (
-                    <div
-                      key={message.id}
-                      className={
-                        message.role ===
-                        'user'
-                          ? 'flex justify-end'
-                          : 'flex justify-start'
-                      }
-                    >
-                      <div
-                        className={
-                          message.role ===
-                          'user'
-                            ? 'max-w-[88%] rounded-2xl rounded-br-md bg-primary px-4 py-3 font-sans text-sm leading-6 text-primary-foreground'
-                            : 'max-w-[96%] rounded-2xl rounded-bl-md border border-border bg-card px-4 py-3 font-sans text-sm leading-6 text-foreground'
-                        }
-                      >
-                        {message.role ===
-                        'assistant' ? (
-                          <div className="font-sans">
-                            {message.answerSource && (
-                              <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-foreground-muted">
-                                <Sparkles className="h-3 w-3 text-accent" />
-                                Thought for {message.responseSeconds || 1} sec · {message.answerSource === 'found' ? 'Found' : 'Online'}
-                              </div>
-                            )}
-                            {renderMarkdown(
-                              message.content
-                            )}
-                          </div>
-                        ) : (
-                          <div className="whitespace-pre-wrap break-words">
-                            {message.content}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )
-                )}
-
-                {loading &&
-                  visibleAnswer && (
-                    <div className="flex justify-start">
-                      <div className="max-w-[96%] rounded-2xl rounded-bl-md border border-border bg-card px-4 py-3 font-sans text-sm leading-6 text-foreground">
-                        <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-foreground-muted">
-                          <Sparkles className="h-3 w-3 text-accent" />
-                          Thought for {completedThinkingSeconds || 1} sec · {activeAnswerSource === 'found' ? 'Found' : 'Online'}
-                        </div>
-
-                        <div className="font-sans">
-                          {renderMarkdown(
-                            visibleAnswer,
-                            true
-                          )}
-                        </div>
-
-                        <motion.span
-                          animate={{
-                            opacity: [
-                              0.2,
-                              1,
-                              0.2,
-                            ],
-                          }}
-                          transition={{
-                            duration: 0.8,
-                            repeat:
-                              Infinity,
-                          }}
-                          className="ml-1 inline-block h-4 w-[2px] translate-y-0.5 rounded-full bg-accent"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                {loading &&
-                  !visibleAnswer && (
-                    <div className="flex justify-start">
-                      <div className="ac-content-panel px-4 py-3">
-                        <div className="flex items-center gap-2 font-sans text-sm text-foreground-muted">
-                          <Spinner className="h-4 w-4" />
-                          Thinking… {thinkingSeconds}s
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                {error && (
-                  <div className="rounded-2xl border border-red-500/20 bg-red-500/5 px-4 py-3 font-sans text-sm leading-6 text-red-700">
-                    {error}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="shrink-0 border-t border-border px-3 py-2">
-              <AnimatePresence mode="wait">
-                {quickQuestion && (
-                <motion.button
-                  key={quickQuestion}
-                  initial={{
-                    opacity: 0,
-                    y: 4,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  exit={{
-                    opacity: 0,
-                    y: -4,
-                  }}
-                  type="button"
-                  disabled={loading}
-                  onClick={() =>
-                    askQuick(
-                      quickQuestion
-                    )
-                  }
-                  className="w-full truncate rounded-xl px-2 py-2 text-left font-sans text-[11px] font-medium text-foreground-muted transition-colors hover:bg-secondary/60 hover:text-foreground disabled:opacity-50"
-                >
-                  Quick question ·{' '}
-                  {quickQuestion}
-                </motion.button>
-                )}
-              </AnimatePresence>
-            </div>
-
-            <form
-              data-auronix-ai-form
-              onSubmit={sendMessage}
-              className="flex shrink-0 items-end gap-2 border-t border-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
-            >
-              <textarea
-                value={input}
-                onChange={(event) =>
-                  setInput(
-                    event.target
-                      .value
-                  )
-                }
-                onKeyDown={(event) => {
-                  if (
-                    event.key ===
-                      'Enter' &&
-                    !event.shiftKey && !event.nativeEvent.isComposing
-                  ) {
-                    event.preventDefault();
-
-                    void sendMessage();
-                  }
-                }}
-                aria-label="Your message"
-                maxLength={5000}
-                rows={1}
-                disabled={loading}
-                placeholder="Ask Auronix AI…"
-                className="max-h-28 min-h-[44px] min-w-0 flex-1 resize-none rounded-2xl border border-border bg-background px-4 py-3 font-sans text-[16px] outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15 disabled:opacity-60 sm:text-sm"
-              />
-
-              {loading ? (
-                <button
-                  type="button"
-                  onClick={stopAnswer}
-                  aria-label="Stop AI response"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border bg-secondary font-sans transition-colors hover:bg-secondary/70"
-                >
-                  <Square className="h-4 w-4 fill-current" />
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={!input.trim()}
-                  aria-label="Send message"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary font-sans text-primary-foreground transition hover:-translate-y-0.5 disabled:opacity-40"
-                >
-                  <Send className="h-4 w-4" />
-                </button>
-              )}
-            </form>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
+      <section className="ac-conversation" aria-label={seller ? 'Seller AI support' : 'Auronix AI support'}>
+        <header className="ac-conversation-header">
+          <div className="ac-assistant-identity"><ChatBrandMark className="h-11 w-11"/><div><strong>Auronix Support</strong><span>{seller ? 'Seller guidance' : 'Support chat'} · AI assistant</span></div></div>
+          <div className="ac-chat-actions"><Link href={seller ? '/seller/support' : '/support/contact'} className="ac-chat-team"><LifeBuoy size={17}/> Contact support</Link><button type="button" className="ac-icon-button" aria-label="Clear saved AI chat memory" disabled={clearingMemory} onClick={()=>setClearDialogOpen(true)}><Trash2 size={18}/></button></div>
+        </header>
+        <div className="ac-chat-scroll" ref={scrollRef} role="log" aria-label="Conversation" aria-live="polite" aria-relevant="additions">
+          {messages.length===0&&!visibleAnswer&&!error&&<div className="ac-chat-welcome"><span className="ac-eyebrow">AURONIX SUPPORT</span><h2>Hi, how can I help?</h2><p>{seller ? 'Ask about your seller workspace, catalogs, verification or support. For account-specific help, contact the support team.' : 'I’m Auronix’s AI support assistant. Tell me what you need help with, or choose a topic below.'}</p><div className="ac-chat-suggestions">{(seller?['How do I update my catalog?','Where is my application status?','How do I contact seller support?']:['How can I become a supplier?','What does Auronix Commerce do?','Where can I verify the company?']).map(question=><button type="button" key={question} onClick={()=>askQuick(question)}>{question}<ArrowRight size={16}/></button>)}</div></div>}
+          <div className="ac-chat-messages">{messages.map(message=>message.sessionBoundary?<div key={message.id} className="ac-chat-boundary" role="separator" aria-label="Previous chat ended">Previous chat ended · New chat</div>:<article key={message.id} className="ac-message" data-role={message.role}><div className="ac-message-label">{message.role==='user'?'You':'Auronix AI'}</div><div className="ac-message-content">{message.role==='assistant'?renderMarkdown(message.content):<p className="whitespace-pre-wrap">{message.content}</p>}</div>{message.role==='assistant'&&<MessageCopy content={message.content}/>}</article>)}</div>
+          {loading&&<article className="ac-message" data-role="assistant"><div className="ac-message-label">Auronix AI</div>{visibleAnswer?<div className="ac-message-content">{renderMarkdown(visibleAnswer,true)}</div>:<div className="ac-chat-thinking" role="status"><Spinner className="w-5 h-5"/> Auronix AI is typing…</div>}</article>}
+          {error&&<div className="ac-chat-error" role="alert"><strong>We couldn’t complete that reply.</strong><p>{error}</p><button type="button" onClick={()=>{const last=[...messages].reverse().find(m=>m.role==='user');if(last)setInput(last.content);setError('');}}>Edit and try again</button></div>}
+        </div>
+        <div className="ac-composer-area"><form data-auronix-support-form onSubmit={sendMessage} className="ac-composer"><textarea aria-label="Your message" value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();void sendMessage();}}} rows={1} maxLength={5000} disabled={loading} placeholder="Your message…"/>{loading?<button type="button" aria-label="Stop AI response" onClick={stopAnswer}><Square size={18}/></button>:<button type="submit" aria-label="Send message" disabled={!input.trim()}><ArrowRight size={21}/></button>}</form><p><ShieldCheck size={13}/> AI can make mistakes. Never share passwords or verification codes.{seller?' This conversation is not saved.':' History is saved in this browser.'}</p></div>
+      </section>
       <AlertDialog open={clearDialogOpen} onOpenChange={(nextOpen) => {
         if (!clearingMemory) setClearDialogOpen(nextOpen);
       }}>
@@ -1321,7 +950,7 @@ export function AIChat() {
               Delete this chat history?
             </AlertDialogTitle>
             <AlertDialogDescription className="font-sans text-sm leading-6 text-foreground-muted">
-              This removes the saved Auronix AI conversation from this browser. This action cannot be undone.
+              This removes this Auronix AI conversation. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-6 gap-2 sm:gap-2">
@@ -1346,7 +975,8 @@ export function AIChat() {
   );
 }
 
-export default AIChat;
+function MessageCopy({content}:{content:string}) { const [copied,setCopied]=useState(false);const timer=useRef<ReturnType<typeof setTimeout>>();useEffect(()=>()=>clearTimeout(timer.current),[]);return <button type="button" className="ac-message-copy" aria-label="Copy answer" onClick={async()=>{try{await navigator.clipboard.writeText(content);setCopied(true);timer.current=setTimeout(()=>setCopied(false),1800);}catch{setCopied(false);}}}>{copied?<Check size={14}/>:<Copy size={14}/>}<span>{copied?'Copied':'Copy'}</span></button>; }
+
 
 function ChatBrandMark({ className }: { className?: string }) {
   return <span className={`relative inline-flex shrink-0 ${className || ''}`}><AuronixMark className="h-full w-full shadow-none" /><span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-background bg-accent text-white shadow-sm"><Bot className="h-2.5 w-2.5" /></span></span>;

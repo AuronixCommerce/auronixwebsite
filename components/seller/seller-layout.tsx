@@ -19,7 +19,7 @@ const NAV = [
   { label: 'Profile', href: '/seller/profile', icon: User },
   { label: 'Products', href: '/seller/dashboard/products', icon: Package },
   { label: 'Catalogs', href: '/seller/dashboard/catalogs', icon: FileText },
-  { label: 'AI support', href: '/seller/support/chat', icon: LifeBuoy },
+  { label: 'Support chat', href: '/seller/support/chat', icon: LifeBuoy },
   { label: 'Support', href: '/seller/support', icon: LifeBuoy },
   { label: 'Notifications', href: '/seller/notifications', icon: Bell },
   { label: 'Settings', href: '/seller/settings', icon: Settings },

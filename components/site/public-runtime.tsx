@@ -68,7 +68,7 @@ export function PublicRuntime({
 
       <SiteAnnouncementPopup />
 
-      {!pathname.startsWith('/support/') && !pathname.startsWith('/seller/') && <AIChat />}
+      {pathname !== '/support/chat' && !pathname.startsWith('/seller/') && <AIChat />}
     </>
   );
 }
