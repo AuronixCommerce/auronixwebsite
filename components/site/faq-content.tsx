@@ -1,16 +1,38 @@
-﻿'use client';
+'use client';
 import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useMemo, useState } from 'react';
 import {
   ChevronDown,
   HelpCircle,
-  Loader2,
   Search,
 } from 'lucide-react';
 import { getList } from '@/lib/firebase-db';
 import type { FAQ } from '@/lib/types';
 import { DEFAULT_FAQS, FAQ_CATEGORY_ORDER } from '@/lib/help-content';
+
+const MOST_ASKED_QUESTIONS = [
+  "What is Auronix Commerce LLC?",
+  "Does Auronix Commerce operate an online retail store?",
+  "Where can I verify company information?",
+  "Where can I apply as a supplier?",
+  "Is a supplier submission the same as a seller account?",
+  "What should a supplier submission include?",
+  "Does submitting as a supplier guarantee purchasing?",
+  "How long does supplier review take?",
+  "How do I become a business partner?",
+  "Who can submit a seller application?",
+  "What information should I prepare before applying?",
+  "What happens after I submit the application?",
+  "How will I know if my seller application is approved?",
+  "Does Auronix guarantee marketplace approval?",
+  "How do I contact Auronix Commerce?"
+];
+
+const MOST_ASKED_FAQS = MOST_ASKED_QUESTIONS.flatMap((question) => {
+  const faq = DEFAULT_FAQS.find((item) => item.question === question);
+  return faq ? [faq] : [];
+});
 
 export function FAQContent() {
   const [faqs, setFaqs] = useState<
@@ -110,7 +132,29 @@ export function FAQContent() {
   );
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="min-w-0 max-w-4xl mx-auto">
+      <section aria-labelledby="most-asked-title" className="mb-12">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-accent">Start here</p>
+            <h2 id="most-asked-title" className="mt-2 text-3xl font-semibold tracking-tight">Most Asked</h2>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-foreground-muted">Get to know Auronix, explore supplier partnerships, and understand the application process.</p>
+          </div>
+          <a href="#all-faqs" className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full border border-border px-5 text-sm font-semibold hover:bg-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">Browse all answers</a>
+        </div>
+        <div className="ac-content-panel overflow-hidden">
+          {MOST_ASKED_FAQS.map((faq) => (
+            <details key={faq.id} className="group border-b border-border last:border-b-0">
+              <summary className="flex min-h-14 cursor-pointer list-none items-center gap-4 px-5 py-5 text-left hover:bg-secondary/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent sm:px-6 [&::-webkit-details-marker]:hidden">
+                <span className="min-w-0 flex-1 break-words text-sm font-medium sm:text-base">{faq.question}</span>
+                <ChevronDown aria-hidden="true" className="h-5 w-5 shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" />
+              </summary>
+              <p className="whitespace-pre-wrap break-words px-5 pb-6 text-sm leading-relaxed text-foreground-muted sm:px-6 sm:text-base">{faq.answer}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+      <h2 id="all-faqs" className="mb-5 scroll-mt-32 text-2xl font-semibold tracking-tight">All questions &amp; answers</h2>
       <div className="mb-8 flex flex-col gap-4 rounded-3xl border border-border bg-card p-4 sm:p-5">
         <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground-muted" />
