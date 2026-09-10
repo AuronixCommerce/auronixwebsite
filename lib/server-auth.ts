@@ -21,17 +21,13 @@ export async function verifyIdToken(request: Request) {
 export async function requireAdmin(request: Request) {
   const decoded = await verifyIdToken(request);
 
-  // First allow an explicit Firebase custom claim.
   if (decoded.role === 'admin') {
     const session = await verifyAdminSession(decoded.uid);
     if (!session.valid) throw new Error('Admin two-factor verification required.');
     return decoded;
   }
 
-  // Also support the project's existing RTDB user profile.
-  const snapshot = await adminDb
-    .ref(`users/${decoded.uid}`)
-    .get();
+  const snapshot = await adminDb.ref(`users/${decoded.uid}`).get();
 
   if (!snapshot.exists()) {
     throw new Error('Admin profile not found.');
@@ -43,19 +39,37 @@ export async function requireAdmin(request: Request) {
     throw new Error('Admin access required.');
   }
 
+  const session = await verifyAdminSession(decoded.uid);
+  if (!session.valid) throw new Error('Admin two-factor verification required.');
+
   return decoded;
 }
 
 export async function requireSeller(request: Request) {
   const decoded = await verifyIdToken(request);
-  if (decoded.role === 'seller' || decoded.role === 'admin') return decoded;
-  const snapshot = await adminDb.ref(`users/${decoded.uid}`).get();
-  const profile = snapshot.val();
-  if (!snapshot.exists() || !['seller', 'admin'].includes(profile?.role) || profile?.status === 'disabled') {
-    throw new Error('Seller access required.');
+
+  // Sellers must never be forced through the admin-only 2FA session flow.
+  if (decoded.role === 'seller') return decoded;
+
+  if (decoded.role === 'admin') {
+    const session = await verifyAdminSession(decoded.uid);
+    if (!session.valid) throw new Error('Admin two-factor verification required.');
+    return decoded;
   }
 
-  const session = await verifyAdminSession(decoded.uid);
-  if (!session.valid) throw new Error('Admin two-factor verification required.');
-  return decoded;
+  const snapshot = await adminDb.ref(`users/${decoded.uid}`).get();
+  if (!snapshot.exists()) throw new Error('Seller access required.');
+
+  const profile = snapshot.val();
+  if (profile?.status === 'disabled') throw new Error('Seller access disabled.');
+
+  if (profile?.role === 'seller') return decoded;
+
+  if (profile?.role === 'admin') {
+    const session = await verifyAdminSession(decoded.uid);
+    if (!session.valid) throw new Error('Admin two-factor verification required.');
+    return decoded;
+  }
+
+  throw new Error('Seller access required.');
 }
