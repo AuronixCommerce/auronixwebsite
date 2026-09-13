@@ -326,7 +326,7 @@ export function AdminCrudPage({
                   {editingId ? 'Edit Record' : 'Create Record'}
                 </h2>
                 <p className="text-xs text-foreground-muted mt-1">
-                  Changes are saved directly to Firebase.
+                  Changes are saved securely to Auronix.
                 </p>
               </div>
 

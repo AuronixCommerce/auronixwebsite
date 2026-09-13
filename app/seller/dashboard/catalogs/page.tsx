@@ -1,4 +1,5 @@
-﻿'use client';
+'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useState } from 'react';
@@ -33,7 +34,7 @@ export default function SellerCatalogsPage() {
     return onAuthChange(async (user) => {
       if (!user) { setLoading(false); return; }
       try { const data = await sellerWorkspaceRequest(); setCatalogs(data.catalogs); }
-      catch (loadError) { setError(loadError instanceof Error ? loadError.message : 'Unable to load catalogs.'); }
+      catch (loadError) { setError(loadError instanceof Error ? userFacingError(loadError) : 'Unable to load catalogs.'); }
       finally { setLoading(false); }
     });
   }, []);
@@ -45,7 +46,7 @@ export default function SellerCatalogsPage() {
     }
     setSaving(true); setError('');
     try { const data = await sellerWorkspaceRequest('', { method: 'POST', body: JSON.stringify({ resource: 'catalog', ...form }) }); setCatalogs((current) => [data.item, ...current]); }
-    catch (saveError) { setError(saveError instanceof Error ? saveError.message : 'Unable to create catalog.'); setSaving(false); return; }
+    catch (saveError) { setError(saveError instanceof Error ? userFacingError(saveError) : 'Unable to create catalog.'); setSaving(false); return; }
 
     setForm({
       name: '',
@@ -60,7 +61,7 @@ export default function SellerCatalogsPage() {
   const deleteCatalog = async (id: string) => {
     if (!await confirmAction({ title: 'Delete this catalog?', description: 'This catalog will be permanently removed from your seller workspace.', confirmLabel: 'Delete catalog', destructive: true })) return;
     try { await sellerWorkspaceRequest(`?resource=catalog&id=${encodeURIComponent(id)}`, { method: 'DELETE' }); setCatalogs((current) => current.filter((item) => item.id !== id)); }
-    catch (deleteError) { setError(deleteError instanceof Error ? deleteError.message : 'Unable to delete catalog.'); }
+    catch (deleteError) { setError(deleteError instanceof Error ? userFacingError(deleteError) : 'Unable to delete catalog.'); }
   };
 
   return (

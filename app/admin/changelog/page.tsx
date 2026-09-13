@@ -1,4 +1,5 @@
 'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useState } from 'react';
@@ -186,7 +187,7 @@ export default function AdminChangelogPage() {
     } catch (error) {
       notifyAction(
         error instanceof Error
-          ? error.message
+          ? userFacingError(error)
           : 'Unable to create release.'
       );
     } finally {
@@ -250,7 +251,7 @@ export default function AdminChangelogPage() {
     } catch (error) {
       notifyAction(
         error instanceof Error
-          ? error.message
+          ? userFacingError(error)
           : 'Unable to delete release.'
       );
     }

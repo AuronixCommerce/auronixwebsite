@@ -1,8 +1,10 @@
 'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import { FormField } from '@/components/design/primitives';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { readApplicationPrefill } from '@/lib/application-prefill';
 import { SiteLayout } from '@/components/site/site-layout';
 import { PageHeader } from '@/components/site/page-header';
 import { Section } from '@/components/site/section';
@@ -37,6 +39,12 @@ export default function ContactPage() {
     category: '' as ContactCategory | '',
     message: '',
   });
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('from') !== 'application') return;
+    const value = readApplicationPrefill('auronix-application-contact');
+    if (value) setForm({ name: value.name, company: value.company, email: value.email, phone: value.phone, category: 'Support', message: value.message });
+  }, []);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -75,7 +83,7 @@ export default function ContactPage() {
     } catch (err) {
       toast({
         title: 'Failed to send',
-        description: err instanceof Error ? err.message : 'Please try again.',
+        description: err instanceof Error ? userFacingError(err) : 'Please try again.',
         variant: 'destructive',
       });
     } finally {

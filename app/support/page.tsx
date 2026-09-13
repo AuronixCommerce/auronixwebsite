@@ -1,4 +1,5 @@
 'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import { GlobalSearch } from '@/components/design/search-trigger';
@@ -83,7 +84,7 @@ export default function SupportPage() {
     } catch (err) {
       toast({
         title: 'Failed to create ticket',
-        description: err instanceof Error ? err.message : 'Please try again.',
+        description: err instanceof Error ? userFacingError(err) : 'Please try again.',
         variant: 'destructive',
       });
     } finally {

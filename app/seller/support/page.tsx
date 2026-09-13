@@ -1,4 +1,5 @@
 'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import Link from 'next/link';
 import { TicketThread } from '@/components/support/ticket-thread';
 import { Spinner } from '@/components/design/primitives';
@@ -138,7 +139,7 @@ export default function SellerSupportPage() {
         title: 'Failed to create ticket',
         description:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Please try again later.',
         variant: 'destructive',
       });

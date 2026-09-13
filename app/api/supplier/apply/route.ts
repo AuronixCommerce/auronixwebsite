@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/user-facing-error';
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { protectPublicRequest, publicRequestErrorResponse } from '@/lib/server-protection';
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, submissionId: ref.key }, { status: 201 });
   } catch (error) {
     const protectedError = publicRequestErrorResponse(error); if (protectedError) return NextResponse.json(protectedError.body, { status: protectedError.status });
-    console.error('Supplier submission failed:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Supplier submission failed:', error instanceof Error ? userFacingError(error) : 'Unknown error');
     return NextResponse.json({ error: 'Unable to submit supplier information right now. Please retry.', code: 'SUPPLIER_SUBMISSION_FAILED' }, { status: 500 });
   }
 }

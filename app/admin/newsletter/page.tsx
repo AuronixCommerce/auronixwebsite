@@ -1,4 +1,5 @@
 'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import {
@@ -320,7 +321,7 @@ export default function AdminNewsletterPage() {
       ) {
         setNotice(
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to generate newsletter.'
         );
       } finally {
@@ -460,7 +461,7 @@ export default function AdminNewsletterPage() {
       ) {
         setNotice(
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to send newsletter.'
         );
       } finally {
@@ -554,7 +555,7 @@ export default function AdminNewsletterPage() {
     ) {
       setNotice(
         error instanceof Error
-          ? error.message
+          ? userFacingError(error)
           : 'Unable to delete campaign.'
       );
     }
@@ -646,7 +647,7 @@ export default function AdminNewsletterPage() {
       ) {
         setNotice(
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to clear campaign history.'
         );
       }

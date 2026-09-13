@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/user-facing-error';
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { requireSeller } from '@/lib/server-auth';
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
       tickets: list(ticketsSnapshot.val()).filter((ticket: any) => ticket.sellerUid === uid).sort((a: any, b: any) => Number(b.createdAt || 0) - Number(a.createdAt || 0)),
     });
   } catch (error) {
-    console.error('Seller workspace load failed:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Seller workspace load failed:', error instanceof Error ? userFacingError(error) : 'Unknown error');
     return errorResponse('Unable to load the seller workspace.', 'WORKSPACE_LOAD_FAILED', 401);
   }
 }
@@ -69,7 +70,7 @@ export async function POST(request: Request) {
     }
     return errorResponse('Unsupported seller workspace action.', 'UNSUPPORTED_ACTION', 400);
   } catch (error) {
-    console.error('Seller workspace create failed:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Seller workspace create failed:', error instanceof Error ? userFacingError(error) : 'Unknown error');
     return errorResponse('Unable to save this item right now.', 'WORKSPACE_SAVE_FAILED', 500);
   }
 }
@@ -84,7 +85,7 @@ export async function PATCH(request: Request) {
     await adminDb.ref(`users/${uid}`).update(updates);
     return NextResponse.json({ success: true, profile: updates });
   } catch (error) {
-    console.error('Seller profile update failed:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Seller profile update failed:', error instanceof Error ? userFacingError(error) : 'Unknown error');
     return errorResponse('Unable to update the seller profile.', 'PROFILE_UPDATE_FAILED', 500);
   }
 }
@@ -97,7 +98,7 @@ export async function DELETE(request: Request) {
     await adminDb.ref(`sellerData/${uid}/${resource === 'product' ? 'products' : 'catalogs'}/${id}`).remove();
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Seller workspace delete failed:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Seller workspace delete failed:', error instanceof Error ? userFacingError(error) : 'Unknown error');
     return errorResponse('Unable to delete this item.', 'WORKSPACE_DELETE_FAILED', 500);
   }
 }

@@ -1,10 +1,9 @@
-﻿import {
+import { resolveControls, maintenancePath, maintenanceBypass } from '@/lib/maintenance-controls';
+import {
   adminDb,
 } from '@/lib/firebase-admin';
 
 import {
-  DEFAULT_GLOBAL_CONTROL,
-  DEFAULT_PAGE_CONTROL,
   isScheduleActive,
   isScheduleUpcoming,
 } from '@/lib/page-controls';
@@ -19,22 +18,6 @@ function strictBoolean(
     value === 'true' ||
     value === 'TRUE' ||
     value === 'True'
-  );
-}
-
-function decodeKey(
-  key: string
-): string {
-  if (key === 'home') {
-    return '/';
-  }
-
-  return (
-    '/' +
-    key
-      .split('__')
-      .filter(Boolean)
-      .join('/')
   );
 }
 
@@ -63,57 +46,9 @@ function text(
 export async function getMaintenanceContext(
   pathname = '/'
 ) {
-  const requestedPath = pathname === '/' ? '/' : `/${String(pathname).split('?')[0].split('#')[0].replace(/^\/+|\/+$/g, '')}`;
-  const snapshot =
-    await adminDb
-      .ref('sitePageControls')
-      .get();
-
-  const data =
-    snapshot.exists()
-      ? snapshot.val()
-      : {};
-
-  const global = {
-    ...DEFAULT_GLOBAL_CONTROL,
-    ...(data?.global || {}),
-  } as any;
-
-  let page = {
-    ...DEFAULT_PAGE_CONTROL,
-    path: requestedPath,
-  } as any;
-
-  if (
-    data?.pages &&
-    typeof data.pages === 'object'
-  ) {
-    const pages =
-      data.pages as Record<string, any>;
-
-    for (
-      const [
-        key,
-        value,
-      ] of Object.entries(pages)
-    ) {
-      const path =
-        typeof value?.path === 'string'
-          ? value.path
-          : decodeKey(key);
-
-      const normalizedStoredPath = path === '/' ? '/' : `/${String(path).replace(/^\/+|\/+$/g, '')}`;
-      if (normalizedStoredPath === requestedPath) {
-        page = {
-          ...DEFAULT_PAGE_CONTROL,
-          ...(value || {}),
-          path: requestedPath,
-        };
-
-        break;
-      }
-    }
-  }
+  const requestedPath = maintenancePath(pathname);
+  const snapshot = maintenanceBypass(requestedPath) ? null : await adminDb.ref('sitePageControls').get();
+  const { global, page } = resolveControls(snapshot?.exists() ? snapshot.val() : {}, requestedPath);
 
   const now = Date.now();
 

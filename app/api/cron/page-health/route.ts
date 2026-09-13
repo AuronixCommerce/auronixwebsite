@@ -1,4 +1,6 @@
-﻿import { NextResponse } from 'next/server';
+import { userFacingError } from '@/lib/user-facing-error';
+import { maintenanceFlag } from '@/lib/maintenance-controls';
+import { NextResponse } from 'next/server';
 
 import { adminDb } from '@/lib/firebase-admin';
 import { reportOperationalError } from '@/lib/server-audit';
@@ -301,7 +303,7 @@ async function main() {
     ) {
       errorText =
         error instanceof Error
-          ? error.message
+          ? userFacingError(error)
           : 'Health request failed.';
     }
 
@@ -399,7 +401,7 @@ async function main() {
         });
 
       if (
-        current.automaticMaintenanceEnabled &&
+        maintenanceFlag(current.automaticMaintenanceEnabled) &&
         ai.confirmed
       ) {
         const generated =
@@ -410,11 +412,12 @@ async function main() {
               errorText
           );
 
-        await adminDb
+        const activation = await adminDb
           .ref(
             `sitePageControls/pages/${key}`
           )
-          .update({
+          .transaction((latest) => latest && maintenanceFlag(latest.automaticMaintenanceEnabled) ? {
+            ...latest,
             maintenanceEnabled:
               true,
 
@@ -452,7 +455,8 @@ async function main() {
 
             updatedBy:
               'automatic-health-monitor',
-          });
+          } : undefined);
+        if (!activation.committed) continue;
 
         await adminDb
           .ref(
@@ -487,13 +491,15 @@ async function main() {
     if (
       success &&
       current.maintenanceEnabled &&
-      current.automaticRecoveryEnabled
+      maintenanceFlag(current.automaticRecoveryEnabled) &&
+      current.updatedBy === 'automatic-health-monitor'
     ) {
-      await adminDb
+      const recovery = await adminDb
         .ref(
           `sitePageControls/pages/${key}`
         )
-        .update({
+        .transaction(latest => latest && latest.updatedBy === 'automatic-health-monitor' && maintenanceFlag(latest.automaticRecoveryEnabled) ? {
+          ...latest,
           maintenanceEnabled:
             false,
 
@@ -520,7 +526,8 @@ async function main() {
 
           updatedBy:
             'automatic-health-recovery',
-        });
+        } : undefined);
+      if (!recovery.committed) continue;
 
       await adminDb
         .ref(
@@ -641,7 +648,7 @@ export async function GET(
 
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Health monitor failed.',
       },
       {

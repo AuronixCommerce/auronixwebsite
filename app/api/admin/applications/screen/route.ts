@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/user-facing-error';
 import { NextResponse } from 'next/server';
 
 import { adminDb } from '@/lib/firebase-admin';
@@ -434,7 +435,7 @@ Return strict JSON only.
       {
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to screen application.',
       },
       { status: 500 }

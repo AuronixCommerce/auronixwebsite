@@ -1,4 +1,5 @@
 'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import { FormField } from '@/components/design/primitives';
@@ -91,7 +92,7 @@ export default function BecomeSupplierPage() {
     } catch (err) {
       toast({
         title: 'Submission failed',
-        description: err instanceof Error ? err.message : 'Please try again.',
+        description: err instanceof Error ? userFacingError(err) : 'Please try again.',
         variant: 'destructive',
       });
     } finally {

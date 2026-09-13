@@ -1,4 +1,5 @@
 'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -134,7 +135,7 @@ export default function UsersAdminPage() {
     } catch (error) {
       notifyAction(
         error instanceof Error
-          ? error.message
+          ? userFacingError(error)
           : 'Unable to ban user.'
       );
     } finally {
@@ -154,7 +155,7 @@ export default function UsersAdminPage() {
     } catch (error) {
       notifyAction(
         error instanceof Error
-          ? error.message
+          ? userFacingError(error)
           : 'Unable to unban user.'
       );
     }
@@ -177,7 +178,7 @@ export default function UsersAdminPage() {
     } catch (error) {
       notifyAction(
         error instanceof Error
-          ? error.message
+          ? userFacingError(error)
           : 'Unable to delete user.'
       );
     }
@@ -198,7 +199,7 @@ export default function UsersAdminPage() {
     } catch (error) {
       notifyAction(
         error instanceof Error
-          ? error.message
+          ? userFacingError(error)
           : 'Unable to generate reset link.'
       );
     }
@@ -290,7 +291,7 @@ export default function UsersAdminPage() {
                 </h2>
 
                 <p className="mt-1 text-sm text-foreground-muted">
-                  The user will be blocked from Firebase Authentication.
+                  The user will no longer be able to sign in to Auronix.
                 </p>
               </div>
 

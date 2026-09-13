@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/user-facing-error';
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { requireAdmin } from '@/lib/server-auth';
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
     await adminDb.ref(`sellerApplications/${applicationId}`).update({ invitationSentAt: Date.now(), invitationSentBy: 'admin', invitationDestination: email, accountCreationStatus: 'invitation_sent', invitationError: null });
     return NextResponse.json({ success: true, expiresAt });
   } catch (error) {
-    console.error('Invitation resend failed:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Invitation resend failed:', error instanceof Error ? userFacingError(error) : 'Unknown error');
     return NextResponse.json({ error: 'Unable to resend the invitation right now. Please retry.', code: 'INVITATION_SEND_FAILED' }, { status: 500 });
   }
 }

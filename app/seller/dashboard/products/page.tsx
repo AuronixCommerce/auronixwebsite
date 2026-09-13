@@ -1,4 +1,5 @@
-﻿'use client';
+'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useState } from 'react';
@@ -38,7 +39,7 @@ export default function SellerProductsPage() {
     return onAuthChange(async (user) => {
       if (!user) { setLoading(false); return; }
       try { const data = await sellerWorkspaceRequest(); setProducts(data.products); }
-      catch (loadError) { setError(loadError instanceof Error ? loadError.message : 'Unable to load products.'); }
+      catch (loadError) { setError(loadError instanceof Error ? userFacingError(loadError) : 'Unable to load products.'); }
       finally { setLoading(false); }
     });
   }, []);
@@ -50,7 +51,7 @@ export default function SellerProductsPage() {
     }
     setSaving(true); setError('');
     try { const data = await sellerWorkspaceRequest('', { method: 'POST', body: JSON.stringify({ resource: 'product', ...form }) }); setProducts((current) => [data.item, ...current]); }
-    catch (saveError) { setError(saveError instanceof Error ? saveError.message : 'Unable to create product.'); setSaving(false); return; }
+    catch (saveError) { setError(saveError instanceof Error ? userFacingError(saveError) : 'Unable to create product.'); setSaving(false); return; }
 
     setForm({
       name: '',
@@ -67,7 +68,7 @@ export default function SellerProductsPage() {
   const deleteProduct = async (id: string) => {
     if (!await confirmAction({ title: 'Delete this product?', description: 'This product will be permanently removed from your seller workspace.', confirmLabel: 'Delete product', destructive: true })) return;
     try { await sellerWorkspaceRequest(`?resource=product&id=${encodeURIComponent(id)}`, { method: 'DELETE' }); setProducts((current) => current.filter((item) => item.id !== id)); }
-    catch (deleteError) { setError(deleteError instanceof Error ? deleteError.message : 'Unable to delete product.'); }
+    catch (deleteError) { setError(deleteError instanceof Error ? userFacingError(deleteError) : 'Unable to delete product.'); }
   };
 
   return (

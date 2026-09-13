@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/user-facing-error';
 import { NextResponse } from 'next/server';
 
 import { requireAdmin } from '@/lib/server-auth';
@@ -157,7 +158,7 @@ Do not make promises the administrator did not request.
       {
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to generate email.',
       },
       { status: 500 }

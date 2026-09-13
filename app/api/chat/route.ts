@@ -1,4 +1,5 @@
-﻿import { NextResponse } from 'next/server';
+import { userFacingError } from '@/lib/user-facing-error';
+import { NextResponse } from 'next/server';
 
 import {
   adminDb,
@@ -575,7 +576,7 @@ Never expose API keys, Firebase credentials, admin internals, private records or
 
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to respond right now.',
       },
       {

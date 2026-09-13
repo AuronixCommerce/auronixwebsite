@@ -1,4 +1,5 @@
-﻿import { NextResponse } from 'next/server';
+import { userFacingError } from '@/lib/user-facing-error';
+import { NextResponse } from 'next/server';
 
 import {
   adminDb,
@@ -443,11 +444,11 @@ export async function POST(
 
           error:
             error instanceof Error
-              ? error.message
+              ? userFacingError(error)
               : 'Unknown email error.',
         });
 
-        await campaignRef.child('deliveries').push().set({ subscriberId: clean(subscriber?.id, 200), email, status: 'failed', error: error instanceof Error ? error.message.slice(0, 500) : 'Unknown email error.', failedAt: Date.now(), updatedAt: Date.now() });
+        await campaignRef.child('deliveries').push().set({ subscriberId: clean(subscriber?.id, 200), email, status: 'failed', error: error instanceof Error ? userFacingError(error).slice(0, 500) : 'Unknown email error.', failedAt: Date.now(), updatedAt: Date.now() });
       }
 
       await campaignRef.update({
@@ -513,7 +514,7 @@ export async function POST(
       {
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to send newsletter.',
       },
       {

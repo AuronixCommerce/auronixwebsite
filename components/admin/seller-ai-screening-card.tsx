@@ -1,4 +1,5 @@
-﻿'use client';
+'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import {
@@ -250,7 +251,7 @@ export function SellerAIScreeningCard({
       } catch (error) {
         setError(
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'AI screening failed.'
         );
       } finally {

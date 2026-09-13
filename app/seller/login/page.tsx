@@ -1,4 +1,5 @@
 'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import { useState, type FormEvent } from 'react';
@@ -109,7 +110,7 @@ export default function SellerLoginPage() {
 
       setError(
         err instanceof Error
-          ? err.message
+          ? userFacingError(err)
           : 'Unable to sign in. Please check your email and password.'
       );
     } finally {
@@ -258,6 +259,7 @@ export default function SellerLoginPage() {
         </form>
 
         <div className="ac-login-links text-center mt-6 space-y-3">
+          <div><Link href="/seller/application/track" className="text-sm font-medium underline">Track a submitted application</Link></div>
           <Link
             href="/seller/apply"
             className="inline-flex items-center gap-2 text-sm font-medium hover:text-accent"

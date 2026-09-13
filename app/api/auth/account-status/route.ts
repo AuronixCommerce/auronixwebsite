@@ -1,4 +1,5 @@
-﻿import { NextResponse } from 'next/server';
+import { userFacingError } from '@/lib/user-facing-error';
+import { NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
 
 export async function POST(request: Request) {
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
       {
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to check account status.',
       },
       { status: 500 }

@@ -1,4 +1,6 @@
-﻿import { NextResponse } from 'next/server';
+import { notifySellerApplication } from '@/lib/seller-tracking';
+import { userFacingError } from '@/lib/user-facing-error';
+import { NextResponse } from 'next/server';
 
 import { requireAdmin } from '@/lib/server-auth';
 import { adminDb } from '@/lib/firebase-admin';
@@ -1175,7 +1177,8 @@ async function approveAndSendInvitation(
   app: SellerApplication,
   first: FirstAIResult,
   second: SecondAIResult,
-  deterministicQuality: number
+  deterministicQuality: number,
+  expectedRevision: number
 ) {
   const applicationRef =
     adminDb.ref(
@@ -1243,7 +1246,8 @@ async function approveAndSendInvitation(
    * Save approval before sending email so
    * the decision is auditable.
    */
-  await applicationRef.update({
+  const approved = await applicationRef.transaction(current => current && Number(current.revision || 0) === expectedRevision && ['pending','under_review','screening'].includes(current.status || 'pending') ? {
+    ...current,
     status:
       'approved',
 
@@ -1292,7 +1296,8 @@ async function approveAndSendInvitation(
 
     updatedAt:
       Date.now(),
-  });
+  } : undefined);
+  if (!approved.committed) throw new Error('The application changed before approval. Review its latest version.');
 
   try {
     await sendSellerInvitationEmail({
@@ -1349,7 +1354,7 @@ invitationUrl:
 
       invitationError:
         emailError instanceof Error
-          ? emailError.message
+          ? userFacingError(emailError)
           : 'Invitation email failed.',
 
       updatedAt:
@@ -1385,6 +1390,14 @@ async function processApplication(
       string,
       unknown
     >;
+
+  if (raw.status === 'changes_requested') throw new Error('Waiting for applicant corrections.');
+  const revision = Number(raw.revision || 0);
+  if (['pending', 'under_review', 'screening'].includes(String(raw.status || 'pending'))) {
+    const started = await applicationRef.transaction(current => current && Number(current.revision || 0) === revision && ['pending','under_review','screening'].includes(current.status || 'pending') ? { ...current, status: 'under_review', updatedAt: Date.now() } : undefined);
+    if (!started.committed) throw new Error('The application changed. Review its latest version.');
+    if ((raw.status || 'pending') === 'pending') await notifySellerApplication(applicationId, raw, 'Your Auronix application is being reviewed', 'The review team has started reviewing your application. Track its progress online.');
+  }
 
   const app =
     normalizeApplication(
@@ -1789,7 +1802,8 @@ async function processApplication(
       'seller-screen-v7',
   };
 
-  await applicationRef.update({
+  const savedReview = await applicationRef.transaction(current => current && Number(current.revision || 0) === revision && current.status !== 'changes_requested' ? {
+    ...current,
     aiStatus:
       label,
 
@@ -1809,7 +1823,8 @@ async function processApplication(
 
     updatedAt:
       Date.now(),
-  });
+  } : undefined);
+  if (!savedReview.committed) throw new Error('The application changed during review. Review its latest version.');
 
   let automaticOnboarding:
     | Record<
@@ -1833,7 +1848,8 @@ async function processApplication(
 
           second!,
 
-          checks.quality
+          checks.quality,
+          revision
         );
     } catch (
       error
@@ -1848,7 +1864,7 @@ async function processApplication(
 
           error:
             error instanceof Error
-              ? error.message
+              ? userFacingError(error)
               : 'Automatic invitation failed.',
         };
     }
@@ -1960,6 +1976,7 @@ export async function POST(
         if (
           status ===
             'approved' ||
+          status === 'changes_requested' ||
           status ===
             'rejected'
         ) {
@@ -2010,7 +2027,7 @@ export async function POST(
             error:
               error instanceof
               Error
-                ? error.message
+                ? userFacingError(error)
                 : 'Screening failed.',
           });
         }
@@ -2055,7 +2072,7 @@ export async function POST(
         error:
           error instanceof
           Error
-            ? error.message
+            ? userFacingError(error)
             : 'Seller AI screening failed.',
       },
       {

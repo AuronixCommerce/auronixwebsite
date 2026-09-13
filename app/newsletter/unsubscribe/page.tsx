@@ -1,4 +1,5 @@
 'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import { FormEvent, useState } from 'react';
@@ -36,7 +37,7 @@ export default function NewsletterUnsubscribePage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Unable to send unsubscribe email.');
       setEmailSent(true);
-    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : 'Unable to send unsubscribe email.'); }
+    } catch (requestError) { setError(requestError instanceof Error ? userFacingError(requestError) : 'Unable to send unsubscribe email.'); }
     finally { setBusy(false); }
   };
 
@@ -49,7 +50,7 @@ export default function NewsletterUnsubscribePage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Unable to unsubscribe this email.');
       setComplete(true);
-    } catch (confirmError) { setError(confirmError instanceof Error ? confirmError.message : 'Unable to unsubscribe this email.'); }
+    } catch (confirmError) { setError(confirmError instanceof Error ? userFacingError(confirmError) : 'Unable to unsubscribe this email.'); }
     finally { setBusy(false); }
   };
 

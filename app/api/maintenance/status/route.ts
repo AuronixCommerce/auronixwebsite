@@ -1,4 +1,7 @@
-﻿import {
+import { userFacingError } from '@/lib/user-facing-error';
+import { maintenancePath, maintenanceBypass } from '@/lib/maintenance-controls';
+export const dynamic = 'force-dynamic';
+import {
   NextResponse,
 } from 'next/server';
 
@@ -18,19 +21,14 @@ export async function GET(
     );
 
   const pathname =
-    url.searchParams.get(
-      'path'
-    ) || '/';
+    maintenancePath(url.searchParams.get('path') || '/');
 
   /*
    * Admin is ALWAYS outside public
    * maintenance.
    */
   if (
-    pathname === '/admin' ||
-    pathname.startsWith(
-      '/admin/'
-    )
+    maintenanceBypass(pathname)
   ) {
     return NextResponse.json(
       {
@@ -132,7 +130,7 @@ export async function GET(
           process.env.NODE_ENV ===
           'development'
             ? error instanceof Error
-              ? error.message
+              ? userFacingError(error)
               : String(error)
             : 'Maintenance service unavailable.',
       },

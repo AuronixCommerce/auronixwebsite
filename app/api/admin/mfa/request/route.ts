@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/user-facing-error';
 import { createHmac, randomInt } from 'crypto';
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
@@ -18,5 +19,5 @@ export async function POST(request: Request) {
     await adminDb.ref(`adminMfaChallenges/${decoded.uid}`).set({ codeHash: hash, attempts: 0, expiresAt, sentAt: Date.now(), device: String(body?.device || '').slice(0, 200) });
     await sendAdminMfaCodeEmail({ email, code, expiresAt, device: String(body?.device || '').slice(0, 100) });
     return NextResponse.json({ success: true, required: true, emailMasked: email.replace(/^(.{2}).*(@.*)$/, '$1••••$2') });
-  } catch (error) { const protectedError = publicRequestErrorResponse(error); if (protectedError) return NextResponse.json(protectedError.body, { status: protectedError.status }); return NextResponse.json({ error: error instanceof Error ? error.message : 'Unable to request security code.' }, { status: 500 }); }
+  } catch (error) { const protectedError = publicRequestErrorResponse(error); if (protectedError) return NextResponse.json(protectedError.body, { status: protectedError.status }); return NextResponse.json({ error: error instanceof Error ? userFacingError(error) : 'Unable to request security code.' }, { status: 500 }); }
 }

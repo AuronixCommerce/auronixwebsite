@@ -1,4 +1,5 @@
-﻿'use client';
+'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useState } from 'react';
@@ -40,7 +41,7 @@ export default function SellerSettingsPage() {
         website: data.website || '',
       });
 
-      } catch (loadError) { setError(loadError instanceof Error ? loadError.message : 'Unable to load settings.'); }
+      } catch (loadError) { setError(loadError instanceof Error ? userFacingError(loadError) : 'Unable to load settings.'); }
       finally { setLoading(false); }
     });
   }, []);
@@ -58,7 +59,7 @@ export default function SellerSettingsPage() {
       }) });
       setMessage('Settings saved successfully.');
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Unable to save settings.');
+      setError(saveError instanceof Error ? userFacingError(saveError) : 'Unable to save settings.');
     } finally {
       setSaving(false);
     }

@@ -1,4 +1,4 @@
-﻿export type SitePageDefinition = {
+export type SitePageDefinition = {
   id: string;
   path: string;
   title: string;
@@ -154,6 +154,17 @@ export const SITE_PAGES: SitePageDefinition[] = [
     category: 'Seller',
     section: 'seller',
   },
+  { id: 'seller-login', path: '/seller/login', title: 'Seller Login', category: 'Seller', section: 'seller' },
+  { id: 'seller-activate', path: '/seller/activate', title: 'Seller Account Activation', category: 'Seller', section: 'seller' },
+  { id: 'seller-application-track', path: '/seller/application/track', title: 'Seller Application Tracking', category: 'Seller', section: 'seller' },
+  { id: 'seller-dashboard', path: '/seller/dashboard', title: 'Seller Dashboard', category: 'Seller', section: 'seller' },
+  { id: 'seller-products', path: '/seller/dashboard/products', title: 'Seller Products', category: 'Seller', section: 'seller' },
+  { id: 'seller-catalogs', path: '/seller/dashboard/catalogs', title: 'Seller Catalogs', category: 'Seller', section: 'seller' },
+  { id: 'seller-profile', path: '/seller/profile', title: 'Seller Profile', category: 'Seller', section: 'seller' },
+  { id: 'seller-settings', path: '/seller/settings', title: 'Seller Settings', category: 'Seller', section: 'seller' },
+  { id: 'seller-notifications', path: '/seller/notifications', title: 'Seller Notifications', category: 'Seller', section: 'seller' },
+  { id: 'seller-support', path: '/seller/support', title: 'Seller Support', category: 'Seller', section: 'seller' },
+  { id: 'seller-support-chat', path: '/seller/support/chat', title: 'Seller Support Chat', category: 'Seller', section: 'seller' },
   {
     id: 'seller-policy',
     path: '/seller/policy',

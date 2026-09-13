@@ -214,6 +214,7 @@ export interface SellerApplication extends TimestampedRecord {
 }
 
 export type SellerApplicationStatus =
+  | 'changes_requested'
   | 'pending'
   | 'under_review'
   | 'approved'

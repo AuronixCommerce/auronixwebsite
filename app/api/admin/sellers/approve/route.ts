@@ -1,4 +1,5 @@
-﻿import { NextResponse } from 'next/server';
+import { userFacingError } from '@/lib/user-facing-error';
+import { NextResponse } from 'next/server';
 
 import { requireAdmin } from '@/lib/server-auth';
 import { adminDb } from '@/lib/firebase-admin';
@@ -395,7 +396,7 @@ invitationUrl,
 
         invitationError:
           emailError instanceof Error
-            ? emailError.message
+            ? userFacingError(emailError)
             : 'Seller invitation email failed.',
 
         updatedAt:
@@ -416,7 +417,7 @@ invitationUrl,
       {
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to approve seller application.',
       },
       {

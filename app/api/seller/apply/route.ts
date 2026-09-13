@@ -1,3 +1,5 @@
+import { userFacingError } from '@/lib/user-facing-error';
+import { createTrackingId, trackingHash, notifySellerApplication } from '@/lib/seller-tracking';
 import { NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 
@@ -10,7 +12,7 @@ export const runtime = 'nodejs';
 
 const SELLER_POLICY_VERSION = '2026-08-15';
 const APPLICATION_VERSION = 'seller-application-v7-resumable-email-verified';
-const ACTIVE_APPLICATION_STATUSES = new Set(['pending', 'screening', 'approved', 'invited', 'active']);
+const ACTIVE_APPLICATION_STATUSES = new Set(['pending', 'screening', 'under_review', 'changes_requested', 'approved', 'invited', 'active']);
 const emailKey = (email: string) => createHash('sha256').update(email).digest('hex');
 
 function text(value: unknown): string {
@@ -127,8 +129,10 @@ export async function POST(request: Request) {
     }
 
     const timestamp = Date.now();
+    const trackingId = createTrackingId();
     const application = {
       id: applicationId,
+      trackingId,
       applicationVersion: APPLICATION_VERSION,
       source: 'seller-application',
       status: 'pending',
@@ -174,18 +178,21 @@ export async function POST(request: Request) {
 
     try {
       await applicationRef.set(application);
-      await adminDb.ref(`sellerApplicationDrafts/${draftId}`).update({ status: 'submitted', submittedAt: timestamp, applicationId, updatedAt: timestamp });
-      await adminDb.ref(`sellerApplicationResumeIndex/${resumeCodeHash}`).remove();
+      await adminDb.ref(`sellerApplicationTrackingIndex/${trackingHash(trackingId)}`).set({ applicationId });
+      await adminDb.ref(`sellerApplicationDrafts/${draftId}`).update({ status: 'submitted', submittedAt: timestamp, applicationId, trackingId, updatedAt: timestamp });
+      // Retain the private resume lookup so returning applicants can reach tracking.
     } catch (persistenceError) {
       await applicationRef.remove().catch(() => undefined);
+      await adminDb.ref(`sellerApplicationTrackingIndex/${trackingHash(trackingId)}`).remove().catch(() => undefined);
       await emailIndexRef.transaction((current) => current?.applicationId === applicationId ? null : current).catch(() => undefined);
       throw persistenceError;
     }
 
-    return NextResponse.json({ success: true, applicationId });
+    const emailSent = await notifySellerApplication(applicationId, application, 'Your Auronix seller application is in progress', 'Your application was submitted successfully and is awaiting review. Your resume ID has been replaced by the tracking ID below.');
+    return NextResponse.json({ success: true, applicationId, trackingId, emailSent });
   } catch (error) {
     const protectedError = publicRequestErrorResponse(error); if (protectedError) return NextResponse.json(protectedError.body, { status: protectedError.status });
-    console.error('Seller application submission failed:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Seller application submission failed:', error instanceof Error ? userFacingError(error) : 'Unknown error');
     return NextResponse.json(
       { success: false, error: 'Unable to submit your application right now. Please retry.', code: 'APPLICATION_SUBMISSION_FAILED' },
       { status: 500 }

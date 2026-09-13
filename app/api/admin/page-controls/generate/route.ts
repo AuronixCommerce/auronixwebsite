@@ -1,4 +1,5 @@
-﻿import { NextResponse } from 'next/server';
+import { userFacingError } from '@/lib/user-facing-error';
+import { NextResponse } from 'next/server';
 
 import { requireAdmin } from '@/lib/server-auth';
 
@@ -127,7 +128,7 @@ ${incident || 'Temporary maintenance.'}
         success: false,
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to generate message.',
       },
       { status: 500 }

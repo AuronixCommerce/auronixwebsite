@@ -1,4 +1,5 @@
 'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 
 import {
   FormEvent,
@@ -167,7 +168,7 @@ export default function CampaignForm({
     ) {
       setError(
         submissionError instanceof Error
-          ? submissionError.message
+          ? userFacingError(submissionError)
           : 'Unable to submit your information.'
       );
     } finally {

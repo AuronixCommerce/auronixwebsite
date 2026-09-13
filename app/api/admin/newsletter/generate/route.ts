@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/user-facing-error';
 import { adminDb } from '@/lib/firebase-admin';
 
 import { NextResponse } from 'next/server';
@@ -662,7 +663,7 @@ ${instructions || 'Choose the best campaign format automatically.'}
 
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to generate campaign.',
       },
       {

@@ -1,4 +1,6 @@
-﻿'use client';
+'use client';
+import { readApplicationPrefill } from '@/lib/application-prefill';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import {
@@ -431,6 +433,11 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
   >([]);
 
   const [input, setInput] = useState('');
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('from') !== 'application') return;
+    const value = readApplicationPrefill('auronix-application-ai');
+    if (value) setInput(value.message);
+  }, []);
 
   const [loading, setLoading] = useState(true);
 
@@ -856,7 +863,7 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
 
       setError(
         caught instanceof Error
-          ? caught.message
+          ? userFacingError(caught)
           : 'Sorry, I am temporarily unable to respond.'
       );
     } finally {

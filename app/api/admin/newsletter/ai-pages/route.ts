@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/user-facing-error';
 import {
   NextResponse,
 } from 'next/server';
@@ -297,7 +298,7 @@ export async function GET(
 
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to load AI generated pages.',
       },
       {

@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/user-facing-error';
 import {
   NextResponse,
 } from 'next/server';
@@ -371,7 +372,7 @@ export async function POST(
 
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to submit the form.',
       },
       {

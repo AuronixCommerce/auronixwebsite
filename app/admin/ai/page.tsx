@@ -1,4 +1,5 @@
 'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useState } from 'react';
@@ -134,7 +135,7 @@ export default function AdminAIPage() {
     } catch (error) {
       notifyAction(
         error instanceof Error
-          ? error.message
+          ? userFacingError(error)
           : 'Unable to save AI settings.'
       );
     } finally {

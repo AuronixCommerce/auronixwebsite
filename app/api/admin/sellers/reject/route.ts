@@ -1,4 +1,6 @@
-﻿import { NextResponse } from 'next/server';
+import { userFacingError } from '@/lib/user-facing-error';
+import { notifySellerApplication } from '@/lib/seller-tracking';
+import { NextResponse } from 'next/server';
 
 import { requireAdmin } from '@/lib/server-auth';
 import { adminDb } from '@/lib/firebase-admin';
@@ -206,6 +208,7 @@ export async function POST(
 
       rejectionReason:
         reason,
+      reviewMessage: reason,
 
       /*
        * Keep contact information auditable.
@@ -232,6 +235,8 @@ export async function POST(
      * it can be called separately, but the application
      * must still successfully transition to rejected.
      */
+    const emailSent = validEmail ? await notifySellerApplication(applicationId, application, 'An update on your Auronix seller application', `Your application review is complete.\n\n${reason}\n\nYou can view the decision in application tracking or contact support with questions.`) : false;
+
     return NextResponse.json({
       success:
         true,
@@ -241,6 +246,7 @@ export async function POST(
 
       emailAvailable:
         validEmail,
+      emailSent,
     });
   } catch (
     error
@@ -254,7 +260,7 @@ export async function POST(
       {
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to reject seller application.',
       },
       {

@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/user-facing-error';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
@@ -18,5 +19,5 @@ export async function POST(request: Request) {
     await Promise.all([challengeRef.remove(), adminDb.ref(`adminSessions/${decoded.uid}/${session.id}`).set({ id: session.id, device, userAgent: String(request.headers.get('user-agent') || '').slice(0, 500), createdAt: Date.now(), lastSeenAt: Date.now(), expiresAt })]);
     await writeAuditLog({ actorUid: decoded.uid, actorEmail: decoded.email || '', action: 'ADMIN_MFA_VERIFIED', targetType: 'adminSession', targetId: session.id, summary: `New admin session verified for ${device}.`, request });
     const response = NextResponse.json({ success: true, expiresAt }); response.cookies.set(ADMIN_SESSION_COOKIE, session.value, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', path: '/', expires: new Date(expiresAt) }); return response;
-  } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : 'Unable to verify security code.' }, { status: 500 }); }
+  } catch (error) { return NextResponse.json({ error: error instanceof Error ? userFacingError(error) : 'Unable to verify security code.' }, { status: 500 }); }
 }

@@ -1,4 +1,5 @@
 'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import { FormEvent, useState, useId } from 'react';
@@ -103,6 +104,8 @@ export default function SellerApplyPage() {
   const [emailBusy, setEmailBusy] = useState(false);
   const [copiedResume, setCopiedResume] = useState(false);
   const [submittedId, setSubmittedId] = useState('');
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
+  const [notificationPending, setNotificationPending] = useState(false);
 
   const updateField = <K extends keyof FormState>(field: K, value: FormState[K]) => {
     setError('');
@@ -130,7 +133,7 @@ export default function SellerApplyPage() {
       setDraftId(data.draftId); setResumeId(data.resumeId); setStep(2);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (draftError) {
-      setError(draftError instanceof Error ? draftError.message : 'Progress could not be saved. Press Continue to retry.');
+      setError(draftError instanceof Error ? userFacingError(draftError) : 'Progress could not be saved. Press Continue to retry.');
     } finally {
       setSavingDraft(false);
     }
@@ -140,11 +143,12 @@ export default function SellerApplyPage() {
     setSavingDraft(true); setError('');
     try {
       const data = await draftRequest({ action: 'resume', resumeId: resumeInput });
+      if (data.submitted) { setSubmittedId(data.trackingId); setAlreadySubmitted(true); setSubmitted(true); setResumeOpen(false); return; }
       setDraftId(data.draftId); setResumeId(data.resumeId); setStep(data.step || 1);
       setForm(current => ({ ...current, ...(data.form || {}) }));
       setEmailVerified(Boolean(data.emailVerified)); setResumeOpen(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (resumeError) { setError(resumeError instanceof Error ? resumeError.message : 'Unable to resume application.'); }
+    } catch (resumeError) { setError(resumeError instanceof Error ? userFacingError(resumeError) : 'Unable to resume application.'); }
     finally { setSavingDraft(false); }
   };
 
@@ -152,7 +156,7 @@ export default function SellerApplyPage() {
     if (!draftId || !resumeId) return;
     setSavingDraft(true); setError('');
     try { await draftRequest({ action: 'save', draftId, resumeId, form, step: nextStep }); setStep(nextStep); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-    catch (saveError) { setError(saveError instanceof Error ? saveError.message : 'Unable to save this step.'); }
+    catch (saveError) { setError(saveError instanceof Error ? userFacingError(saveError) : 'Unable to save this step.'); }
     finally { setSavingDraft(false); }
   };
 
@@ -161,14 +165,14 @@ export default function SellerApplyPage() {
     if (!form.preferredContact || !validEmail(selectedEmail)) { setError('Select personal or business email and enter a valid address.'); return; }
     setEmailBusy(true); setError('');
     try { await draftRequest({ action: 'email-request', draftId, resumeId, emailType: form.preferredContact, email: selectedEmail }); setEmailCodeSent(true); }
-    catch (emailError) { setError(emailError instanceof Error ? emailError.message : 'Unable to send email code.'); }
+    catch (emailError) { setError(emailError instanceof Error ? userFacingError(emailError) : 'Unable to send email code.'); }
     finally { setEmailBusy(false); }
   };
 
   const verifyEmailCode = async () => {
     setEmailBusy(true); setError('');
     try { await draftRequest({ action: 'email-verify', draftId, resumeId, code: emailOtp }); setEmailVerified(true); setEmailOtp(''); }
-    catch (emailError) { setError(emailError instanceof Error ? emailError.message : 'Unable to verify email code.'); }
+    catch (emailError) { setError(emailError instanceof Error ? userFacingError(emailError) : 'Unable to verify email code.'); }
     finally { setEmailBusy(false); }
   };
 
@@ -245,13 +249,14 @@ export default function SellerApplyPage() {
         throw new Error(data.error || 'Unable to submit your application.');
       }
 
-      setSubmittedId(String(data.applicationId || ''));
+      setSubmittedId(String(data.trackingId || data.applicationId || ''));
+      setNotificationPending(data.emailSent === false);
       setSubmitted(true);
       setForm(INITIAL_FORM);
     } catch (submitError) {
       setError(
         submitError instanceof Error
-          ? submitError.message
+          ? userFacingError(submitError)
           : 'Unable to submit your application.'
       );
     } finally {
@@ -268,11 +273,14 @@ export default function SellerApplyPage() {
               <CheckCircle2 className="h-8 w-8 text-green-600" />
             </div>
             <div className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-accent">APPLICATION RECEIVED</div>
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight">Thank you for applying.</h1>
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight">{alreadySubmitted ? 'Your application is in progress.' : 'Thank you for applying.'}</h1>
             <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-foreground-muted">
               Your seller application has been received successfully and will now go through the Auronix screening process.
             </p>
-            {submittedId && <div className="mx-auto mt-5 max-w-sm rounded-2xl border border-border bg-background p-4"><div className="text-xs uppercase tracking-wider text-foreground-muted">Application ID</div><div className="mt-1 break-all font-mono text-sm font-semibold">{submittedId}</div></div>}
+            {submittedId && <div className="mx-auto mt-5 max-w-sm rounded-2xl border border-border bg-background p-4"><div className="text-xs uppercase tracking-wider text-foreground-muted">Tracking ID</div><div className="mt-1 break-all font-mono text-sm font-semibold">{submittedId}</div></div>}
+            <p className="mt-5 text-sm text-foreground-muted">Your resume ID is now a tracking reference. Verify your application email to see progress, make available corrections, or contact support.</p>
+            {notificationPending && <p role="status" className="mt-3 text-sm">Your application is saved. The confirmation email is delayed; save your tracking ID above.</p>}
+            <Link className="ac-button mt-6" href={`/seller/application/track?id=${encodeURIComponent(submittedId)}`}>Track your application <ArrowRight size={18}/></Link>
             <Link href="/" className="mt-8 inline-flex rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground">
               Return to Auronix
             </Link>
@@ -291,7 +299,7 @@ export default function SellerApplyPage() {
           <p className="mt-5 text-base leading-7 text-foreground-muted sm:text-lg">
             Complete five secure steps. Every completed step is saved so you can return with your private resume ID.
           </p>
-          <ol className="ac-application-steps" aria-label="Application steps">{['Contact details','Verify email','Business information','Address & profile','Review & submit'].map((label, i) => <li key={label} aria-current={step === i + 1 ? 'step' : undefined} data-complete={step > i + 1}><span>{step > i + 1 ? <CheckCircle2 size={18}/> : String(i + 1).padStart(2, '0')}</span><strong>{label}</strong></li>)}</ol>
+          <Link href="/seller/application/track" className="mt-5 inline-flex text-sm underline">Already submitted? Track your application</Link><ol className="ac-application-steps" aria-label="Application steps">{['Contact details','Verify email','Business information','Address & profile','Review & submit'].map((label, i) => <li key={label} aria-current={step === i + 1 ? 'step' : undefined} data-complete={step > i + 1}><span>{step > i + 1 ? <CheckCircle2 size={18}/> : String(i + 1).padStart(2, '0')}</span><strong>{label}</strong></li>)}</ol>
         </aside>
 
         <form onSubmit={submitApplication} className="ac-application-form space-y-6">

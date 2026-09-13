@@ -1,4 +1,5 @@
-﻿import { NextResponse } from 'next/server';
+import { userFacingError } from '@/lib/user-facing-error';
+import { NextResponse } from 'next/server';
 
 import { adminDb } from '@/lib/firebase-admin';
 import { requireAdmin } from '@/lib/server-auth';
@@ -41,7 +42,7 @@ export async function GET(
       {
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to load popup settings.',
       },
       {
@@ -136,7 +137,7 @@ export async function POST(
       {
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to save popup.',
       },
       {

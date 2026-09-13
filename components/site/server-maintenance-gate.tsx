@@ -1,4 +1,4 @@
-﻿import {
+import {
   headers,
 } from 'next/headers';
 
@@ -27,7 +27,7 @@ function getPathname(): string {
   const requestHeaders = headers();
 
   const pathname =
-    requestHeaders.get(
+    requestHeaders.get('x-auronix-pathname') || requestHeaders.get(
       'x-pathname'
     ) ||
     requestHeaders.get(

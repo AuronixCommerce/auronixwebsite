@@ -1,4 +1,5 @@
 'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 
 import { AnimatedNumber, Spinner } from '@/components/design/primitives';
 import { useEffect, useState } from 'react';
@@ -33,7 +34,7 @@ export default function SellerDashboardPage() {
         setProfile(data.profile); setApplication(data.application);
         setCounts({ products: data.products.length, catalogs: data.catalogs.length, tickets: data.tickets.length });
         setLastSynced(data.serverTime || Date.now()); setError('');
-      } catch (loadError) { if (!quiet) setError(loadError instanceof Error ? loadError.message : 'Unable to load the dashboard.'); }
+      } catch (loadError) { if (!quiet) setError(loadError instanceof Error ? userFacingError(loadError) : 'Unable to load the dashboard.'); }
       finally { setLoading(false); setSyncing(false); } };
       await load();
       timer = setInterval(() => load(true), 15000);
@@ -45,7 +46,7 @@ export default function SellerDashboardPage() {
 
   const accountActive = profile?.status === 'active' && application?.status === 'active';
   const profileComplete = Boolean(profile?.name && profile?.businessName && profile?.phone && profile?.website);
-  const manualRefresh = async () => { setSyncing(true); try { await auth.currentUser?.reload(); setEmailVerified(Boolean(auth.currentUser?.emailVerified)); const { sellerWorkspaceRequest } = await import('@/lib/seller-workspace-client'); const data = await sellerWorkspaceRequest(); setProfile(data.profile); setApplication(data.application); setCounts({ products: data.products.length, catalogs: data.catalogs.length, tickets: data.tickets.length }); setLastSynced(data.serverTime || Date.now()); setError(''); } catch (refreshError) { setError(refreshError instanceof Error ? refreshError.message : 'Unable to refresh verification status.'); } finally { setSyncing(false); } };
+  const manualRefresh = async () => { setSyncing(true); try { await auth.currentUser?.reload(); setEmailVerified(Boolean(auth.currentUser?.emailVerified)); const { sellerWorkspaceRequest } = await import('@/lib/seller-workspace-client'); const data = await sellerWorkspaceRequest(); setProfile(data.profile); setApplication(data.application); setCounts({ products: data.products.length, catalogs: data.catalogs.length, tickets: data.tickets.length }); setLastSynced(data.serverTime || Date.now()); setError(''); } catch (refreshError) { setError(refreshError instanceof Error ? userFacingError(refreshError) : 'Unable to refresh verification status.'); } finally { setSyncing(false); } };
 
   if (loading) return <SellerLayout><LoadingState /></SellerLayout>;
   if (error) return <SellerLayout><div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6 text-sm text-red-700 dark:text-red-300">{error}</div></SellerLayout>;
@@ -67,7 +68,7 @@ export default function SellerDashboardPage() {
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <VerificationItem label="Seller account" complete={accountActive} detail={accountActive ? 'Active and connected' : `Application: ${application?.status || 'unavailable'}`} href="/seller/support" />
-          <VerificationItem label="Email address" complete={emailVerified} detail={emailVerified ? 'Firebase email verified' : 'Email verification pending'} href="/seller/settings" />
+          <VerificationItem label="Email address" complete={emailVerified} detail={emailVerified ? 'Email verified with Auronix Auth' : 'Email verification pending'} href="/seller/settings" />
           <VerificationItem label="Business profile" complete={profileComplete} detail={profileComplete ? 'Required profile fields complete' : 'Add phone, website, and business details'} href="/seller/settings" />
         </div>
       </div>

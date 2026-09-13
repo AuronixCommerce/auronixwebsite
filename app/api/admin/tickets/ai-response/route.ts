@@ -1,4 +1,5 @@
-﻿import { NextResponse } from 'next/server';
+import { userFacingError } from '@/lib/user-facing-error';
+import { NextResponse } from 'next/server';
 
 import { adminDb } from '@/lib/firebase-admin';
 import { requireAdmin } from '@/lib/server-auth';
@@ -153,7 +154,7 @@ ${conversation}
       {
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to generate AI response.',
       },
       { status: 500 }

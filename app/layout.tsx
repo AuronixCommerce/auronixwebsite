@@ -1,4 +1,5 @@
-﻿import './globals.css';
+import { MaintenanceRefresh } from '@/components/site/maintenance-refresh';
+import './globals.css';
 import './mobile-responsive.css';
 import './interface.css';
 import './support-interface.css';
@@ -254,7 +255,7 @@ export default async function RootLayout({
               'var(--font-inter), Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
           }}
         >
-          <ThemeProvider><MaintenanceShell
+          <ThemeProvider><MaintenanceRefresh serverPath={pathname} blocked={true} /><MaintenanceShell
             globalActive={
               globalActive
             }
@@ -315,6 +316,7 @@ export default async function RootLayout({
         }}
       >
         <ThemeProvider>
+          <MaintenanceRefresh serverPath={pathname} blocked={false} />
           <PublicRuntime>{children}</PublicRuntime>
           <CookieConsent />
           <ConfirmActionHost />

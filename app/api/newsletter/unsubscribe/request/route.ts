@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/user-facing-error';
 import { createHash, randomBytes, randomInt } from 'crypto';
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, message: 'If this address is subscribed, a confirmation email has been sent.' });
   } catch (error) {
     const protectedError = publicRequestErrorResponse(error); if (protectedError) return NextResponse.json(protectedError.body, { status: protectedError.status });
-    console.error('Newsletter unsubscribe request failed:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Newsletter unsubscribe request failed:', error instanceof Error ? userFacingError(error) : 'Unknown error');
     return NextResponse.json({ success: false, error: 'Unable to send the confirmation email right now. Please retry.' }, { status: 500 });
   }
 }

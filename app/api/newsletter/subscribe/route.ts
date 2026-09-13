@@ -1,4 +1,5 @@
-﻿import { NextResponse } from 'next/server';
+import { userFacingError } from '@/lib/user-facing-error';
+import { NextResponse } from 'next/server';
 
 import {
   isValidNewsletterEmail,
@@ -120,7 +121,7 @@ export async function POST(
         success: false,
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to subscribe to the newsletter.',
       },
       {

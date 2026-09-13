@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/user-facing-error';
 import { NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { hashInvitationToken, normalizeEmail } from '@/lib/server-seller-invitations';
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Seller activation failed:', error?.code || (error instanceof Error ? error.message : 'Unknown error'));
+    console.error('Seller activation failed:', error?.code || (error instanceof Error ? userFacingError(error) : 'Unknown error'));
     if (error?.code === 'auth/email-already-exists') return response('An account already exists for this email. Sign in or reset your password.', 'ACCOUNT_EXISTS', 409);
     if (error?.code === 'auth/invalid-password') return response('Choose a stronger password with at least 8 characters.', 'INVALID_PASSWORD', 400);
     return response('Unable to create the seller account right now. Please retry or contact support.', 'ACTIVATION_FAILED', 500);

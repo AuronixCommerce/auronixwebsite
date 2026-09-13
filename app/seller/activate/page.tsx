@@ -1,4 +1,5 @@
-﻿'use client';
+'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import { FormEvent, useState } from 'react';
@@ -68,7 +69,7 @@ export default function SellerActivatePage() {
     } catch (err) {
       setError(
         err instanceof Error
-          ? err.message
+          ? userFacingError(err)
           : 'Unable to create seller account.'
       );
     } finally {

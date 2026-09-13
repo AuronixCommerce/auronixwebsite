@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/user-facing-error';
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { requireAdmin } from '@/lib/server-auth';
@@ -19,6 +20,6 @@ export async function POST(request: Request) {
     await writeAuditLog({ actorUid: admin.uid, actorEmail: admin.email || '', action: `NEWSLETTER_SUBSCRIBER_${action.toUpperCase()}`, targetType: 'newsletterSubscriber', targetId: id, summary: `${action} ${record.email || 'subscriber'}`, request });
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Unable to update subscriber.' }, { status: 403 });
+    return NextResponse.json({ error: error instanceof Error ? userFacingError(error) : 'Unable to update subscriber.' }, { status: 403 });
   }
 }

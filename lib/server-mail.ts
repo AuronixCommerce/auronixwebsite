@@ -30,7 +30,7 @@ const cta = (label: string, url: string) => `<table role="presentation" cellspac
 async function sendWithSender(sender: string, options: MailOptions) {
   if (!options.to || (Array.isArray(options.to) && !options.to.length)) throw new Error('Email recipient is required.');
   if (!SMTP_PASSWORD) throw new Error('Email service is not configured. Set SMTP_PASSWORD.');
-  const transporter = nodemailer.createTransport({ host: SMTP_HOST, port: SMTP_PORT, secure: SMTP_SECURE, auth: { user: SMTP_USER, pass: SMTP_PASSWORD } });
+  const transporter = nodemailer.createTransport({ connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000, host: SMTP_HOST, port: SMTP_PORT, secure: SMTP_SECURE, auth: { user: SMTP_USER, pass: SMTP_PASSWORD } });
   return transporter.sendMail({ from: { name: options.fromName || MAIL_FROM_NAME, address: sender }, to: options.to, subject: options.subject, html: options.html, text: options.text, replyTo: options.replyTo || SUPPORT_EMAIL });
 }
 
@@ -99,6 +99,6 @@ export async function sendTicketResponseEmail(input: any, positionalSubject?: st
 
 export async function verifyMailConnection() {
   if (!SMTP_PASSWORD) throw new Error('Email service is not configured. Set SMTP_PASSWORD.');
-  const transporter = nodemailer.createTransport({ host: SMTP_HOST, port: SMTP_PORT, secure: SMTP_SECURE, auth: { user: SMTP_USER, pass: SMTP_PASSWORD } });
+  const transporter = nodemailer.createTransport({ connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000, host: SMTP_HOST, port: SMTP_PORT, secure: SMTP_SECURE, auth: { user: SMTP_USER, pass: SMTP_PASSWORD } });
   await transporter.verify(); return true;
 }

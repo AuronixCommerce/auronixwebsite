@@ -1,4 +1,5 @@
 'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -191,7 +192,7 @@ export default function AdminBlogPage() {
     } catch (error) {
       notifyAction(
         error instanceof Error
-          ? error.message
+          ? userFacingError(error)
           : 'Unable to save blog post.'
       );
     } finally {
@@ -220,7 +221,7 @@ export default function AdminBlogPage() {
     } catch (error) {
       notifyAction(
         error instanceof Error
-          ? error.message
+          ? userFacingError(error)
           : 'Unable to update publication status.'
       );
     }
@@ -244,7 +245,7 @@ export default function AdminBlogPage() {
     } catch (error) {
       notifyAction(
         error instanceof Error
-          ? error.message
+          ? userFacingError(error)
           : 'Unable to delete blog post.'
       );
     }

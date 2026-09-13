@@ -1,4 +1,5 @@
-﻿'use client';
+'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import {
@@ -853,7 +854,7 @@ export function AIChat() {
     } catch (caught) {
       setTicketStep('message');
       setLoading(false);
-      askAgain(caught instanceof Error ? caught.message : 'I could not create the ticket. Please try again.');
+      askAgain(caught instanceof Error ? userFacingError(caught) : 'I could not create the ticket. Please try again.');
     }
   };
 
@@ -1017,7 +1018,7 @@ export function AIChat() {
 
       setError(
         caught instanceof Error
-          ? caught.message
+          ? userFacingError(caught)
           : 'Sorry, I am temporarily unable to respond.'
       );
     } finally {

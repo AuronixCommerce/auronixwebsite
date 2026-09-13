@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/user-facing-error';
 import { createHash, timingSafeEqual } from 'crypto';
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const protectedError = publicRequestErrorResponse(error);
     if (protectedError) return NextResponse.json(protectedError.body, { status: protectedError.status });
-    console.error('Newsletter confirmation failed:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Newsletter confirmation failed:', error instanceof Error ? userFacingError(error) : 'Unknown error');
     return NextResponse.json({ success: false, error: 'Unable to confirm your subscription right now.' }, { status: 500 });
   }
 }

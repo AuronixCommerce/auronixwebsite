@@ -1,4 +1,5 @@
-﻿'use client';
+'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import {
@@ -569,7 +570,7 @@ export default function AdminPagesManagerPage() {
     ) {
       setNotice(
         error instanceof Error
-          ? error.message
+          ? userFacingError(error)
           : 'Unable to load page controls.'
       );
     } finally {
@@ -751,7 +752,7 @@ export default function AdminPagesManagerPage() {
     ) {
       setNotice(
         error instanceof Error
-          ? error.message
+          ? userFacingError(error)
           : 'Unable to save global settings.'
       );
     } finally {
@@ -772,7 +773,7 @@ export default function AdminPagesManagerPage() {
         ...old,
         maintenanceEnabled:
           nextEnabled,
-        ...(!nextEnabled ? { scheduleEnabled: false, scheduleStartAt: null, scheduleEndAt: null } : {}),
+        ...(!nextEnabled ? { scheduleEnabled: false, scheduleStartAt: null, scheduleEndAt: null, automaticFullSiteShutdown: false } : {}),
       })
     );
 
@@ -797,7 +798,7 @@ export default function AdminPagesManagerPage() {
 
                 maintenanceEnabled:
                   nextEnabled,
-                ...(!nextEnabled ? { scheduleEnabled: false, scheduleStartAt: null, scheduleEndAt: null } : {}),
+                ...(!nextEnabled ? { scheduleEnabled: false, scheduleStartAt: null, scheduleEndAt: null, automaticFullSiteShutdown: false } : {}),
               }),
           }
         );
@@ -822,7 +823,7 @@ export default function AdminPagesManagerPage() {
 
         maintenanceEnabled:
           nextEnabled,
-        ...(!nextEnabled ? { scheduleEnabled: false, scheduleStartAt: null, scheduleEndAt: null } : {}),
+        ...(!nextEnabled ? { scheduleEnabled: false, scheduleStartAt: null, scheduleEndAt: null, automaticFullSiteShutdown: false } : {}),
       });
 
       setNotice(
@@ -835,7 +836,7 @@ export default function AdminPagesManagerPage() {
     ) {
       setNotice(
         error instanceof Error
-          ? error.message
+          ? userFacingError(error)
           : 'Unable to change maintenance mode.'
       );
     } finally {
@@ -870,7 +871,7 @@ export default function AdminPagesManagerPage() {
       setPages(old => ({ ...old, [selectedPage.path]: { ...EMPTY_PAGE, ...(data.page || next), path: selectedPage.path } }));
       setNotice(value ? `🚨 ${selectedPage.title} maintenance is now ON.` : `✅ ${selectedPage.title} maintenance is now fully OFF.`);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Unable to change page maintenance.');
+      setNotice(error instanceof Error ? userFacingError(error) : 'Unable to change page maintenance.');
       await load();
     } finally {
       setSaving(false);
@@ -887,7 +888,7 @@ export default function AdminPagesManagerPage() {
       await load();
       setNotice('✅ All website and page maintenance is fully OFF. Schedules and automatic reactivation were also disabled.');
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Unable to disable all maintenance.');
+      setNotice(error instanceof Error ? userFacingError(error) : 'Unable to disable all maintenance.');
     } finally {
       setSaving(false);
     }
@@ -904,6 +905,7 @@ export default function AdminPagesManagerPage() {
         ...old,
         aiMaintenanceEnabled:
           nextEnabled,
+        ...(!nextEnabled ? { aiScheduleEnabled: false, aiScheduleStartAt: null, aiScheduleEndAt: null } : {}),
       })
     );
 
@@ -928,6 +930,7 @@ export default function AdminPagesManagerPage() {
 
                 aiMaintenanceEnabled:
                   nextEnabled,
+                ...(!nextEnabled ? { aiScheduleEnabled: false, aiScheduleStartAt: null, aiScheduleEndAt: null } : {}),
               }),
           }
         );
@@ -952,6 +955,7 @@ export default function AdminPagesManagerPage() {
 
         aiMaintenanceEnabled:
           nextEnabled,
+        ...(!nextEnabled ? { aiScheduleEnabled: false, aiScheduleStartAt: null, aiScheduleEndAt: null } : {}),
       });
 
       setNotice(
@@ -974,7 +978,7 @@ export default function AdminPagesManagerPage() {
 
       setNotice(
         error instanceof Error
-          ? error.message
+          ? userFacingError(error)
           : 'Unable to change AI maintenance.'
       );
     } finally {
@@ -1068,7 +1072,7 @@ export default function AdminPagesManagerPage() {
     ) {
       setNotice(
         error instanceof Error
-          ? error.message
+          ? userFacingError(error)
           : 'Unable to save page.'
       );
     } finally {
@@ -1173,7 +1177,7 @@ export default function AdminPagesManagerPage() {
     ) {
       setNotice(
         error instanceof Error
-          ? error.message
+          ? userFacingError(error)
           : 'AI generation failed.'
       );
     } finally {
@@ -1274,7 +1278,7 @@ export default function AdminPagesManagerPage() {
     ) {
       setNotice(
         error instanceof Error
-          ? error.message
+          ? userFacingError(error)
           : 'AI generation failed.'
       );
     } finally {

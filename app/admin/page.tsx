@@ -1,4 +1,5 @@
 'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import {
@@ -494,7 +495,7 @@ export default function AdminDashboardPage() {
       ) {
         notifyAction(
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to update admin availability.'
         );
       } finally {
@@ -877,7 +878,7 @@ export default function AdminDashboardPage() {
 
           <p className="mt-2 text-sm leading-relaxed text-foreground-muted">
             Your administration workspace is connected to
-            Firebase Realtime Database. Admin availability controls
+            Auronix data services. Admin availability controls
             support automation, while Pages Manager provides
             independent public-site maintenance and announcement
             controls. Seller, supplier, partner, support, blog,

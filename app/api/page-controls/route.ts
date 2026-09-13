@@ -1,4 +1,5 @@
-﻿import { NextResponse } from 'next/server';
+import { resolveControls, controlSchedule, maintenanceBypass, maintenancePath } from '@/lib/maintenance-controls';
+import { NextResponse } from 'next/server';
 
 import { adminDb } from '@/lib/firebase-admin';
 
@@ -9,61 +10,6 @@ import {
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-
-function decodeKey(
-  key: string
-): string {
-  if (key === 'home') {
-    return '/';
-  }
-
-  return (
-    '/' +
-    key
-      .split('__')
-      .filter(Boolean)
-      .join('/')
-  );
-}
-
-function normalizePages(
-  value: unknown
-) {
-  if (
-    !value ||
-    typeof value !== 'object'
-  ) {
-    return {};
-  }
-
-  const output: Record<string, any> = {};
-
-  for (
-    const [key, raw] of Object.entries(
-      value as Record<string, any>
-    )
-  ) {
-    if (
-      !raw ||
-      typeof raw !== 'object'
-    ) {
-      continue;
-    }
-
-    const path =
-      typeof raw.path === 'string'
-        ? raw.path
-        : decodeKey(key);
-
-    output[path] = {
-      ...DEFAULT_PAGE_CONTROL,
-      ...raw,
-      path,
-    };
-  }
-
-  return output;
-}
 
 export async function GET(
   request: Request
@@ -79,34 +25,8 @@ export async function GET(
       ) || '/';
     const path = rawPath === '/' ? '/' : `/${rawPath.split('?')[0].split('#')[0].replace(/^\/+|\/+$/g, '')}`;
 
-    const snapshot =
-      await adminDb
-        .ref(
-          'sitePageControls'
-        )
-        .get();
-
-    const data =
-      snapshot.exists()
-        ? snapshot.val()
-        : {};
-
-    const global = {
-      ...DEFAULT_GLOBAL_CONTROL,
-      ...(data?.global || {}),
-    };
-
-    const pages =
-      normalizePages(
-        data?.pages
-      );
-
-    const page = {
-      ...DEFAULT_PAGE_CONTROL,
-      ...(pages[path] || {}),
-      path,
-    };
-
+    const snapshot = maintenanceBypass(maintenancePath(path)) ? null : await adminDb.ref('sitePageControls').get();
+    const { global, page, pages } = resolveControls(snapshot?.exists() ? snapshot.val() : {}, path);
     const now = Date.now();
 
     const scheduledPages = Object.values(pages)
@@ -125,23 +45,9 @@ export async function GET(
         endAt: item.scheduleEndAt ? Number(item.scheduleEndAt) : null,
       }));
 
-    if (
-      page.scheduleEnabled
-    ) {
-      if (
-        page.scheduleStartAt &&
-        now >= page.scheduleStartAt
-      ) {
-        page.maintenanceEnabled = true;
-      }
-
-      if (
-        page.scheduleEndAt &&
-        now >= page.scheduleEndAt
-      ) {
-        page.maintenanceEnabled = false;
-      }
-    }
+    // Keep manual flags distinct from schedule activity, as the status API does.
+    global.schedule = controlSchedule(global, now);
+    page.schedule = controlSchedule(page, now);
 
     if (
       page.popupUntilAt &&
@@ -171,11 +77,11 @@ export async function GET(
     );
 
     return NextResponse.json({
-      success: true,
+      success: false,
       global:
         DEFAULT_GLOBAL_CONTROL,
       page:
         DEFAULT_PAGE_CONTROL,
-    });
+    }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
   }
 }

@@ -1,4 +1,7 @@
-﻿import {
+import { userFacingError } from '@/lib/user-facing-error';
+import { resolveControls, maintenanceFlag } from '@/lib/maintenance-controls';
+export const dynamic = 'force-dynamic';
+import {
   NextResponse,
 } from 'next/server';
 
@@ -27,7 +30,7 @@ function text(
 function bool(
   value: unknown
 ): boolean {
-  return value === true;
+  return maintenanceFlag(value);
 }
 
 function numberOrNull(
@@ -69,66 +72,6 @@ function normalizePath(path: string): string {
   const value = String(path || '/').trim().split('?')[0].split('#')[0];
   if (!value || value === '/') return '/';
   return `/${value.replace(/^\/+|\/+$/g, '')}`;
-}
-
-function normalizePages(
-  value: unknown
-) {
-  if (
-    !value ||
-    typeof value !==
-      'object'
-  ) {
-    return {};
-  }
-
-  const result:
-    Record<
-      string,
-      any
-    > = {};
-
-  for (
-    const [
-      key,
-      raw,
-    ] of Object.entries(
-      value as Record<
-        string,
-        any
-      >
-    )
-  ) {
-    if (
-      !raw ||
-      typeof raw !==
-        'object'
-    ) {
-      continue;
-    }
-
-    const path =
-      typeof raw.path ===
-      'string'
-        ? raw.path
-        : key === 'home'
-        ? '/'
-        : '/' +
-          key
-            .split('__')
-            .filter(Boolean)
-            .join('/');
-
-    result[
-      path
-    ] = {
-      ...DEFAULT_PAGE_CONTROL,
-      ...raw,
-      path,
-    };
-  }
-
-  return result;
 }
 
 async function audit(
@@ -178,17 +121,8 @@ export async function GET(
       success:
         true,
 
-      global: {
-        ...DEFAULT_GLOBAL_CONTROL,
-
-        ...(data?.global ||
-          {}),
-      },
-
-      pages:
-        normalizePages(
-          data?.pages
-        ),
+      global: resolveControls(data, '/').global,
+      pages: resolveControls(data, '/').pages,
     });
   } catch (
     error
@@ -205,7 +139,7 @@ export async function GET(
 
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to load controls.',
       },
       {
@@ -277,51 +211,59 @@ export async function POST(
           ? oldSnapshot.val()
           : {};
 
+      const input = { ...oldValue, ...body };
       const payload = {
         ...DEFAULT_GLOBAL_CONTROL,
         ...oldValue,
 
         maintenanceEnabled:
           bool(
-            body.maintenanceEnabled
+            input.maintenanceEnabled
           ),
 
         maintenanceTitle:
           text(
-            body.maintenanceTitle
+            input.maintenanceTitle
           ) ||
           DEFAULT_GLOBAL_CONTROL.maintenanceTitle,
 
         maintenanceMessage:
           text(
-            body.maintenanceMessage
+            input.maintenanceMessage
           ) ||
           DEFAULT_GLOBAL_CONTROL.maintenanceMessage,
 
         scheduleEnabled:
           bool(
-            body.scheduleEnabled
+            input.scheduleEnabled
           ),
 
         scheduleStartAt:
           numberOrNull(
-            body.scheduleStartAt
+            input.scheduleStartAt
           ),
 
         scheduleEndAt:
           numberOrNull(
-            body.scheduleEndAt
+            input.scheduleEndAt
           ),
 
         automaticFullSiteShutdown:
           bool(
-            body.automaticFullSiteShutdown
+            input.automaticFullSiteShutdown
           ),
 
         automaticRecovery:
           bool(
-            body.automaticRecovery
+            input.automaticRecovery
           ),
+
+        aiMaintenanceEnabled: 'aiMaintenanceEnabled' in body ? bool(input.aiMaintenanceEnabled) : bool(oldValue.aiMaintenanceEnabled),
+        aiMaintenanceTitle: 'aiMaintenanceTitle' in body ? text(input.aiMaintenanceTitle) : text(oldValue.aiMaintenanceTitle),
+        aiMaintenanceMessage: 'aiMaintenanceMessage' in body ? text(input.aiMaintenanceMessage) : text(oldValue.aiMaintenanceMessage),
+        aiScheduleEnabled: 'aiScheduleEnabled' in body ? bool(input.aiScheduleEnabled) : bool(oldValue.aiScheduleEnabled),
+        aiScheduleStartAt: numberOrNull('aiScheduleStartAt' in body ? input.aiScheduleStartAt : oldValue.aiScheduleStartAt),
+        aiScheduleEndAt: numberOrNull('aiScheduleEndAt' in body ? input.aiScheduleEndAt : oldValue.aiScheduleEndAt),
 
         updatedAt:
           Date.now(),
@@ -397,6 +339,7 @@ export async function POST(
           ? oldSnapshot.val()
           : {};
 
+      const input = { ...oldValue, ...body };
       const payload = {
         ...DEFAULT_PAGE_CONTROL,
         ...oldValue,
@@ -405,82 +348,82 @@ export async function POST(
 
         maintenanceEnabled:
           bool(
-            body.maintenanceEnabled
+            input.maintenanceEnabled
           ),
 
         maintenanceTitle:
           text(
-            body.maintenanceTitle
+            input.maintenanceTitle
           ) ||
           DEFAULT_PAGE_CONTROL.maintenanceTitle,
 
         maintenanceMessage:
           text(
-            body.maintenanceMessage
+            input.maintenanceMessage
           ) ||
           DEFAULT_PAGE_CONTROL.maintenanceMessage,
 
         scheduleEnabled:
           bool(
-            body.scheduleEnabled
+            input.scheduleEnabled
           ),
 
         scheduleStartAt:
           numberOrNull(
-            body.scheduleStartAt
+            input.scheduleStartAt
           ),
 
         scheduleEndAt:
           numberOrNull(
-            body.scheduleEndAt
+            input.scheduleEndAt
           ),
 
         popupEnabled:
           bool(
-            body.popupEnabled
+            input.popupEnabled
           ),
 
         popupTitle:
           text(
-            body.popupTitle
+            input.popupTitle
           ) ||
           DEFAULT_PAGE_CONTROL.popupTitle,
 
         popupMessage:
           text(
-            body.popupMessage
+            input.popupMessage
           ),
 
         popupButtonText:
           text(
-            body.popupButtonText
+            input.popupButtonText
           ) ||
           DEFAULT_PAGE_CONTROL.popupButtonText,
 
         popupButtonUrl:
           text(
-            body.popupButtonUrl
+            input.popupButtonUrl
           ),
 
         popupFrequency:
-          body.popupFrequency ===
+          input.popupFrequency ===
             'once' ||
-          body.popupFrequency ===
+          input.popupFrequency ===
             'always'
-            ? body.popupFrequency
+            ? input.popupFrequency
             : 'session',
 
         popupUntilAt:
           numberOrNull(
-            body.popupUntilAt
+            input.popupUntilAt
           ),
 
         automaticMaintenanceEnabled:
-          bool(body.automaticMaintenanceEnabled),
+          bool(input.automaticMaintenanceEnabled),
 
         automaticRecoveryEnabled:
           bool(
-            body.automaticRecoveryEnabled
+            input.automaticRecoveryEnabled
           ),
 
         failureThreshold:
@@ -489,15 +432,22 @@ export async function POST(
             Math.min(
               10,
               Number(
-                body.failureThreshold
+                input.failureThreshold
               ) ||
                 3
             )
           ),
 
         adminBypassEnabled:
-          body.adminBypassEnabled !==
+          input.adminBypassEnabled !==
           false,
+
+        aiMaintenanceEnabled: 'aiMaintenanceEnabled' in body ? bool(input.aiMaintenanceEnabled) : bool(oldValue.aiMaintenanceEnabled),
+        aiMaintenanceTitle: 'aiMaintenanceTitle' in body ? text(input.aiMaintenanceTitle) : text(oldValue.aiMaintenanceTitle),
+        aiMaintenanceMessage: 'aiMaintenanceMessage' in body ? text(input.aiMaintenanceMessage) : text(oldValue.aiMaintenanceMessage),
+        aiScheduleEnabled: 'aiScheduleEnabled' in body ? bool(input.aiScheduleEnabled) : bool(oldValue.aiScheduleEnabled),
+        aiScheduleStartAt: numberOrNull('aiScheduleStartAt' in body ? input.aiScheduleStartAt : oldValue.aiScheduleStartAt),
+        aiScheduleEndAt: numberOrNull('aiScheduleEndAt' in body ? input.aiScheduleEndAt : oldValue.aiScheduleEndAt),
 
         updatedAt:
           Date.now(),
@@ -556,7 +506,7 @@ export async function POST(
 
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to update controls.',
       },
       {

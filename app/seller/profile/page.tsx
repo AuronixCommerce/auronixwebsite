@@ -1,4 +1,5 @@
-﻿'use client';
+'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useState } from 'react';
@@ -16,7 +17,7 @@ export default function SellerProfilePage() {
     return onAuthChange(async (user) => {
       if (!user) { setLoading(false); return; }
       try { const data = await sellerWorkspaceRequest(); setProfile(data.profile); }
-      catch (loadError) { setError(loadError instanceof Error ? loadError.message : 'Unable to load profile.'); }
+      catch (loadError) { setError(loadError instanceof Error ? userFacingError(loadError) : 'Unable to load profile.'); }
       finally { setLoading(false); }
     });
   }, []);

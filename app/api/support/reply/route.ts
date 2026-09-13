@@ -1,4 +1,5 @@
-﻿import { NextResponse } from 'next/server';
+import { userFacingError } from '@/lib/user-facing-error';
+import { NextResponse } from 'next/server';
 
 import { adminDb } from '@/lib/firebase-admin';
 import { generateGroqResponse } from '@/lib/server-groq';
@@ -238,7 +239,7 @@ Rules:
       {
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to process support reply.',
       },
       { status: 500 }

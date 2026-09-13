@@ -1,3 +1,4 @@
+import { userFacingError } from '@/lib/user-facing-error';
 import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from 'crypto';
 import { NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
@@ -14,7 +15,7 @@ const digest = (value: string) => createHash('sha256').update(value).digest('hex
 const secret = () => process.env.SELLER_APPLICATION_OTP_SECRET?.trim() || process.env.AURONIX_VERIFY_SECRET?.trim() || '';
 const otpHash = (draftId: string, email: string, code: string) => createHmac('sha256', secret()).update(`${draftId}:${email}:${code}`).digest('hex');
 const validEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-const ACTIVE_APPLICATION_STATUSES = new Set(['pending', 'screening', 'approved', 'invited', 'active']);
+const ACTIVE_APPLICATION_STATUSES = new Set(['pending', 'screening', 'under_review', 'changes_requested', 'approved', 'invited', 'active']);
 const cleanCode = (value: unknown) => String(value || '').trim().toUpperCase().replace(/\s+/g, '');
 const publicDraft = (value: any) => ({ draftId: value.id, resumeId: value.resumeIdLabel, step: Number(value.step || 1), form: value.form || {}, emailVerified: Boolean(value.emailVerified), emailVerifiedAddress: value.emailVerifiedAddress || '' });
 
@@ -24,7 +25,7 @@ async function authorize(draftId: string, resumeId: string) {
   const value = snapshot.val();
   const actual = Buffer.from(digest(cleanCode(resumeId)), 'hex');
   const expected = Buffer.from(String(value.resumeCodeHash || ''), 'hex');
-  if (actual.length !== expected.length || !timingSafeEqual(actual, expected) || Number(value.expiresAt || 0) <= Date.now()) return null;
+  if (actual.length !== expected.length || !timingSafeEqual(actual, expected) || (value.status !== 'submitted' && Number(value.expiresAt || 0) <= Date.now())) return null;
   return value;
 }
 
@@ -45,16 +46,24 @@ export async function POST(request: Request) {
     }
     if (action === 'resume') {
       const resumeId = cleanCode(body?.resumeId);
+      if (!/^AX-[A-F0-9]{8}$/.test(resumeId)) return NextResponse.json({ error: 'Resume ID is invalid or expired.' }, { status: 404 });
       const index = await adminDb.ref(`sellerApplicationResumeIndex/${digest(resumeId)}`).get();
-      if (!index.exists()) return NextResponse.json({ error: 'Resume ID is invalid or expired.' }, { status: 404 });
-      const value = await authorize(String(index.val().draftId || ''), resumeId);
+      let id = index.exists() ? String(index.val().draftId || '') : '';
+      if (!id) {
+        // Earlier releases removed the resume index after submission. Resolve only the matching private hash.
+        const legacy = await adminDb.ref('sellerApplicationDrafts').orderByChild('resumeCodeHash').equalTo(digest(resumeId)).limitToFirst(1).get();
+        if (legacy.exists()) id = Object.keys(legacy.val())[0] || '';
+      }
+      const value = id ? await authorize(id, resumeId) : null;
       if (!value) return NextResponse.json({ error: 'Resume ID is invalid or expired.' }, { status: 404 });
+      if (value.status === 'submitted') return NextResponse.json({ success: true, submitted: true, status: 'in_progress', trackingId: value.trackingId || value.applicationId, message: 'Your application has been submitted and is in progress. Use application tracking to view updates.' });
       return NextResponse.json({ success: true, ...publicDraft(value), resumeId });
     }
     const draftId = String(body?.draftId || '');
     const resumeId = cleanCode(body?.resumeId);
     const draft = await authorize(draftId, resumeId);
     if (!draft) return NextResponse.json({ error: 'Your saved application session is invalid or expired.' }, { status: 401 });
+    if (draft.status === 'submitted') return NextResponse.json({ error: 'Your application has already been submitted. Open application tracking to view updates.', code: 'APPLICATION_SUBMITTED' }, { status: 409 });
     if (action === 'save') {
       const safeForm: Record<string, string | boolean | null> = {};
       for (const [key, value] of Object.entries(body?.form || {})) if (ALLOWED_FIELDS.has(key) && (typeof value === 'string' || typeof value === 'boolean' || value === null)) safeForm[key] = typeof value === 'string' ? value.slice(0, 5000) : value;
@@ -109,7 +118,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unsupported draft action.' }, { status: 400 });
   } catch (error) {
     const protectedError = publicRequestErrorResponse(error); if (protectedError) return NextResponse.json(protectedError.body, { status: protectedError.status });
-    console.error('Seller application draft failed:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Seller application draft failed:', error instanceof Error ? userFacingError(error) : 'Unknown error');
     return NextResponse.json({ error: 'Unable to update the saved application right now.' }, { status: 500 });
   }
 }

@@ -26,6 +26,13 @@ export function SupportWorkspace({ seller = false }: { seller?: boolean }) {
   useEffect(() => { if (phase !== 'connecting') return; const timer = window.setTimeout(() => setPhase('connected'), 1600); return () => window.clearTimeout(timer); }, [phase]);
   useEffect(() => {
     try {
+      if (new URLSearchParams(window.location.search).get('from') === 'application') {
+        const application = JSON.parse(sessionStorage.getItem('auronix-application-ai') || 'null');
+        if (application && application.expiresAt > Date.now() && typeof application.message === 'string') {
+          setPhase('connected');
+          return;
+        }
+      }
       const stored = window.sessionStorage.getItem('auronix-support-handoff');
       if (!stored) return;
       const handoff = JSON.parse(stored);

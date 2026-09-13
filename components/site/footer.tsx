@@ -1,4 +1,5 @@
-﻿'use client';
+'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import {
@@ -205,7 +206,7 @@ export function Footer() {
 
       setMessage(
         error instanceof Error
-          ? error.message
+          ? userFacingError(error)
           : 'Unable to subscribe to the newsletter.'
       );
     } finally {

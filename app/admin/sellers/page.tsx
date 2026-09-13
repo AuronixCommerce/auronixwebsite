@@ -1,4 +1,5 @@
 'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import {
@@ -48,6 +49,8 @@ import {
 type Filter =
   | 'all'
   | 'pending'
+  | 'under_review'
+  | 'changes_requested'
   | 'approved'
   | 'rejected';
 
@@ -895,7 +898,7 @@ export default function AdminSellersPage() {
       } catch (error) {
         notifyAction(
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to approve seller.'
         );
       } finally {
@@ -904,6 +907,21 @@ export default function AdminSellersPage() {
         );
       }
     };
+
+  const requestChanges = async () => {
+    if (!selected || !auth.currentUser || actionLoading) return;
+    const message = await promptAction({ title: 'Request application corrections', description: 'This message appears in tracking and is emailed to the applicant.', label: 'What should the applicant fix?', confirmLabel: 'Send correction request' });
+    if (!message || message.trim().length < 10) return;
+    setActionLoading(true);
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const response = await fetch('/api/admin/sellers/request-changes', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ applicationId: selected.id, message }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Unable to request corrections.');
+      notifyAction(data.emailSent ? 'Correction request saved and emailed.' : 'Correction request saved. Email delivery is delayed.');
+    } catch (error) { notifyAction(userFacingError(error)); }
+    finally { setActionLoading(false); }
+  };
 
   const reject =
     async () => {
@@ -918,7 +936,7 @@ export default function AdminSellersPage() {
       const reason =
         await promptAction({
           title: `Reject ${getName(selected)}'s application?`,
-          description: 'Provide a professional reason that can be recorded with this decision.',
+          description: 'Provide a professional reason to share with the applicant by email and in application tracking.',
           label: 'Rejection reason',
           defaultValue: 'The application did not meet the current requirements.',
           confirmLabel: 'Reject application',
@@ -979,7 +997,7 @@ export default function AdminSellersPage() {
       } catch (error) {
         notifyAction(
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to reject seller.'
         );
       } finally {
@@ -1059,7 +1077,7 @@ export default function AdminSellersPage() {
       } catch (error) {
         notifyAction(
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to delete application.'
         );
       } finally {
@@ -1131,7 +1149,7 @@ export default function AdminSellersPage() {
       } catch (error) {
         notifyAction(
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'AI screening failed.'
         );
       } finally {
@@ -1370,6 +1388,8 @@ export default function AdminSellersPage() {
               Pending
             </option>
 
+            <option value="under_review">In review</option>
+            <option value="changes_requested">Corrections requested</option>
             <option value="approved">
               Approved
             </option>
@@ -1603,8 +1623,10 @@ export default function AdminSellersPage() {
                     </button>
                   </div>
 
+                  {getStatus(selected) === 'changes_requested' && <p className="mt-5 rounded-xl border border-amber-500/30 p-4 text-sm">Waiting for applicant corrections.</p>}
                   {/* ACTIONS */}
                   <div className="mt-6 flex flex-wrap gap-3 border-t border-border pt-5">
+                    <button type="button" onClick={requestChanges} disabled={actionLoading || !['pending','screening','under_review','changes_requested'].includes(getStatus(selected))} className="ac-button ac-button-secondary">Request corrections</button>
                     <button
                       type="button"
                       onClick={
@@ -2093,7 +2115,7 @@ function StatusBadge({
     <span
       className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${className}`}
     >
-      {status}
+      {status.replace(/_/g, ' ')}
     </span>
   );
 }

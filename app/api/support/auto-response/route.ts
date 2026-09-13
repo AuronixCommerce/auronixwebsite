@@ -1,4 +1,5 @@
-﻿import { NextResponse } from 'next/server';
+import { userFacingError } from '@/lib/user-facing-error';
+import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { generateGroqResponse } from '@/lib/server-groq';
 import { sendTicketResponseEmail } from '@/lib/server-mail';
@@ -132,7 +133,7 @@ Write only the email reply body.
       {
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to send automatic support response.',
       },
       { status: 500 }

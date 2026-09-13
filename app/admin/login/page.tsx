@@ -1,4 +1,5 @@
 'use client';
+import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
 import { useState } from 'react';
@@ -71,7 +72,7 @@ export default function AdminLoginPage() {
 
         toast({
           title: 'Access denied',
-          description: `Firebase role is "${profile.role}", not "admin".`,
+          description: 'This account does not have administrator access.',
           variant: 'destructive',
         });
 
@@ -114,7 +115,7 @@ export default function AdminLoginPage() {
             break;
 
           case 'auth/user-not-found':
-            message = 'No Firebase Authentication user exists for this email.';
+            message = 'The email or password is incorrect.';
             break;
 
           case 'auth/wrong-password':
@@ -126,21 +127,21 @@ export default function AdminLoginPage() {
             break;
 
           case 'auth/user-disabled':
-            message = 'This Firebase Authentication account is disabled.';
+            message = 'This Auronix account is disabled. Contact support.';
             break;
 
           case 'PERMISSION_DENIED':
           case 'database/permission-denied':
-            message = 'Firebase Realtime Database rules blocked the profile lookup.';
+            message = 'Your account profile is unavailable. Contact support.';
             break;
 
           default:
-            message = code || 'An unexpected authentication error occurred.';
+            message = userFacingError(err, 'Auronix Auth is temporarily unavailable. Please try again.');
         }
       }
 
       toast({
-        title: 'Login failed',
+        title: 'Auronix Auth',
         description: message,
         variant: 'destructive',
       });

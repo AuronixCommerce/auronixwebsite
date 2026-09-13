@@ -1,4 +1,5 @@
-﻿import { NextResponse } from 'next/server';
+import { userFacingError } from '@/lib/user-facing-error';
+import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { requireAdmin } from '@/lib/server-auth';
 
@@ -32,7 +33,7 @@ export async function GET(request: Request) {
       {
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to load admin availability.',
       },
       { status: 500 }
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
       {
         error:
           error instanceof Error
-            ? error.message
+            ? userFacingError(error)
             : 'Unable to update admin availability.',
       },
       { status: 500 }
