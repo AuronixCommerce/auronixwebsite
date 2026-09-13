@@ -47,7 +47,7 @@ export default function MarketplaceExpertisePage() {
 
       <Section className="border-t border-border bg-background-subtle">
         <Reveal>
-          <div className="overflow-hidden rounded-[28px] border border-accent/20 bg-card p-7 shadow-sm sm:p-10 lg:flex lg:items-center lg:justify-between lg:gap-12">
+          <div className="ac-content-panel overflow-hidden border-accent/20 p-7 sm:p-10 lg:flex lg:items-center lg:justify-between lg:gap-12">
             <div className="max-w-3xl">
               <div className="inline-flex items-center gap-2 rounded-full bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent">
                 <ShoppingBag className="h-4 w-4" />

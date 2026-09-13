@@ -105,7 +105,7 @@ function CareerCard({ career }: { career: Career }) {
     "Open — Accepting Applications";
 
   return (
-    <article className="group rounded-3xl border border-border bg-card p-7 sm:p-9 transition-all duration-500 hover:-translate-y-1 hover:shadow-premium-lg">
+    <article className="ac-content-panel group p-7 sm:p-9 transition-all duration-500 hover:-translate-y-1 hover:shadow-premium-lg">
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
         <div>
           <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-accent">
@@ -269,14 +269,14 @@ export default function CareersPage() {
 
           {loading ? (
             <div className="mt-14 flex justify-center">
-              <div className="inline-flex items-center gap-3 rounded-full border border-border bg-card px-5 py-3 text-sm text-foreground-muted">
+              <div className="ac-content-panel inline-flex items-center gap-3 px-5 py-3 text-sm text-foreground-muted">
                 <Spinner className="w-4 h-4" />
                 Loading opportunities...
               </div>
             </div>
           ) : careers.length === 0 ? (
             <Reveal delay={0.1}>
-              <div className="mt-14 rounded-3xl border border-border bg-card p-10 sm:p-14 text-center">
+              <div className="ac-content-panel mt-14 p-10 sm:p-14 text-center">
                 <div className="mx-auto w-14 h-14 rounded-2xl border border-border bg-background flex items-center justify-center">
                   <BriefcaseBusiness className="w-6 h-6 text-accent" />
                 </div>

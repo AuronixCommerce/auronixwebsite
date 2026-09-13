@@ -7,7 +7,7 @@ import { HelpCenterContent } from '@/components/site/help-center-content';
 
 export const metadata: Metadata = {
   title: 'Help Center & Seller Troubleshooting',
-  description: 'Technical troubleshooting for Auronix seller applications, WhatsApp and email verification, account invitations, password reset, seller dashboard, catalogs, products, notifications, and support.',
+  description: 'Technical troubleshooting for Auronix seller applications, email verification, account invitations, password reset, seller dashboard, catalogs, products, notifications, and support.',
   alternates: { canonical: '/help' },
 };
 

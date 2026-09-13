@@ -1,4 +1,3 @@
-import { CommerceScene } from '@/components/design/commerce-scene';
 import { AuronixMark } from "./auronix-mark";
 export function CommerceFlow() {
   return (
@@ -7,7 +6,6 @@ export function CommerceFlow() {
         <span>COMMERCE FLOW</span>
         <span>01 — 05</span>
       </div>
-      <CommerceScene/>
       <ol>
         {[
           "Suppliers",

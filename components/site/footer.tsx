@@ -429,7 +429,7 @@ export function Footer() {
         </div>
 
         {/* NEWSLETTER */}
-        <div className="mt-10 rounded-3xl border border-border bg-card p-6 sm:p-7">
+        <div className="ac-content-panel mt-10 p-6 sm:p-7">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
 
             <div className="flex items-start gap-4">

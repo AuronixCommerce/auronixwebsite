@@ -83,7 +83,7 @@ export class SiteErrorBoundary
     ) {
       return (
         <div className="min-h-screen bg-background px-5 py-20 text-foreground">
-          <div className="mx-auto max-w-xl rounded-3xl border border-border bg-card p-8 text-center shadow-xl">
+          <div className="ac-content-panel mx-auto max-w-xl p-8 text-center">
 
             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">
               TEMPORARILY UNAVAILABLE

@@ -31,8 +31,8 @@ const PLATFORM_RELEASE: Release = {
   summary: 'A production-focused release improving seller access, live account visibility, supplier onboarding, legal content, appearance, and transactional account flows.',
   releaseDate: Date.UTC(2026, 7, 29),
   features: [
-    'Five-step seller application with WhatsApp verification, selected-email OTP, automatic progress saving, and private resume IDs.',
-    'Live seller verification center for account, email, WhatsApp, and business-profile status.',
+    'Five-step seller application with contact details, selected-email OTP, automatic progress saving, and private resume IDs.',
+    'Live seller verification center for account, email, and business-profile status.',
     'Dedicated seller access chooser with separate login and new-account application paths.',
     'Persistent light and dark appearance across public, authentication, seller, and admin experiences.',
     'Database-connected seller products, catalogs, profile, settings, and support workspace.',
@@ -121,7 +121,7 @@ export default function WhatsNewPage() {
               <Spinner className="h-6 w-6" />
             </div>
           ) : releases.length === 0 ? (
-            <div className="rounded-3xl border border-border bg-card p-12 text-center">
+            <div className="ac-content-panel p-12 text-center">
               <h2 className="text-xl font-semibold">
                 No releases published yet.
               </h2>
@@ -220,7 +220,7 @@ export default function WhatsNewPage() {
 
       <section className="border-t border-border">
         <div className="mx-auto max-w-5xl px-5 py-16 sm:px-6 lg:px-8">
-          <div className="rounded-3xl border border-border bg-card p-8 sm:p-10">
+          <div className="ac-content-panel p-8 sm:p-10">
             <h2 className="text-2xl font-semibold">
               Keep up with Auronix.
             </h2>

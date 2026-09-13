@@ -792,7 +792,7 @@ export default function AdminAiNewsletterPagesPage() {
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_440px]">
 
-          <section className="overflow-hidden rounded-3xl border border-border bg-card">
+          <section className="ac-content-panel overflow-hidden">
 
             <div className="border-b border-border p-5">
 
@@ -982,7 +982,7 @@ export default function AdminAiNewsletterPagesPage() {
 
           </section>
 
-          <section className="rounded-3xl border border-border bg-card p-6">
+          <section className="ac-content-panel p-6">
 
             {!selected ? (
               <div className="flex min-h-[560px] items-center justify-center text-center">

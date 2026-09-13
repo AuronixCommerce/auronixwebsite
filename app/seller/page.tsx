@@ -59,7 +59,7 @@ export default function SellerLandingPage() {
 
       <Section className="border-t border-border">
         <Reveal>
-          <div className="rounded-3xl border border-border bg-card p-7 sm:p-10">
+          <div className="ac-content-panel p-7 sm:p-10">
             <div className="max-w-2xl">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-accent">Seller access</p>
               <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">A clear, secure path into your workspace.</h2>

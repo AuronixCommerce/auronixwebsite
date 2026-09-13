@@ -21,7 +21,7 @@ const QUESTION_VARIANTS = [
 
 const CATEGORY_LINKS: Record<string, { label: string; url: string }> = {
   'Seller Applications': { label: 'Seller application', url: '/seller/apply' },
-  'WhatsApp & Email Verification': { label: 'Seller application verification', url: '/seller/apply' },
+  'Email Verification': { label: 'Seller application verification', url: '/seller/apply' },
   'Approval & Account Creation': { label: 'Seller account help', url: '/help/seller-invitation-link' },
   'Login, Passwords & Security': { label: 'Seller Login', url: '/seller/login' },
   'Seller Dashboard': { label: 'Seller dashboard help', url: '/help/seller-dashboard-access' },
@@ -60,15 +60,15 @@ for (const article of TROUBLESHOOTING_ARTICLES) {
 
 AI_PREMADE_MEMORY.push(
   { id: 'common-company', query: 'What does Auronix Commerce do?', answer: 'Auronix Commerce LLC supports structured eCommerce sourcing, supplier relationships, procurement, distribution, and marketplace operations.\n\n[About Auronix](/about)', category: 'About Auronix Commerce' },
-  { id: 'common-seller-apply', query: 'How can I become a seller?', answer: 'Start the five-step seller application, verify the WhatsApp number and email you control, complete truthful business details, then submit the application for review. Submission does not guarantee approval.\n\n[Start or resume a seller application](/seller/apply)', category: 'Seller Applications' },
-  { id: 'common-seller-process', query: 'What is the seller application process?', answer: 'The seller application has five saved steps: WhatsApp verification, email verification, business information, business profile, and final review. Keep the private resume ID so you can continue a saved draft.\n\n[Start or resume a seller application](/seller/apply)', category: 'Seller Applications' },
+  { id: 'common-seller-apply', query: 'How can I become a seller?', answer: 'Start the five-step seller application, enter your contact number and verify the email you control, complete truthful business details, then submit the application for review. Submission does not guarantee approval.\n\n[Start or resume a seller application](/seller/apply)', category: 'Seller Applications' },
+  { id: 'common-seller-process', query: 'What is the seller application process?', answer: 'The seller application has five saved steps: contact details, email verification, business information, business profile, and final review. Keep the private resume ID so you can continue a saved draft.\n\n[Start or resume a seller application](/seller/apply)', category: 'Seller Applications' },
   { id: 'common-seller-login', query: 'Where can I login as a seller?', answer: 'Use the official Seller Login page with the email and password for an approved, created seller account.\n\n[Seller Login](/seller/login)', category: 'Login, Passwords & Security' },
   { id: 'common-supplier', query: 'How can I become a supplier?', answer: 'Open the supplier application, provide accurate company, contact, product or service, and operational information, then submit it for review. Submission does not guarantee a commercial relationship.\n\n[Become a Supplier](/supplier)', category: 'Suppliers & Partnerships' },
   { id: 'common-contact', query: 'How can I contact Auronix?', answer: 'Use the Contact page for business inquiries or Support for a website, seller, application, or account problem.\n\n[Contact Auronix](/contact)\n\n[Open Support](/support)', category: 'Support & Notifications' },
   { id: 'common-reset', query: 'How do I reset my password?', answer: 'Open Forgot Password, enter the seller account email, and use only the newest secure reset link. The response stays generic to protect account privacy.\n\n[Reset password](/forgot-password)', category: 'Login, Passwords & Security' },
   { id: 'common-resume', query: 'How do I resume my seller application?', answer: 'Open Seller Apply, choose Resume saved application, and enter the private resume ID exactly as issued.\n\n[Resume seller application](/seller/apply)', category: 'Seller Applications' },
   { id: 'common-dashboard', query: 'Why is my seller dashboard not working?', answer: 'Confirm account creation completed, sign out and back in, allow cookies and site storage, and retry in a current browser without blocking extensions. If it continues, follow the technical guide.\n\n[Fix seller dashboard access](/help/seller-dashboard-access)', category: 'Seller Dashboard' },
-  { id: 'common-otp', query: 'Why did I not receive my OTP?', answer: 'Confirm you requested the code for the correct phone number or email, check the relevant inbox or WhatsApp instructions, wait briefly, and use only the newest active code.\n\n[Verification troubleshooting](/help/whatsapp-verification)', category: 'WhatsApp & Email Verification' },
+  { id: 'common-otp', query: 'Why did I not receive my OTP?', answer: 'Confirm you requested the code for the correct email address, check the inbox and spam folder, wait briefly, and use only the newest active code.\n\n[Verification troubleshooting](/help/email-verification)', category: 'Email Verification' },
   { id: 'common-invite', query: 'Why is my seller invitation link invalid?', answer: 'The link may be incomplete, altered, expired, already used, or replaced. Open the complete newest URL from the original approval email; request a fresh authorized invitation if needed.\n\n[Fix an invitation link](/help/seller-invitation-link)', category: 'Approval & Account Creation' },
   { id: 'common-unsubscribe', query: 'How do I unsubscribe from the newsletter?', answer: 'Use the newsletter unsubscribe page, verify control of the address using the secure link or code, choose a reason if requested, and confirm.\n\n[Unsubscribe](/newsletter/unsubscribe)', category: 'Privacy, Legal & Cookies' },
   { id: 'common-help', query: 'Where can I find technical help?', answer: 'The Auronix Help Center contains step-by-step guides for applications, verification, invitations, password reset, seller dashboard access, catalogs, notifications, maintenance, and browser problems.\n\n[Open Help Center](/help)', category: 'Technical Troubleshooting' },
@@ -91,7 +91,7 @@ const TOKEN_EQUIVALENTS: Record<string, string> = {
   invitation: 'invite', invited: 'invite',
   passwords: 'password', resetting: 'reset',
   emails: 'email', mailbox: 'email',
-  whatsapp: 'whatsapp', otp: 'code', codes: 'code',
+  otp: 'code', codes: 'code',
   sellers: 'seller', vendors: 'seller', vendor: 'seller',
   suppliers: 'supplier', partnerships: 'partner', partners: 'partner',
   catalogs: 'catalog', products: 'product', notifications: 'notification',

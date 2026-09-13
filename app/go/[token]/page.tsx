@@ -413,7 +413,7 @@ export default async function CampaignPage({
     return (
       <main className="flex min-h-screen items-center justify-center bg-background px-5 py-16 font-sans text-foreground">
 
-        <section className="w-full max-w-lg rounded-[34px] border border-border bg-card p-8 text-center shadow-2xl">
+        <section className="ac-content-panel w-full max-w-lg p-8 text-center shadow-2xl">
 
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary">
             <div className="h-4 w-4 rounded-full bg-white" />

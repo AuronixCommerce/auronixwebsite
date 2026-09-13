@@ -1509,7 +1509,7 @@ export default function AdminSellersPage() {
           {/* DETAIL */}
           <div>
             {!selected ? (
-              <div className="flex min-h-[600px] items-center justify-center rounded-2xl border border-dashed border-border bg-card p-10 text-center">
+              <div className="ac-content-panel flex min-h-[600px] items-center justify-center border-dashed p-10 text-center">
                 <div>
                   <Bot className="mx-auto h-9 w-9 text-foreground-muted" />
 

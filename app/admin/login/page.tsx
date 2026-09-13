@@ -150,9 +150,9 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background-subtle px-5">
-      <div className="max-w-md w-full">
-        <div className="text-center mb-8">
+    <div className="ac-login-screen ac-login-admin">
+      <div className="ac-login-layout">
+        <div className="ac-login-intro">
           <Link
             href="/"
             className="inline-flex items-center gap-2 mb-6"
@@ -243,7 +243,7 @@ export default function AdminLoginPage() {
           </Button>
         </form>
 
-        <div className="text-center mt-6">
+        <div className="ac-login-links text-center mt-6">
           <Link
             href="/"
             className="inline-flex items-center gap-1.5 text-sm text-foreground-muted hover:text-foreground transition-colors"

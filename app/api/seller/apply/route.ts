@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
-import { normalizePhone } from '@/lib/seller-whatsapp';
+import { normalizePhone } from '@/lib/seller-phone';
 import { normalizeEmail } from '@/lib/server-seller-invitations';
 import { protectPublicRequest, publicRequestErrorResponse } from '@/lib/server-protection';
 
@@ -26,16 +26,9 @@ export async function POST(request: Request) {
     const body = await request.json();
     await protectPublicRequest(request, 'seller-application-submit', body, { limit: 5, windowMs: 60 * 60_000 });
     const form = body?.form || {};
-    const verificationId = text(body?.verificationId);
     const draftId = text(body?.draftId);
     const resumeId = text(body?.resumeId).toUpperCase().replace(/\s+/g, '');
 
-    if (!verificationId) {
-      return NextResponse.json(
-        { success: false, error: 'WhatsApp verification is required before submitting your seller application.' },
-        { status: 403 }
-      );
-    }
 
     const required: Array<[string, string]> = [
       ['Full Name', text(form.fullName)],
@@ -79,8 +72,8 @@ export async function POST(request: Request) {
     const draftSnapshot = await adminDb.ref(`sellerApplicationDrafts/${draftId}`).get();
     const draft = draftSnapshot.exists() ? draftSnapshot.val() : null;
     const resumeCodeHash = createHash('sha256').update(resumeId).digest('hex');
-    if (!draft || draft.resumeCodeHash !== resumeCodeHash || !draft.emailVerified || normalizeEmail(draft.emailVerifiedAddress) !== preferredContactEmail || draft.whatsappVerificationId !== verificationId) {
-      return NextResponse.json({ success: false, error: 'Verify the selected email and WhatsApp number before submitting.' }, { status: 403 });
+    if (!draft || draft.resumeCodeHash !== resumeCodeHash || !draft.emailVerified || normalizeEmail(draft.emailVerifiedAddress) !== preferredContactEmail || Number(draft.expiresAt || 0) <= Date.now() || draft.status !== 'draft') {
+      return NextResponse.json({ success: false, error: 'A valid saved application with a verified contact email is required.' }, { status: 403 });
     }
 
     try {
@@ -114,26 +107,8 @@ export async function POST(request: Request) {
       }
     }
 
-    const normalizedPhone = normalizePhone(form.phone);
-    const verificationRef = adminDb.ref(`sellerWhatsappVerifications/${verificationId}`);
-    const verificationSnapshot = await verificationRef.get();
-
-    if (!verificationSnapshot.exists()) {
-      return NextResponse.json({ success: false, error: 'WhatsApp verification was not found. Please verify again.' }, { status: 403 });
-    }
-
-    const verification = verificationSnapshot.val();
-    if (
-      verification?.status !== 'verified' ||
-      String(verification?.phone || '') !== normalizedPhone ||
-      Number(verification?.verifiedAt || 0) <= 0 ||
-      verification?.consumedAt
-    ) {
-      return NextResponse.json(
-        { success: false, error: 'WhatsApp verification is required for the phone number on this application.' },
-        { status: 403 }
-      );
-    }
+    let normalizedPhone: string;
+    try { normalizedPhone = normalizePhone(form.phone); } catch { return NextResponse.json({ success: false, error: 'Enter a valid phone number including the country code.' }, { status: 400 }); }
 
     const applicationRef = adminDb.ref('sellerApplications').push();
     const applicationId = applicationRef.key;
@@ -181,10 +156,6 @@ export async function POST(request: Request) {
       sellerPolicyAgreed: true,
       sellerPolicyVersion: SELLER_POLICY_VERSION,
       sellerPolicyAgreedAt: timestamp,
-      whatsappVerified: true,
-      whatsappPhone: normalizedPhone,
-      whatsappVerifiedAt: Number(verification.verifiedAt),
-      whatsappVerificationId: verificationId,
       emailVerified: true,
       emailVerifiedAt: Number(draft.emailVerifiedAt || timestamp),
       applicationDraftId: draftId,
@@ -203,7 +174,6 @@ export async function POST(request: Request) {
 
     try {
       await applicationRef.set(application);
-      await verificationRef.update({ consumedAt: timestamp, applicationId, updatedAt: timestamp });
       await adminDb.ref(`sellerApplicationDrafts/${draftId}`).update({ status: 'submitted', submittedAt: timestamp, applicationId, updatedAt: timestamp });
       await adminDb.ref(`sellerApplicationResumeIndex/${resumeCodeHash}`).remove();
     } catch (persistenceError) {

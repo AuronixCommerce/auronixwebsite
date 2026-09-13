@@ -134,9 +134,9 @@ export default function SellerLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background-subtle flex items-center justify-center px-5">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
+    <div className="ac-login-screen ac-login-seller">
+      <div className="ac-login-layout">
+        <div className="ac-login-intro">
           <Link
             href="/"
             className="inline-flex items-center gap-2 mb-6"
@@ -257,7 +257,7 @@ export default function SellerLoginPage() {
           </button>
         </form>
 
-        <div className="text-center mt-6 space-y-3">
+        <div className="ac-login-links text-center mt-6 space-y-3">
           <Link
             href="/seller/apply"
             className="inline-flex items-center gap-2 text-sm font-medium hover:text-accent"

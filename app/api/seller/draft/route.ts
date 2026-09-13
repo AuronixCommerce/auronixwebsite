@@ -1,7 +1,7 @@
 import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from 'crypto';
 import { NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
-import { normalizePhone } from '@/lib/seller-whatsapp';
+import { normalizePhone } from '@/lib/seller-phone';
 import { normalizeEmail } from '@/lib/server-seller-invitations';
 import { sendSellerEmailVerification, sendSellerResumeIdEmail } from '@/lib/server-mail';
 import { protectPublicRequest, publicRequestErrorResponse } from '@/lib/server-protection';
@@ -11,12 +11,12 @@ const OTP_TTL = 10 * 60 * 1000;
 const DRAFT_TTL = 30 * 24 * 60 * 60 * 1000;
 const ALLOWED_FIELDS = new Set(['fullName','businessName','businessEmail','personalEmail','phone','country','address','city','state','zipCode','website','businessType','yearsInBusiness','productCategories','businessInformation','whyWorkWithAuronix','catalogUrl','preferredContact','contactAgreement','sellerPolicyAgreement']);
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
-const secret = () => process.env.SELLER_APPLICATION_OTP_SECRET?.trim() || process.env.SELLER_WHATSAPP_OTP_SECRET?.trim() || process.env.AURONIX_VERIFY_SECRET?.trim() || '';
+const secret = () => process.env.SELLER_APPLICATION_OTP_SECRET?.trim() || process.env.AURONIX_VERIFY_SECRET?.trim() || '';
 const otpHash = (draftId: string, email: string, code: string) => createHmac('sha256', secret()).update(`${draftId}:${email}:${code}`).digest('hex');
 const validEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 const ACTIVE_APPLICATION_STATUSES = new Set(['pending', 'screening', 'approved', 'invited', 'active']);
 const cleanCode = (value: unknown) => String(value || '').trim().toUpperCase().replace(/\s+/g, '');
-const publicDraft = (value: any) => ({ draftId: value.id, resumeId: value.resumeIdLabel, step: Number(value.step || 1), form: value.form || {}, whatsappVerificationId: value.whatsappVerificationId || '', whatsappVerified: Boolean(value.whatsappVerified), emailVerified: Boolean(value.emailVerified), emailVerifiedAddress: value.emailVerifiedAddress || '' });
+const publicDraft = (value: any) => ({ draftId: value.id, resumeId: value.resumeIdLabel, step: Number(value.step || 1), form: value.form || {}, emailVerified: Boolean(value.emailVerified), emailVerifiedAddress: value.emailVerifiedAddress || '' });
 
 async function authorize(draftId: string, resumeId: string) {
   const snapshot = await adminDb.ref(`sellerApplicationDrafts/${draftId}`).get();
@@ -34,16 +34,12 @@ export async function POST(request: Request) {
     await protectPublicRequest(request, 'seller-application-draft', body, { limit: 30, windowMs: 15 * 60_000 });
     const action = String(body?.action || '');
     if (action === 'start') {
-      const verificationId = String(body?.verificationId || '').trim();
-      const phone = normalizePhone(body?.phone);
-      const verification = await adminDb.ref(`sellerWhatsappVerifications/${verificationId}`).get();
-      const verified = verification.exists() ? verification.val() : null;
-      if (!verified || verified.status !== 'verified' || String(verified.phone) !== phone || verified.consumedAt) return NextResponse.json({ error: 'Complete WhatsApp verification before creating an application.' }, { status: 403 });
+      try { normalizePhone(body?.phone); } catch { return NextResponse.json({ error: 'Enter a valid phone number including the country code.' }, { status: 400 }); }
       const draftRef = adminDb.ref('sellerApplicationDrafts').push();
       if (!draftRef.key) throw new Error('Unable to create application draft.');
       const resumeId = `AX-${randomBytes(4).toString('hex').toUpperCase()}`;
       const now = Date.now();
-      const draft = { id: draftRef.key, resumeIdLabel: resumeId.slice(0, 5) + '•••••', resumeCodeHash: digest(resumeId), status: 'draft', step: 2, form: { phone: String(body.phone || '').trim() }, whatsappVerified: true, whatsappVerifiedAt: Number(verified.verifiedAt || now), whatsappVerificationId: verificationId, emailVerified: false, createdAt: now, updatedAt: now, expiresAt: now + DRAFT_TTL };
+      const draft = { id: draftRef.key, resumeIdLabel: resumeId.slice(0, 5) + '•••••', resumeCodeHash: digest(resumeId), status: 'draft', step: 2, form: { phone: String(body.phone || '').trim() }, emailVerified: false, createdAt: now, updatedAt: now, expiresAt: now + DRAFT_TTL };
       await Promise.all([draftRef.set(draft), adminDb.ref(`sellerApplicationResumeIndex/${digest(resumeId)}`).set({ draftId: draftRef.key, expiresAt: draft.expiresAt })]);
       return NextResponse.json({ success: true, ...publicDraft(draft), draftId: draftRef.key, resumeId });
     }

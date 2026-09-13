@@ -1879,7 +1879,7 @@ export default function AdminPagesManagerPage() {
               PAGE EDITOR
               ================================================== */}
 
-          <div className="rounded-3xl border border-border bg-card p-6">
+          <div className="ac-content-panel p-6">
 
             {selectedPage && (
               <>

@@ -47,7 +47,7 @@ export default function FAQPage() {
       </Section>
 
       <Section className="border-t border-border bg-secondary/30">
-        <div className="mx-auto max-w-4xl rounded-[2rem] border border-border bg-card p-7 sm:p-10">
+        <div className="ac-content-panel mx-auto max-w-4xl p-7 sm:p-10">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex gap-4"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent/10 text-accent"><Wrench className="h-5 w-5" /></span><div><h2 className="text-2xl font-semibold">Need step-by-step troubleshooting?</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-foreground-muted">Open technical guides for seller login, application verification, account invitations, dashboard access, catalogs, notifications, and browser issues.</p></div></div>
             <Link href="/help" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground">Open Help Center <ArrowRight className="h-4 w-4" /></Link>

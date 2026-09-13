@@ -1288,7 +1288,7 @@ export function AIChat() {
                 {loading &&
                   visibleAnswer && (
                     <div className="flex justify-start">
-                      <div className="max-w-[96%] rounded-2xl rounded-bl-md border border-border bg-card px-4 py-3 font-sans text-sm leading-6 text-foreground">
+                      <div className="ac-content-panel max-w-[96%] px-4 py-3 font-sans text-sm leading-6 text-foreground">
                         <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-foreground-muted">
                           <Sparkles className="h-3 w-3 text-accent" />
                           Thought for {completedThinkingSeconds || 1} sec · {activeAnswerSource === 'found' ? 'Found' : 'Online'}

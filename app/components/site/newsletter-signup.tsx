@@ -102,7 +102,7 @@ export default function NewsletterSignup() {
   };
 
   return (
-    <div className="mt-10 rounded-3xl border border-border bg-card p-6 sm:p-7">
+    <div className="ac-content-panel mt-10 p-6 sm:p-7">
       <div className="flex items-start gap-4">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-secondary">
           <Mail className="h-5 w-5" />

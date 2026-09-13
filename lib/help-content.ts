@@ -12,7 +12,7 @@ export type HelpFaq = {
 export const FAQ_CATEGORY_ORDER = [
   'About Auronix Commerce',
   'Seller Applications',
-  'WhatsApp & Email Verification',
+  'Email Verification',
   'Approval & Account Creation',
   'Login, Passwords & Security',
   'Seller Dashboard',
@@ -42,26 +42,20 @@ const GROUPS: ReadonlyArray<readonly [string, readonly FaqPair[]]> = [
   ['Seller Applications', [
     ['Who can submit a seller application?', 'A person authorized to provide accurate information for the proposed seller or business may submit an application.'],
     ['Where do I start a seller application?', 'Choose Seller Access, select Create account or apply, and open the seller application page.'],
-    ['How many steps are in the seller application?', 'The application uses five saved steps: WhatsApp verification, email verification, business details, profile information, and review.'],
+    ['How many steps are in the seller application?', 'The application uses five saved steps: contact details, email verification, business details, profile information, and review.'],
     ['Does each application step save automatically?', 'Completed application progress is saved when the flow provides a successful save confirmation. Keep the private resume ID safely.'],
     ['Can I resume an unfinished seller application?', 'Yes. Choose Resume saved application and enter the private resume ID associated with that draft.'],
     ['What is the seller application resume ID?', 'It is a private reference generated for an application draft. It helps retrieve saved progress and should not be posted publicly.'],
     ['Can I submit two applications with the same email?', 'The system blocks sensible duplicates, including an existing seller account and active or pending applications for the same normalized email.'],
     ['Are email addresses case-sensitive in seller applications?', 'No. The server normalizes email addresses so uppercase and lowercase versions are treated as the same address.'],
-    ['What information should I prepare before applying?', 'Prepare an accessible WhatsApp number, an email you control, business identity and address details, and a truthful description of your operations.'],
+    ['What information should I prepare before applying?', 'Prepare a contact phone number, an email you control, business identity and address details, and a truthful description of your operations.'],
     ['Can I apply with a personal email address?', 'The form lets you identify the email as personal or business. Use an address you can verify and continue to access.'],
     ['Why was my application rejected as a duplicate?', 'A seller account or an active application may already use that normalized email. Use the existing account, resume the saved application, or contact Support.'],
     ['Can I change my email midway through an application?', 'You may change unsubmitted information, but the new email must be verified and must not belong to another seller account or active application.'],
     ['What happens after I submit the application?', 'The application enters review. Approval is not automatic; monitor the verified email and the application status provided by Auronix.'],
     ['Can Support approve my application through chat?', 'No. The AI assistant and support chat cannot approve applications. Approval must come through the authorized review workflow.'],
   ]],
-  ['WhatsApp & Email Verification', [
-    ['Why must I verify my WhatsApp number?', 'Verification helps confirm that the applicant controls the number used for application communication and security checks.'],
-    ['How do I request the WhatsApp verification code?', 'Enter the full number with country code, create the verification request, then follow the on-page instruction to message OTP from that same WhatsApp number.'],
-    ['Why did my WhatsApp code not arrive?', 'Confirm the country code, use the same number entered in the form, check connectivity, wait briefly, and request a new active code if the earlier request expired.'],
-    ['Why is my WhatsApp OTP invalid?', 'The code may be mistyped, expired, already used, or tied to another request or phone number. Enter the newest code under the WhatsApp field.'],
-    ['Can I verify with a different WhatsApp number?', 'Create a new verification request for the new number. A code issued for one number or request cannot verify another.'],
-    ['How long does a WhatsApp verification request remain valid?', 'Use the expiry information shown in the flow. Expired requests must be replaced with a new request for security.'],
+  ['Email Verification', [
     ['Why must I verify my email address?', 'Email verification confirms access to the address used for application status, account invitations, password recovery, and important notices.'],
     ['Where is the email verification code sent?', 'It is sent to the personal or business email address selected and entered in the application.'],
     ['What should I do if the email code is missing?', 'Check spam and filtered folders, confirm the displayed address, allow a few minutes, then request a new code without repeatedly submitting the form.'],
@@ -226,10 +220,6 @@ export const TROUBLESHOOTING_ARTICLES: TroubleshootingArticle[] = [
   { slug: 'seller-application-resume', title: 'Resume a saved seller application', summary: 'Use the private resume ID safely and recover a draft that does not open.', category: 'Seller Applications', audience: 'Seller applicants', sections: [
     { heading: 'Use the resume dialog', body: 'Open Seller Apply, choose Resume saved application, and enter the private resume ID exactly as issued.' },
     { heading: 'If the draft is not found', body: 'Avoid creating repeated applications until you complete these checks.', steps: ['Remove leading or trailing spaces from the resume ID.', 'Confirm you are on the official site and not an old cached tab.', 'Use the most recently issued resume ID.', 'Check whether the saved draft expired under the retention policy.', 'Contact Support with the reference only; never include verification codes.'] },
-  ]},
-  { slug: 'whatsapp-verification', title: 'Fix WhatsApp verification problems', summary: 'Resolve missing, expired, mismatched, and invalid WhatsApp OTP requests.', category: 'Verification', audience: 'Seller applicants', sections: [
-    { heading: 'Match the number and request', body: 'The OTP request is tied to the normalized phone number and the active application verification request.' },
-    { heading: 'Verification checklist', body: 'Complete each step before requesting another code.', steps: ['Enter the full country code and phone number.', 'Create the verification request on the website.', 'From that same WhatsApp number, send the instructed OTP message.', 'Enter only the newest six-digit code in the WhatsApp code field.', 'If expired, create one new request and discard older codes.'] },
   ]},
   { slug: 'email-verification', title: 'Fix seller email verification', summary: 'Resolve missing codes, duplicate-account warnings, and expired email verification.', category: 'Verification', audience: 'Seller applicants', sections: [
     { heading: 'Confirm the selected address', body: 'Check whether you selected personal or business email and verify the exact address displayed by the form.' },

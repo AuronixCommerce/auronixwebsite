@@ -18,7 +18,7 @@ test('password reset provides enumeration-safe completion', async ({ page }) => 
 });
 
 test('seller application exposes five steps and a resumable secure dialog', async ({ page }) => {
-  await openPage(page, '/seller/apply'); for (const step of ['WhatsApp', 'Email', 'Business', 'Profile', 'Review']) await expect(page.getByText(step, { exact: true })).toHaveCount(1);
+  await openPage(page, '/seller/apply'); await expect(page.getByRole('textbox', { name: 'Phone', exact: true })).toBeVisible(); await expect(page.getByText('Step 1 of 5')).toBeVisible();
   await page.getByRole('button', { name: 'Resume saved application' }).click(); await expect(page.getByRole('dialog', { name: 'Continue your application' })).toBeVisible(); await expect(page.getByLabel('Private resume ID')).toBeVisible();
 });
 

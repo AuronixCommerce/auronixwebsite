@@ -22,10 +22,9 @@ export default function HomePage() {
     <SiteLayout>
       <section className="ac-home-hero">
         <div className="ac-container">
+          <div className="ac-home-masthead"><span className="ac-eyebrow">Auronix Commerce LLC</span><h1>Powering the next generation of commerce.</h1></div>
           <div className="ac-hero-layout">
-            <div>
-              <span className="ac-eyebrow">Auronix Commerce LLC</span>
-              <h1>Powering the next generation of commerce.</h1>
+            <div className="ac-home-brief">
               <p>
                 Auronix Commerce LLC connects quality suppliers, brands, and
                 online marketplaces through smarter procurement, distribution,
@@ -68,7 +67,7 @@ export default function HomePage() {
               <p className="text-lg leading-relaxed text-foreground-muted">
                 Auronix operates at the intersection of procurement, marketplace
                 operations, and distribution. We work with suppliers and brands
-                to move quality products through the right channels Ã¢â‚¬â€
+                to move quality products through the right channels —
                 efficiently, profitably, and with the operational discipline
                 that modern commerce demands.
               </p>

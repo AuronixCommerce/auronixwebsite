@@ -83,7 +83,7 @@ export const PROCESS_STEPS_FULL = [
     number: '01',
     title: 'Discover',
     description:
-      'We begin by identifying supplier opportunities and evaluating market demand. This phase is about understanding where value can be created â€” which products, which categories, and which marketplaces present the strongest opportunity.',
+      'We begin by identifying supplier opportunities and evaluating market demand. This phase is about understanding where value can be created — which products, which categories, and which marketplaces present the strongest opportunity.',
   },
   {
     number: '02',
@@ -101,7 +101,7 @@ export const PROCESS_STEPS_FULL = [
     number: '04',
     title: 'Prepare',
     description:
-      'Products are prepared for the marketplace. This includes catalog development, listing optimization, pricing strategy, and inventory coordination â€” everything needed for a successful launch.',
+      'Products are prepared for the marketplace. This includes catalog development, listing optimization, pricing strategy, and inventory coordination — everything needed for a successful launch.',
   },
   {
     number: '05',
@@ -119,7 +119,7 @@ export const PROCESS_STEPS_FULL = [
     number: '07',
     title: 'Scale',
     description:
-      'Successful products are scaled â€” expanded to additional marketplaces, supported with deeper inventory, and built into long-term revenue streams.',
+      'Successful products are scaled — expanded to additional marketplaces, supported with deeper inventory, and built into long-term revenue streams.',
   },
 ] as const;
 
@@ -134,13 +134,13 @@ export const CAPABILITIES = [
     icon: 'Store',
     title: 'Marketplace Operations',
     description:
-      'End-to-end management of marketplace presence â€” from listing creation and optimization to performance monitoring and competitive positioning.',
+      'End-to-end management of marketplace presence — from listing creation and optimization to performance monitoring and competitive positioning.',
   },
   {
     icon: 'Handshake',
     title: 'Supplier Partnerships',
     description:
-      'Long-term relationships built on transparency, quality expectations, and mutual growth â€” not transactional, one-off deals.',
+      'Long-term relationships built on transparency, quality expectations, and mutual growth — not transactional, one-off deals.',
   },
   {
     icon: 'Truck',
@@ -159,7 +159,7 @@ export const WHY_AURONIX = [
   {
     title: 'Marketplace Expertise',
     description:
-      'Deep understanding of how marketplaces work â€” what drives visibility, what converts, and what sustains long-term performance.',
+      'Deep understanding of how marketplaces work — what drives visibility, what converts, and what sustains long-term performance.',
   },
   {
     title: 'Operational Discipline',
@@ -174,7 +174,7 @@ export const WHY_AURONIX = [
   {
     title: 'Quality-First Thinking',
     description:
-      'Quality is not an afterthought. It is built into how we evaluate, source, and operate â€” because quality is what sustains marketplace performance.',
+      'Quality is not an afterthought. It is built into how we evaluate, source, and operate — because quality is what sustains marketplace performance.',
   },
   {
     title: 'Structured Processes',
@@ -202,14 +202,14 @@ export const SOLUTIONS = [
     icon: 'Store',
     title: 'Marketplace Operations',
     description:
-      'Full management of marketplace presence â€” from listing creation and optimization to ongoing performance monitoring and competitive positioning.',
+      'Full management of marketplace presence — from listing creation and optimization to ongoing performance monitoring and competitive positioning.',
     points: ['Listing optimization', 'Performance monitoring', 'Competitive analysis', 'Review management'],
   },
   {
     icon: 'FileText',
     title: 'Catalog & Product Operations',
     description:
-      'We handle the details that make products sell â€” catalog structure, product data, imagery guidance, and listing quality across every channel.',
+      'We handle the details that make products sell — catalog structure, product data, imagery guidance, and listing quality across every channel.',
     points: ['Catalog structure', 'Product data management', 'Listing quality', 'Content optimization'],
   },
   {
@@ -247,7 +247,7 @@ export const WHY_WORK = [
   {
     title: 'Marketplace Knowledge',
     description:
-      'We understand how marketplaces work â€” the algorithms, the competition, the customer behavior â€” and we use that knowledge to your advantage.',
+      'We understand how marketplaces work — the algorithms, the competition, the customer behavior — and we use that knowledge to your advantage.',
   },
   {
     title: 'Operational Discipline',
@@ -275,7 +275,7 @@ export const MARKETPLACE_EXPERTISE = [
   {
     title: 'Marketplace Operations',
     description:
-      'Day-to-day management of marketplace presence â€” monitoring listings, responding to changes, managing reviews, and keeping operations running smoothly.',
+      'Day-to-day management of marketplace presence — monitoring listings, responding to changes, managing reviews, and keeping operations running smoothly.',
   },
   {
     title: 'Pricing & Positioning',

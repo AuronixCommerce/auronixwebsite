@@ -330,7 +330,7 @@ export default function SellerPolicyPage() {
         </div>
 
         {/* FOOTER ACTION */}
-        <div className="mt-12 rounded-3xl border border-border bg-card p-6 sm:p-8">
+        <div className="ac-content-panel mt-12 p-6 sm:p-8">
           <h2 className="text-xl font-semibold">
             Ready to apply?
           </h2>
@@ -364,7 +364,7 @@ function PolicySection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-3xl border border-border bg-card p-6 sm:p-8">
+    <section className="ac-content-panel p-6 sm:p-8">
       <div className="flex items-start gap-4">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-xs font-semibold">
           {number}

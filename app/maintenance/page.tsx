@@ -233,7 +233,7 @@ export default async function MaintenancePage({
   ) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background px-5 py-16 font-sans text-foreground">
-        <div className="w-full max-w-lg rounded-[32px] border border-border bg-card p-8 text-center shadow-[0_30px_100px_rgba(0,0,0,0.18)]">
+        <div className="ac-content-panel w-full max-w-lg p-8 text-center shadow-[0_30px_100px_rgba(0,0,0,0.18)]">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <span className="font-sans text-lg font-extrabold">
               A

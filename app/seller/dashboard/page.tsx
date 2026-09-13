@@ -43,8 +43,6 @@ export default function SellerDashboardPage() {
     return () => { unsub(); if (timer) clearInterval(timer); if (refreshVisible) document.removeEventListener('visibilitychange', refreshVisible); };
   }, []);
 
-  const applicationData = application as (SellerApplication & { whatsappVerified?: boolean; whatsappVerifiedAt?: number; phoneNormalized?: string }) | null;
-  const whatsappVerified = Boolean(applicationData?.whatsappVerified || applicationData?.whatsappVerifiedAt);
   const accountActive = profile?.status === 'active' && application?.status === 'active';
   const profileComplete = Boolean(profile?.name && profile?.businessName && profile?.phone && profile?.website);
   const manualRefresh = async () => { setSyncing(true); try { await auth.currentUser?.reload(); setEmailVerified(Boolean(auth.currentUser?.emailVerified)); const { sellerWorkspaceRequest } = await import('@/lib/seller-workspace-client'); const data = await sellerWorkspaceRequest(); setProfile(data.profile); setApplication(data.application); setCounts({ products: data.products.length, catalogs: data.catalogs.length, tickets: data.tickets.length }); setLastSynced(data.serverTime || Date.now()); setError(''); } catch (refreshError) { setError(refreshError instanceof Error ? refreshError.message : 'Unable to refresh verification status.'); } finally { setSyncing(false); } };
@@ -69,7 +67,6 @@ export default function SellerDashboardPage() {
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <VerificationItem label="Seller account" complete={accountActive} detail={accountActive ? 'Active and connected' : `Application: ${application?.status || 'unavailable'}`} href="/seller/support" />
-          <VerificationItem label="WhatsApp number" complete={whatsappVerified} detail={whatsappVerified ? 'Verified during application' : 'Verification not recorded'} href="/seller/support" />
           <VerificationItem label="Email address" complete={emailVerified} detail={emailVerified ? 'Firebase email verified' : 'Email verification pending'} href="/seller/settings" />
           <VerificationItem label="Business profile" complete={profileComplete} detail={profileComplete ? 'Required profile fields complete' : 'Add phone, website, and business details'} href="/seller/settings" />
         </div>

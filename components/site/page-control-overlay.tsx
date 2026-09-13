@@ -581,7 +581,7 @@ export function PageControlOverlay({
         page.popupEnabled && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/35 px-5 backdrop-blur-sm">
 
-            <div className="relative w-full max-w-lg rounded-[30px] border border-border bg-card p-7 shadow-2xl sm:p-9">
+            <div className="ac-content-panel relative w-full max-w-lg p-7 shadow-2xl sm:p-9">
 
               <button
                 type="button"

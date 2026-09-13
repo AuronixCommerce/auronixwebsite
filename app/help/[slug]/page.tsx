@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { ArrowLeft, ArrowRight, CheckCircle2, LifeBuoy, ShieldAlert } from 'lucide-react';
 import { SiteLayout } from '@/components/site/site-layout';
 import { getTroubleshootingArticle, TROUBLESHOOTING_ARTICLES } from '@/lib/help-content';
@@ -9,12 +9,14 @@ import { buildSeo } from '@/lib/seo';
 export function generateStaticParams() { return TROUBLESHOOTING_ARTICLES.map(({ slug }) => ({ slug })); }
 
 export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
+  if (params.slug === 'whatsapp-verification') permanentRedirect('/help/email-verification');
   const article = getTroubleshootingArticle(params.slug);
   if (!article) return {};
   return buildSeo({ title: article.title, description: article.summary, path: `/help/${article.slug}`, keywords: ['Auronix help', 'seller troubleshooting', article.category] });
 }
 
 export default function TroubleshootingArticlePage({ params }: { params: { slug: string } }) {
+  if (params.slug === 'whatsapp-verification') permanentRedirect('/help/email-verification');
   const article = getTroubleshootingArticle(params.slug);
   if (!article) notFound();
   const related = TROUBLESHOOTING_ARTICLES.filter((item) => item.slug !== article.slug && (item.category === article.category || item.audience === article.audience)).slice(0, 3);
