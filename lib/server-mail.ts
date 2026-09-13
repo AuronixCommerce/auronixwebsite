@@ -9,7 +9,7 @@ const MAIL_FROM_NAME = process.env.MAIL_FROM_NAME || 'Auronix Commerce LLC';
 const SMTP_USER = process.env.SMTP_USER || NOTIFICATION_EMAIL;
 const SMTP_PASSWORD = process.env.SMTP_PASSWORD || process.env.SMTP_PASS || '';
 const SMTP_HOST = process.env.SMTP_HOST || (/@gmail\.com$/i.test(SMTP_USER) ? 'smtp.gmail.com' : 'smtp.hostinger.com');
-const SMTP_PORT = Number(process.env.SMTP_PORT || (/@gmail\.com$/i.test(SMTP_USER) ? 587 : 465));
+const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
 const SMTP_SECURE = process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : SMTP_PORT === 465;
 
 type MailOptions = { to: string | string[]; subject: string; html: string; text?: string; replyTo?: string; fromName?: string };
@@ -27,26 +27,45 @@ function emailShell(input: { preheader: string; title: string; body: string; foo
 
 const cta = (label: string, url: string) => `<table role="presentation" cellspacing="0" cellpadding="0" style="margin:26px 0"><tr><td style="border-radius:12px;background:#111827"><a href="${escapeHtml(url)}" style="display:inline-block;padding:13px 22px;color:#fff;text-decoration:none;font-weight:700">${escapeHtml(label)}</a></td></tr></table>`;
 
-function createMailTransport() {
+function createMailTransport(port = SMTP_PORT, secure = SMTP_SECURE) {
   return nodemailer.createTransport({
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
+    connectionTimeout: 7000,
+    greetingTimeout: 7000,
+    socketTimeout: 10000,
     host: SMTP_HOST,
-    port: SMTP_PORT,
-    secure: SMTP_SECURE,
+    port,
+    secure,
     auth: { user: SMTP_USER, pass: SMTP_PASSWORD },
   });
+}
+
+function mailTransportCandidates() {
+  const candidates = [{ port: SMTP_PORT, secure: SMTP_SECURE }];
+  if (/(?:gmail|hostinger)\.com$/i.test(SMTP_HOST)) {
+    const fallback = SMTP_PORT === 465
+      ? { port: 587, secure: false }
+      : { port: 465, secure: true };
+    candidates.push(fallback);
+  }
+  return candidates;
 }
 
 async function sendWithSender(sender: string, options: MailOptions) {
   if (!options.to || (Array.isArray(options.to) && !options.to.length)) throw new Error('Email recipient is required.');
   if (!SMTP_PASSWORD) throw new Error('Email service is not configured. Set SMTP_PASSWORD or SMTP_PASS.');
-  const result = await createMailTransport().sendMail({ from: { name: options.fromName || MAIL_FROM_NAME, address: sender }, to: options.to, subject: options.subject, html: options.html, text: options.text, replyTo: options.replyTo || SUPPORT_EMAIL });
-  if (!Array.isArray(result.accepted) || result.accepted.length === 0) {
-    throw new Error('The email service did not accept the recipient.');
+  let lastError: unknown;
+  for (const candidate of mailTransportCandidates()) {
+    try {
+      const result = await createMailTransport(candidate.port, candidate.secure).sendMail({ from: { name: options.fromName || MAIL_FROM_NAME, address: sender }, to: options.to, subject: options.subject, html: options.html, text: options.text, replyTo: options.replyTo || SUPPORT_EMAIL });
+      if (!Array.isArray(result.accepted) || result.accepted.length === 0) {
+        throw new Error('The email service did not accept the recipient.');
+      }
+      return result;
+    } catch (error) {
+      lastError = error;
+    }
   }
-  return result;
+  throw lastError || new Error('The email service is unavailable.');
 }
 
 export const sendNotificationMail = (options: MailOptions) => sendWithSender(NOTIFICATION_EMAIL, options);
@@ -114,5 +133,14 @@ export async function sendTicketResponseEmail(input: any, positionalSubject?: st
 
 export async function verifyMailConnection() {
   if (!SMTP_PASSWORD) throw new Error('Email service is not configured. Set SMTP_PASSWORD or SMTP_PASS.');
-  await createMailTransport().verify(); return true;
+  let lastError: unknown;
+  for (const candidate of mailTransportCandidates()) {
+    try {
+      await createMailTransport(candidate.port, candidate.secure).verify();
+      return true;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || new Error('The email service is unavailable.');
 }
