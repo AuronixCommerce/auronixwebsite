@@ -6,11 +6,11 @@ export const BUSINESS_EMAIL = process.env.MAIL_FROM || process.env.SMTP_USER || 
 export const NOTIFICATION_EMAIL = process.env.MAIL_FROM || BUSINESS_EMAIL;
 export const SUPPORT_EMAIL = process.env.MAIL_SUPPORT_EMAIL || process.env.NEXT_PUBLIC_SUPPORT_EMAIL || BUSINESS_EMAIL;
 const MAIL_FROM_NAME = process.env.MAIL_FROM_NAME || 'Auronix Commerce LLC';
-const SMTP_HOST = process.env.SMTP_HOST || 'smtp.hostinger.com';
-const SMTP_PORT = Number(process.env.SMTP_PORT || 465);
-const SMTP_SECURE = process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : SMTP_PORT === 465;
 const SMTP_USER = process.env.SMTP_USER || NOTIFICATION_EMAIL;
-const SMTP_PASSWORD = process.env.SMTP_PASSWORD || '';
+const SMTP_PASSWORD = process.env.SMTP_PASSWORD || process.env.SMTP_PASS || '';
+const SMTP_HOST = process.env.SMTP_HOST || (/@gmail\.com$/i.test(SMTP_USER) ? 'smtp.gmail.com' : 'smtp.hostinger.com');
+const SMTP_PORT = Number(process.env.SMTP_PORT || (/@gmail\.com$/i.test(SMTP_USER) ? 587 : 465));
+const SMTP_SECURE = process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : SMTP_PORT === 465;
 
 type MailOptions = { to: string | string[]; subject: string; html: string; text?: string; replyTo?: string; fromName?: string };
 const escapeHtml = (value: unknown) => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
@@ -27,11 +27,26 @@ function emailShell(input: { preheader: string; title: string; body: string; foo
 
 const cta = (label: string, url: string) => `<table role="presentation" cellspacing="0" cellpadding="0" style="margin:26px 0"><tr><td style="border-radius:12px;background:#111827"><a href="${escapeHtml(url)}" style="display:inline-block;padding:13px 22px;color:#fff;text-decoration:none;font-weight:700">${escapeHtml(label)}</a></td></tr></table>`;
 
+function createMailTransport() {
+  return nodemailer.createTransport({
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_SECURE,
+    auth: { user: SMTP_USER, pass: SMTP_PASSWORD },
+  });
+}
+
 async function sendWithSender(sender: string, options: MailOptions) {
   if (!options.to || (Array.isArray(options.to) && !options.to.length)) throw new Error('Email recipient is required.');
-  if (!SMTP_PASSWORD) throw new Error('Email service is not configured. Set SMTP_PASSWORD.');
-  const transporter = nodemailer.createTransport({ connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000, host: SMTP_HOST, port: SMTP_PORT, secure: SMTP_SECURE, auth: { user: SMTP_USER, pass: SMTP_PASSWORD } });
-  return transporter.sendMail({ from: { name: options.fromName || MAIL_FROM_NAME, address: sender }, to: options.to, subject: options.subject, html: options.html, text: options.text, replyTo: options.replyTo || SUPPORT_EMAIL });
+  if (!SMTP_PASSWORD) throw new Error('Email service is not configured. Set SMTP_PASSWORD or SMTP_PASS.');
+  const result = await createMailTransport().sendMail({ from: { name: options.fromName || MAIL_FROM_NAME, address: sender }, to: options.to, subject: options.subject, html: options.html, text: options.text, replyTo: options.replyTo || SUPPORT_EMAIL });
+  if (!Array.isArray(result.accepted) || result.accepted.length === 0) {
+    throw new Error('The email service did not accept the recipient.');
+  }
+  return result;
 }
 
 export const sendNotificationMail = (options: MailOptions) => sendWithSender(NOTIFICATION_EMAIL, options);
@@ -98,7 +113,6 @@ export async function sendTicketResponseEmail(input: any, positionalSubject?: st
 }
 
 export async function verifyMailConnection() {
-  if (!SMTP_PASSWORD) throw new Error('Email service is not configured. Set SMTP_PASSWORD.');
-  const transporter = nodemailer.createTransport({ connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000, host: SMTP_HOST, port: SMTP_PORT, secure: SMTP_SECURE, auth: { user: SMTP_USER, pass: SMTP_PASSWORD } });
-  await transporter.verify(); return true;
+  if (!SMTP_PASSWORD) throw new Error('Email service is not configured. Set SMTP_PASSWORD or SMTP_PASS.');
+  await createMailTransport().verify(); return true;
 }

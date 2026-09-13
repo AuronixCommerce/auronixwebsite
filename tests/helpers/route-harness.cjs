@@ -4,7 +4,7 @@ const ts = require('typescript');
 const root = path.resolve(__dirname, '../..');
 function harness(initial = {}) {
   const data = structuredClone(initial), accesses = [], mails = [];
-  let sequence = 0, code = '', admin = true, mailFailure = false;
+  let sequence = 0, code = '', admin = true, mailFailure = false, passwordResetFailure = false, authUser = null, authFailure = null;
   const read = p => p.split('/').filter(Boolean).reduce((v, k) => v?.[k], data);
   const write = (p, v) => { const parts = p.split('/').filter(Boolean), key = parts.pop(); let obj = data; for (const part of parts) obj = obj[part] ??= {}; if (v === null) delete obj[key]; else obj[key] = structuredClone(v); };
   const snap = p => ({ exists: () => read(p) != null, val: () => structuredClone(read(p) ?? null) });
@@ -19,11 +19,23 @@ function harness(initial = {}) {
     };
   }
   const mocks = {
-    '@/lib/firebase-admin': { adminDb: { ref }, adminAuth: { getUserByEmail: async () => { throw Object.assign(new Error('No account'), { code: 'auth/user-not-found' }); } } },
+    '@/lib/firebase-admin': { adminDb: { ref }, adminAuth: {
+      getUserByEmail: async () => {
+        if (authFailure) throw authFailure;
+        if (authUser) return authUser;
+        throw Object.assign(new Error('No account'), { code: 'auth/user-not-found' });
+      },
+      generatePasswordResetLink: async email => `https://identity.example.test/action?mode=resetPassword&oobCode=reset-code-for-${encodeURIComponent(email)}`,
+    } },
     '@/lib/server-auth': { requireAdmin: async () => { if (!admin) throw Error('Admin access required'); return { uid: 'test-admin' }; } },
     '@/lib/server-seller-invitations': { normalizeEmail: v => String(v || '').trim().toLowerCase() },
     '@/lib/server-protection': { protectPublicRequest: async () => {}, publicRequestErrorResponse: () => null },
-    '@/lib/server-mail': { sendSellerEmailVerification: async value => { code = value.code; }, sendSellerResumeIdEmail: async () => {}, sendProfessionalEmail: async value => { if (mailFailure) throw Error('Test mail unavailable'); mails.push(value); } },
+    '@/lib/server-mail': {
+      sendSellerEmailVerification: async value => { code = value.code; },
+      sendSellerResumeIdEmail: async () => {},
+      sendPasswordResetEmail: async value => { if (passwordResetFailure) throw Error('Test reset mail unavailable'); mails.push({ type: 'password-reset', ...value }); },
+      sendProfessionalEmail: async value => { if (mailFailure) throw Error('Test mail unavailable'); mails.push(value); },
+    },
   };
   const cache = {};
   function load(file) {
@@ -39,6 +51,13 @@ function harness(initial = {}) {
     return cache[file] = mod.exports;
   }
   const call = async (file, body) => { const response = await load(file).POST(new Request('http://localhost/api/test', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })); return { status: response.status, body: await response.json() }; };
-  return { data, accesses, mails, ref, call, load, getCode: () => code, setAdmin: value => { admin = value; }, failMail: value => { mailFailure = value; } };
+  return {
+    data, accesses, mails, ref, call, load, getCode: () => code,
+    setAdmin: value => { admin = value; },
+    failMail: value => { mailFailure = value; },
+    failPasswordResetMail: value => { passwordResetFailure = value; },
+    setAuthUser: value => { authUser = value; },
+    failAuth: value => { authFailure = value; },
+  };
 }
 module.exports = { harness };

@@ -16,41 +16,42 @@ export async function POST(request: Request) {
       );
     }
 
-    // Always return the same public response so we do not
-    // reveal whether an account exists.
-    try {
-      const user = await adminAuth.getUserByEmail(email);
-
-      if (user.email) {
-        const baseUrl = (
-          process.env.NEXT_PUBLIC_SITE_URL || process.env.APP_URL || 'https://auronixcommerce.com'
-        ).replace(/\/+$/, '');
-
-        const resetLink =
-          await adminAuth.generatePasswordResetLink(
-            user.email,
-            {
-              url: `${baseUrl}/reset-password`,
-              handleCodeInApp: false,
-            }
-          );
-
-        await sendPasswordResetEmail({ email: user.email, name: user.displayName || '', resetUrl: resetLink });
-      }
-    } catch (error: any) {
-      if (error?.code !== 'auth/user-not-found') {
-        console.error(
-          'Password reset generation error:',
-          error
-        );
-      }
-    }
-
-    return NextResponse.json({
+    const accepted = () => NextResponse.json({
       success: true,
       message:
-        'If an account exists for this email, reset instructions have been sent.',
+        'If an account exists for this email, reset instructions have been requested.',
     });
+
+    // Keep the public response identical so account addresses cannot be enumerated.
+    let user;
+    try {
+      user = await adminAuth.getUserByEmail(email);
+    } catch (error: any) {
+      if (error?.code === 'auth/user-not-found') return accepted();
+      throw error;
+    }
+    if (!user.email) return accepted();
+
+    try {
+      const baseUrl = (
+        process.env.NEXT_PUBLIC_SITE_URL || process.env.APP_URL || 'https://auronixcommerce.com'
+      ).replace(/\/+$/, '');
+      const accountEmail = user.email;
+      const generatedLink = await adminAuth.generatePasswordResetLink(accountEmail, {
+        url: `${baseUrl}/reset-password`,
+        handleCodeInApp: false,
+      });
+      const actionUrl = new URL(generatedLink);
+      const resetCode = actionUrl.searchParams.get('oobCode');
+      if (!resetCode) throw new Error('Auronix Auth returned an invalid password-reset link.');
+      const resetLink = `${baseUrl}/reset-password?oobCode=${encodeURIComponent(resetCode)}`;
+      await sendPasswordResetEmail({ email: accountEmail, name: user.displayName || '', resetUrl: resetLink });
+    } catch (error) {
+      // Log operational delivery failures without exposing whether the account exists.
+      console.error('Auronix password reset delivery failed:', error);
+    }
+
+    return accepted();
   } catch (error) {
     const protectedError = publicRequestErrorResponse(error);
     if (protectedError) return NextResponse.json(protectedError.body, { status: protectedError.status });

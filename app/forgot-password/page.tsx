@@ -2,9 +2,10 @@
 import { Spinner } from '@/components/design/primitives';
 
 import { FormEvent, useState } from 'react';
-import { Loader2, MailCheck, ArrowLeft } from 'lucide-react';
+import { MailCheck, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { AuronixMark } from '@/components/site/auronix-mark';
+import { userFacingError } from '@/lib/user-facing-error';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -49,12 +50,19 @@ export default function ForgotPasswordPage() {
         );
       }
 
+      if (!data.success) {
+        throw new Error(data.error || 'Auronix Auth could not accept the reset request.');
+      }
+
       setSent(true);
     } catch (err) {
       console.error('Password reset request failed:', err);
 
       setError(
-        'We could not process your request right now. Please try again.'
+        userFacingError(
+          err,
+          'Auronix Auth could not process your request right now. Please try again.'
+        )
       );
     } finally {
       setLoading(false);
@@ -97,19 +105,28 @@ export default function ForgotPasswordPage() {
 
               <p className="text-sm text-foreground-muted mt-3 leading-relaxed">
                 If an Auronix account exists for that email address,
-                we have sent a password-reset message.
+                a secure password-reset message has been requested.
               </p>
 
               <p className="text-xs text-foreground-muted mt-3">
-                Check your inbox and spam/junk folder.
+                Allow a few minutes, then check your inbox and spam or junk folder.
               </p>
 
-              <Link
-                href="/seller/login"
-                className="inline-flex items-center gap-2 mt-7 rounded-xl bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium"
-              >
-                Return to Seller Login
-              </Link>
+              <div className="mt-7 flex flex-col items-center gap-3">
+                <Link
+                  href="/seller/login"
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium"
+                >
+                  Return to Seller Login
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setSent(false)}
+                  className="text-sm font-medium text-foreground-muted hover:text-foreground transition-colors"
+                >
+                  Try again or use another email
+                </button>
+              </div>
             </div>
           ) : (
             <>
