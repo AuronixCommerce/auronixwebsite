@@ -41,6 +41,7 @@ The production-hardening features use these additional Vercel variables:
 - `NEXT_PUBLIC_TURNSTILE_SITE_KEY`: public Turnstile site key for a future provider widget rollout.
 - `NEXT_PUBLIC_GA_MEASUREMENT_ID`: optional Google Analytics measurement ID. The script loads only after analytics consent.
 - `SELLER_APPLICATION_OTP_SECRET`: long random secret for seller application email codes.
+- `WHATSAPP_VERIFY_TOKEN`: server-only token used by Meta to verify `/api/webhooks/whatsapp`. This webhook is independent of seller application verification and does not enable WhatsApp OTP gating.
 
 Configure the email provider to POST normalized delivery events to `/api/webhooks/email-delivery` and sign the raw JSON body with HMAC-SHA256 in `X-Auronix-Signature`. Supported event names are `sent`, `delivered`, `deferred`, `failed`, `bounced`, `complained`, `opened`, and `clicked`. Bounces and complaints automatically suppress the matching subscriber.
 
