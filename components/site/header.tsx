@@ -118,6 +118,7 @@ export function Header() {
               <button
                 key={g.title}
                 type="button"
+                data-current={g.paths.some((path) => pathname === path || pathname.startsWith(`${path}/`)) || undefined}
                 aria-expanded={menu === g.title}
                 aria-controls={`menu-${g.title}`}
                 onClick={() => setMenu(menu === g.title ? null : g.title)}
@@ -142,7 +143,11 @@ export function Header() {
             <div className="ac-desktop-action">
               <ThemeToggle />
             </div>
-            <Link href="/partner-portal" className="ac-portal-link">
+            <Link
+              href="/partner-portal"
+              className="ac-portal-link"
+              aria-current={pathname.startsWith('/partner-portal') ? 'page' : undefined}
+            >
               Portal
             </Link>
             <Link href="/supplier" className="ac-button ac-desktop-action">

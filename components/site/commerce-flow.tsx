@@ -4,9 +4,9 @@ export function CommerceFlow() {
     <div className="ac-flow ac-glass">
       <div className="ac-flow-title">
         <span>COMMERCE FLOW</span>
-        <span>01 — 05</span>
+        <span className="ac-flow-state"><i /> MODEL 01 — 05</span>
       </div>
-      <ol>
+      <ol className="ac-flow-map">
         {[
           "Suppliers",
           "Auronix",
@@ -14,10 +14,11 @@ export function CommerceFlow() {
           "Marketplaces",
           "Customers",
         ].map((label, i) => (
-          <li key={label}>
+          <li key={label} data-focus={i === 1 || undefined}>
             <span>{String(i + 1).padStart(2, "0")}</span>
             {i === 1 && <AuronixMark />}
             <strong>{label}</strong>
+            {i < 4 && <i className="ac-flow-connector" aria-hidden="true" />}
           </li>
         ))}
       </ol>

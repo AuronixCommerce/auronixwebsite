@@ -53,6 +53,11 @@ export function PublicSiteChrome({
 
   return (
     <>
+      <div className="ac-atmosphere" aria-hidden="true">
+        <span className="ac-atmosphere-orb ac-atmosphere-orb-one" />
+        <span className="ac-atmosphere-orb ac-atmosphere-orb-two" />
+        <span className="ac-atmosphere-plane" />
+      </div>
       <a className="ac-skip" href="#main-content">Skip to content</a>
       <Header />
       <SearchHost />

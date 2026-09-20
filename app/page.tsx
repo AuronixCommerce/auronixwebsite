@@ -22,7 +22,13 @@ export default function HomePage() {
     <SiteLayout>
       <section className="ac-home-hero">
         <div className="ac-container">
-          <div className="ac-home-masthead"><span className="ac-eyebrow">Auronix Commerce LLC</span><h1>Powering the next generation of commerce.</h1></div>
+          <div className="ac-home-masthead">
+            <span className="ac-eyebrow">Auronix Commerce LLC</span>
+            <h1>
+              <span className="ac-hero-line">Powering the next generation</span>
+              <span className="ac-hero-line ac-hero-accent">of commerce.</span>
+            </h1>
+          </div>
           <div className="ac-hero-layout">
             <div className="ac-home-brief">
               <p>
@@ -41,6 +47,11 @@ export default function HomePage() {
                   Explore Our Process <ArrowRight size={17} />
                 </Link>
               </div>
+              <ul className="ac-hero-signals" aria-label="Auronix capabilities">
+                <li>Structured procurement</li>
+                <li>Marketplace operations</li>
+                <li>Supplier partnerships</li>
+              </ul>
             </div>
             <Reveal>
               <CommerceFlow />
