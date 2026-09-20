@@ -35,7 +35,8 @@
 .ac-page,.ac-container,.ac-admin-shell>main,.ac-seller-shell>main{min-width:0;max-width:100%}
 .ac-hero-layout>*,.ac-page-hero-grid>*,.ac-footer-grid>*,.ac-journey>*,.ac-form-pair>*{min-width:0}
 .ac-notification-list h2,.ac-team-conversation h1{overflow-wrap:anywhere}
-.auronix-ai-window{overflow-wrap:anywhere}
+.auronix-ai-launcher{position:fixed!important;right:max(16px,env(safe-area-inset-right))!important;bottom:max(16px,env(safe-area-inset-bottom))!important;left:auto!important;top:auto!important;z-index:95!important;background:hsl(var(--primary));isolation:isolate}
+.auronix-ai-window{overflow-wrap:anywhere;backdrop-filter:blur(12px) saturate(120%)!important;-webkit-backdrop-filter:blur(12px) saturate(120%)!important}
 .auronix-ai-window pre{max-width:100%;overflow-x:auto}
 @media(max-width:767px){
  .ac-support-page{padding:0 14px 28px}

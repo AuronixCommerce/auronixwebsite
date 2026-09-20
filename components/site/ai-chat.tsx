@@ -431,9 +431,9 @@ function renderMarkdown(
   return output;
 }
 
-export function AIChat() {
+export function AIChat({ initiallyOpen = false }: { initiallyOpen?: boolean } = {}) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initiallyOpen);
   useEffect(() => {
     if (!open) return;
     const viewport = window.visualViewport;
@@ -1079,29 +1079,9 @@ export function AIChat() {
             type="button"
             onClick={() => setOpen(true)}
             aria-label="Open Auronix AI chat"
-            className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-[80] flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-primary text-primary-foreground shadow-[0_14px_50px_rgba(0,0,0,0.25)]"
+            className="auronix-ai-launcher flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-white/20 text-primary-foreground shadow-[0_14px_42px_rgba(0,0,0,0.22)]"
           >
-            <motion.div
-              animate={{
-                scale: [
-                  0.92,
-                  1.15,
-                  0.92,
-                ],
-                opacity: [
-                  0.16,
-                  0.32,
-                  0.16,
-                ],
-              }}
-              transition={{
-                duration: 2.7,
-                repeat: Infinity,
-                ease:
-                  'easeInOut',
-              }}
-              className="absolute inset-1 rounded-full bg-white/20 blur-md"
-            />
+            <div className="absolute inset-1 rounded-full bg-white/15" />
 
             <ChatBrandMark className="h-10 w-10" />
           </motion.button>
@@ -1133,32 +1113,12 @@ export function AIChat() {
               damping: 28,
             }}
             role="dialog" aria-label="Auronix AI chat"
-            className="auronix-ai-window fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 right-3 z-[80] mx-auto flex h-[min(680px,calc(100dvh-1.5rem))] max-w-[430px] flex-col overflow-hidden rounded-[26px] border border-border bg-background/96 font-sans text-foreground shadow-[0_25px_100px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:bottom-5 sm:left-auto sm:right-5 sm:h-[min(680px,calc(100vh-2.5rem))]"
+            className="auronix-ai-window fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 right-3 z-[80] mx-auto flex h-[min(680px,calc(100dvh-1.5rem))] max-w-[430px] flex-col overflow-hidden rounded-[26px] border border-border bg-background/96 font-sans text-foreground shadow-[0_25px_80px_rgba(0,0,0,0.24)] sm:bottom-5 sm:left-auto sm:right-5 sm:h-[min(680px,calc(100vh-2.5rem))]"
           >
             <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
               <div className="flex min-w-0 items-center gap-3">
                 <div className="relative flex h-10 w-10 shrink-0 items-center justify-center">
-                  <motion.div
-                    animate={{
-                      scale: [
-                        0.9,
-                        1.08,
-                        0.9,
-                      ],
-                      opacity: [
-                        0.7,
-                        1,
-                        0.7,
-                      ],
-                    }}
-                    transition={{
-                      duration: 2.8,
-                      repeat: Infinity,
-                      ease:
-                        'easeInOut',
-                    }}
-                    className="absolute inset-1 rounded-full bg-accent/10 blur-sm"
-                  />
+                  <div className="absolute inset-1 rounded-full bg-accent/10" />
                   <ChatBrandMark className="h-9 w-9" />
                 </div>
 

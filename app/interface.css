@@ -2505,3 +2505,79 @@ tbody tr:hover {
     scale: 1 !important;
   }
 }
+
+/* Performance-tuned glass: reserve diffusion for hierarchy, not every control. */
+.ac-glass,
+.ac-nav,
+.ac-mega,
+.ac-workspace-sidebar,
+.ac-workspace-toolbar,
+.ac-workspace-dock {
+  backdrop-filter: blur(18px) saturate(132%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(132%) !important;
+}
+:where(
+  .ac-content-panel,
+  .ac-form-panel,
+  .ac-application-panel,
+  .ac-feature,
+  .ac-journey-story,
+  [role="dialog"],
+  [role="alertdialog"],
+  [role="menu"],
+  [role="listbox"]
+) {
+  backdrop-filter: blur(9px) saturate(116%) !important;
+  -webkit-backdrop-filter: blur(9px) saturate(116%) !important;
+  transition: border-color 0.22s ease, box-shadow 0.22s ease, background-color 0.22s ease !important;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+textarea,
+select,
+button[role="combobox"],
+.ac-table-scroll,
+.ac-content-panel:has(> .overflow-x-auto),
+thead,
+.ac-hero-signals li,
+.ac-flow-map li {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.ac-atmosphere-orb,
+.ac-atmosphere-plane {
+  animation: none !important;
+  translate: none !important;
+  will-change: auto;
+}
+.ac-liquid-light {
+  display: none;
+}
+html[data-ac-liquid="static"] [data-ac-liquid-active="true"] {
+  translate: none !important;
+  scale: 1 !important;
+}
+@media (max-width: 767px), (hover: none), (pointer: coarse) {
+  .ac-glass,
+  .ac-nav,
+  .ac-mega,
+  .ac-workspace-sidebar,
+  .ac-workspace-toolbar,
+  .ac-workspace-dock {
+    backdrop-filter: blur(12px) saturate(122%) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(122%) !important;
+  }
+  :where(
+    .ac-content-panel,
+    .ac-form-panel,
+    .ac-application-panel,
+    .ac-feature,
+    .ac-journey-story,
+    [role="dialog"],
+    [role="alertdialog"],
+    [role="menu"],
+    [role="listbox"]
+  ) {
+    backdrop-filter: blur(4px) saturate(108%) !important;
+    -webkit-backdrop-filter: blur(4px) saturate(108%) !important;
+  }
+}

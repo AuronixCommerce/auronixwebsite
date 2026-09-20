@@ -4,9 +4,7 @@ import {
   usePathname,
 } from 'next/navigation';
 
-import {
-  AIChat,
-} from '@/components/site/ai-chat';
+import { AIChatLauncher } from '@/components/site/ai-chat-launcher';
 
 import {
   SiteAnnouncementPopup,
@@ -16,7 +14,6 @@ import {
   PublicSiteChrome,
 } from '@/components/site/public-site-chrome';
 import { ThemeToggle } from '@/components/site/theme-toggle';
-import { CursorField } from '@/components/design/cursor-field';
 
 export function PublicRuntime({
   children,
@@ -69,9 +66,7 @@ export function PublicRuntime({
 
       <SiteAnnouncementPopup />
 
-      <CursorField />
-
-      {pathname !== '/support/chat' && !pathname.startsWith('/seller/') && <AIChat />}
+      {pathname !== '/support/chat' && !pathname.startsWith('/seller/') && <AIChatLauncher />}
     </>
   );
 }
