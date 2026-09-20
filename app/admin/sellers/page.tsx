@@ -34,6 +34,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { confirmAction, notifyAction, promptAction } from '@/components/ui/confirm-action';
+import { onAuthChange } from '@/lib/auth';
 
 import {
   auth,
@@ -573,10 +574,13 @@ export default function AdminSellersPage() {
     setAutoScreening,
   ] =
     useState(false);
+  const [authReady, setAuthReady] = useState(false);
+
+  useEffect(() => onAuthChange(user => setAuthReady(Boolean(user))), []);
 
   /*
    * Prevent multiple automatic screening calls during
-   * Firebase realtime updates.
+   * Auronix realtime data updates.
    */
   const autoScreenStarted =
     useRef(false);
@@ -659,9 +663,7 @@ export default function AdminSellersPage() {
       return;
     }
 
-    if (
-      !auth.currentUser
-    ) {
+    if (!authReady || !auth.currentUser) {
       return;
     }
 
@@ -750,6 +752,7 @@ export default function AdminSellersPage() {
     };
   }, [
     applications.length,
+    authReady,
   ]);
 
   const selected =
@@ -910,12 +913,15 @@ export default function AdminSellersPage() {
 
   const requestChanges = async () => {
     if (!selected || !auth.currentUser || actionLoading) return;
+    const fieldInput = await promptAction({ title: 'Choose fields for correction', description: 'Enter application field names separated by commas. These appear as field-level requests in the applicant timeline.', label: 'Fields to change', defaultValue: 'businessInformation, productCategories', confirmLabel: 'Continue' });
+    if (fieldInput === null) return;
     const message = await promptAction({ title: 'Request application corrections', description: 'This message appears in tracking and is emailed to the applicant.', label: 'What should the applicant fix?', confirmLabel: 'Send correction request' });
     if (!message || message.trim().length < 10) return;
     setActionLoading(true);
     try {
       const token = await auth.currentUser.getIdToken();
-      const response = await fetch('/api/admin/sellers/request-changes', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ applicationId: selected.id, message }) });
+      const requestedFields = fieldInput.split(',').map(field => field.trim()).filter(Boolean);
+      const response = await fetch('/api/admin/sellers/request-changes', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ applicationId: selected.id, message, requestedFields }) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Unable to request corrections.');
       notifyAction(data.emailSent ? 'Correction request saved and emailed.' : 'Correction request saved. Email delivery is delayed.');
@@ -2209,4 +2215,3 @@ function InfoBlock({
     </div>
   );
 }
-

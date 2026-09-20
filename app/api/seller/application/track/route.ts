@@ -4,6 +4,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import { protectPublicRequest, publicRequestErrorResponse } from '@/lib/server-protection';
 import { sendProfessionalEmail } from '@/lib/server-mail';
 import { notifySellerApplication, trackingHash, trackingView } from '@/lib/seller-tracking';
+import { appendDealRoomTimeline, applicationChanges, ensureDealRoom } from '@/lib/deal-room';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -80,16 +81,20 @@ export async function POST(request: Request) {
       const updates: Record<string, string> = {};
       for (const key of allowed) if (key in (body.form || {})) updates[key] = clean(body.form[key]);
       const candidate = { ...application, ...updates };
+      const fieldChanges = applicationChanges(application, updates);
       for (const key of ['fullName','businessName','phone','country','address','city','state','zipCode','businessType','productCategories']) if (!candidate[key]) return json({ error: 'Complete all required business and address fields.' }, 400);
       if (candidate.businessInformation.length < 30 || candidate.whyWorkWithAuronix.length < 20) return json({ error: 'Please provide more detail about your business and partnership goals.' }, 400);
       if (!/^\d{8,15}$/.test(candidate.phone.replace(/\D/g, ''))) return json({ error: 'Enter a valid phone number with country code.' }, 400);
       if (candidate.yearsInBusiness && (!Number.isFinite(Number(candidate.yearsInBusiness)) || Number(candidate.yearsInBusiness) < 0 || Number(candidate.yearsInBusiness) > 200)) return json({ error: 'Years in business must be between 0 and 200.' }, 400);
       const result = await ref.transaction(current => {
         if (!current || !['pending','changes_requested'].includes(current.status || 'pending')) return;
-        return { ...current, ...updates, phoneNormalized: candidate.phone.replace(/\D/g, ''), status: 'pending', reviewMessage: '', aiStatus: 'PENDING', aiScreening: null, aiScore: 0, aiAutoEligible: false, aiAutoApproved: false, updatedAt: Date.now(), applicantEditedAt: Date.now(), revision: Number(current.revision || 0) + 1 };
+        return { ...current, ...updates, phoneNormalized: candidate.phone.replace(/\D/g, ''), status: 'pending', reviewMessage: '', requestedFields: [], aiStatus: 'PENDING', aiScreening: null, aiScore: 0, aiAutoEligible: false, aiAutoApproved: false, updatedAt: Date.now(), applicantEditedAt: Date.now(), revision: Number(current.revision || 0) + 1 };
       });
       if (!result.committed) return json({ error: 'This application is already being reviewed. Use Contact support to request a correction.' }, 409);
       application = { ...result.snapshot.val(), id: session.applicationId };
+      await ensureDealRoom(application.id, application);
+      await adminDb.ref(`sellerApplicationHistories/${application.id}/${application.revision}`).set({ revision: application.revision, reason: 'applicant-edit', fieldChanges, snapshot: result.snapshot.val(), createdAt: Date.now() });
+      await appendDealRoomTimeline(application.id, { type: 'revision', title: `Application revision ${application.revision} submitted`, description: fieldChanges.length ? `${fieldChanges.length} application field${fieldChanges.length === 1 ? '' : 's'} changed.` : 'The applicant resubmitted the application.', actorRole: 'seller', actorEmail: session.email, fieldChanges });
       await notifySellerApplication(application.id, application, 'Your Auronix application was updated', 'Your corrections have been saved and your application is awaiting review.');
     } else if (action !== 'status') return json({ error: 'Unsupported tracking action.' }, 400);
     return json({ success: true, application: trackingView(application), verifiedEmail: session.email });

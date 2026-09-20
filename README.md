@@ -21,6 +21,7 @@ Configure these values in Vercel for Preview and Production. Never commit mailbo
 - `FIREBASE_ADMIN_CLIENT_EMAIL`
 - `FIREBASE_ADMIN_PRIVATE_KEY`
 - Existing `NEXT_PUBLIC_FIREBASE_*` client/database values
+- `GROQ_API_KEY`: optional model-assisted seller screening. Deterministic screening remains available when omitted and never auto-approves.
 
 The SMTP provider must authorize `MAIL_FROM` for the authenticated domain. All transactional messages use that sender and reply to `MAIL_SUPPORT_EMAIL`.
 
@@ -42,6 +43,27 @@ The production-hardening features use these additional Vercel variables:
 - `NEXT_PUBLIC_GA_MEASUREMENT_ID`: optional Google Analytics measurement ID. The script loads only after analytics consent.
 - `SELLER_APPLICATION_OTP_SECRET`: long random secret for seller application email codes.
 - `WHATSAPP_VERIFY_TOKEN`: server-only token used by Meta to verify `/api/webhooks/whatsapp`. This webhook is independent of seller application verification and does not enable WhatsApp OTP gating.
+
+### Partner Deal Room and private documents
+
+- `R2_ACCOUNT_ID`
+- `R2_ACCESS_KEY_ID`
+- `R2_SECRET_ACCESS_KEY`
+- `R2_BUCKET_NAME=catalogs`
+
+The bucket must remain private. Downloads are streamed only through the authenticated `/api/deal-room/files` route after application ownership or admin-session authorization.
+
+### Installable app and optional notifications
+
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
+- `VAPID_PRIVATE_KEY`
+- `VAPID_SUBJECT=mailto:business@auronixcommerce.com`
+- `WHATSAPP_PHONE_NUMBER_ID` (optional)
+- `WHATSAPP_ACCESS_TOKEN` (optional)
+- `WHATSAPP_STATUS_TEMPLATE` (optional approved utility-template name)
+- `WHATSAPP_API_VERSION=v25.0` (optional override)
+
+WhatsApp is an opt-in status channel only. It is never used for verification, OTP delivery, identity checks, submission requirements, or seller-access gating. Email remains the default partner notification channel.
 
 Configure the email provider to POST normalized delivery events to `/api/webhooks/email-delivery` and sign the raw JSON body with HMAC-SHA256 in `X-Auronix-Signature`. Supported event names are `sent`, `delivered`, `deferred`, `failed`, `bounced`, `complained`, `opened`, and `clicked`. Bounces and complaints automatically suppress the matching subscriber.
 

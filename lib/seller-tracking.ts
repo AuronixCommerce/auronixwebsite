@@ -6,7 +6,7 @@ export const createTrackingId = () => `AX-T-${randomBytes(12).toString('hex').to
 export const TRACKING_PATH = '/seller/application/track';
 export function trackingView(value: any) {
   const fields = ['fullName','businessName','phone','country','address','city','state','zipCode','website','businessType','yearsInBusiness','productCategories','businessInformation','whyWorkWithAuronix','catalogUrl'];
-  return { trackingId: value.trackingId || value.id, status: value.status || 'pending', createdAt: value.createdAt, updatedAt: value.updatedAt, reviewMessage: String(value.reviewMessage || ''), canEdit: ['pending','changes_requested'].includes(value.status || 'pending'), form: Object.fromEntries(fields.map(key => [key, String(value[key] || '')])) };
+  return { trackingId: value.trackingId || value.id, status: value.status || 'pending', createdAt: value.createdAt, updatedAt: value.updatedAt, reviewMessage: String(value.reviewMessage || ''), requestedFields: Array.isArray(value.requestedFields) ? value.requestedFields : [], revision: Number(value.revision || 1), canEdit: ['pending','changes_requested'].includes(value.status || 'pending'), form: Object.fromEntries(fields.map(key => [key, String(value[key] || '')])) };
 }
 export async function notifySellerApplication(applicationId: string, application: any, subject: string, body: string) {
   const email = String(application.preferredContactEmail || (application.preferredContactType === 'personal' ? application.personalEmail : application.businessEmail) || application.email || '').trim();

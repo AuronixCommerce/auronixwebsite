@@ -19,8 +19,102 @@ export interface SupplierSubmission extends TimestampedRecord {
   yearsInBusiness?: string;
   distributionModel?: string;
   catalogUrl?: string;
+  commercial?: PartnerCommercialTerms;
+  documents?: Record<string, PartnerDocument>;
   message?: string;
   status: SupplierStatus;
+}
+
+export type PartnerDocumentStatus = 'pending' | 'approved' | 'rejected' | 'expired' | 'archived';
+export type PartnerDocumentType = 'catalog' | 'brand-authorization' | 'pricing' | 'compliance' | 'other';
+
+export interface PartnerCommercialTerms {
+  brands: string;
+  minimumOrderQuantity: string;
+  pricingModel: string;
+  currency: string;
+  leadTimeDays: string;
+  incoterms: string;
+  notes: string;
+}
+
+export interface PartnerDocument {
+  id: string;
+  name: string;
+  type: PartnerDocumentType;
+  mimeType: string;
+  size: number;
+  storageKey: string;
+  status: PartnerDocumentStatus;
+  expiresAt?: number | null;
+  uploadedAt: number;
+  uploadedBy?: string;
+  uploadedByRole: 'seller' | 'supplier' | 'admin';
+  reviewedAt?: number | null;
+  reviewedBy?: string;
+  reviewNote?: string;
+}
+
+export interface PartnerFieldChange {
+  field: string;
+  label: string;
+  before: string;
+  after: string;
+}
+
+export interface PartnerTimelineEvent {
+  id: string;
+  type: 'created' | 'status' | 'change-request' | 'revision' | 'message' | 'document' | 'commercial' | 'notification' | 'account';
+  title: string;
+  description: string;
+  actorRole: 'seller' | 'supplier' | 'admin' | 'system';
+  actorEmail?: string;
+  fieldChanges?: PartnerFieldChange[];
+  requestedFields?: string[];
+  createdAt: number;
+}
+
+export interface PartnerMessage {
+  id: string;
+  body: string;
+  senderRole: 'seller' | 'supplier' | 'admin';
+  senderUid?: string;
+  senderEmail?: string;
+  createdAt: number;
+}
+
+export interface PartnerNotificationPreferences {
+  email: boolean;
+  push: boolean;
+  whatsapp: boolean;
+  whatsappPhone: string;
+}
+
+export interface PartnerDealRoom extends TimestampedRecord {
+  applicationId: string;
+  sellerUid?: string;
+  companyName: string;
+  contactName: string;
+  contactEmail: string;
+  status: string;
+  commercial: PartnerCommercialTerms;
+  documents: Record<string, PartnerDocument>;
+  messages: Record<string, PartnerMessage>;
+  timeline: Record<string, PartnerTimelineEvent>;
+  notificationPreferences: PartnerNotificationPreferences;
+}
+
+export interface EmailDeliveryRecord {
+  id: string;
+  applicationId?: string;
+  recipient: string;
+  subject: string;
+  event: string;
+  status: 'queued' | 'sent' | 'failed' | 'delivered' | 'bounced' | 'complained';
+  error?: string;
+  providerMessageId?: string;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export type SupplierStatus =

@@ -4,6 +4,8 @@ import { NextResponse } from 'next/server';
 
 import { requireAdmin } from '@/lib/server-auth';
 import { adminDb } from '@/lib/firebase-admin';
+import { appendDealRoomTimeline, ensureDealRoom } from '@/lib/deal-room';
+import { writeAuditLog } from '@/lib/server-audit';
 
 function text(
   value: unknown
@@ -110,7 +112,7 @@ export async function POST(
   request: Request
 ) {
   try {
-    await requireAdmin(
+    const admin = await requireAdmin(
       request
     );
 
@@ -227,6 +229,9 @@ export async function POST(
       updatedAt:
         Date.now(),
     });
+    await ensureDealRoom(applicationId, { ...application, status: 'rejected' });
+    await appendDealRoomTimeline(applicationId, { type: 'status', title: 'Application decision recorded', description: reason, actorRole: 'admin', actorEmail: admin.email || '' });
+    await writeAuditLog({ actorUid: admin.uid, actorEmail: admin.email, action: 'SELLER_APPLICATION_REJECTED', targetType: 'sellerApplication', targetId: applicationId, summary: reason, request });
 
     /*
      * Do not make rejection depend on email delivery.

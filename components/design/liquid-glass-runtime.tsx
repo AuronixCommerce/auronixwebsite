@@ -45,7 +45,11 @@ export function LiquidGlassRuntime() {
       return () => { delete root.dataset.acLiquid; };
     }
 
-    root.dataset.acLiquid = 'live';
+    const userReducedMotion = () => {
+      try { return localStorage.getItem('auronix-reduce-glass-motion') === 'true'; } catch { return false; }
+    };
+    root.dataset.acReduceMotion = String(userReducedMotion());
+    root.dataset.acLiquid = userReducedMotion() ? 'static' : 'live';
     let active: HTMLElement | null = null;
     let frame = 0;
     let latestEvent: PointerEvent | null = null;
@@ -56,6 +60,7 @@ export function LiquidGlassRuntime() {
       frame = 0;
       const event = latestEvent;
       if (!event) return;
+      if (root.dataset.acLiquid !== 'live') { clearSurface(active); active = null; return; }
 
       const viewportX = event.clientX / Math.max(window.innerWidth, 1);
       const viewportY = event.clientY / Math.max(window.innerHeight, 1);
@@ -113,11 +118,18 @@ export function LiquidGlassRuntime() {
       root.removeAttribute('data-ac-pointer');
     };
     const onPointerEnter = () => { root.dataset.acPointer = 'visible'; };
+    const onMotionPreference = () => {
+      const reduced = userReducedMotion();
+      root.dataset.acReduceMotion = String(reduced);
+      root.dataset.acLiquid = reduced ? 'static' : 'live';
+      if (reduced) { clearSurface(active); active = null; }
+    };
 
     window.addEventListener('pointermove', onPointerMove, { passive: true });
     window.addEventListener('pointerdown', onPointerDown, { passive: true });
     document.documentElement.addEventListener('mouseleave', onPointerLeave);
     document.documentElement.addEventListener('mouseenter', onPointerEnter);
+    window.addEventListener('auronix:motion-preference', onMotionPreference);
 
     return () => {
       cancelAnimationFrame(frame);
@@ -136,6 +148,7 @@ export function LiquidGlassRuntime() {
       window.removeEventListener('pointerdown', onPointerDown);
       document.documentElement.removeEventListener('mouseleave', onPointerLeave);
       document.documentElement.removeEventListener('mouseenter', onPointerEnter);
+      window.removeEventListener('auronix:motion-preference', onMotionPreference);
     };
   }, []);
 

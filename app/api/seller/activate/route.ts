@@ -2,6 +2,8 @@ import { userFacingError } from '@/lib/user-facing-error';
 import { NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { hashInvitationToken, normalizeEmail } from '@/lib/server-seller-invitations';
+import { linkSellerToDealRoom } from '@/lib/deal-room';
+import { notifyPartner } from '@/lib/server-partner-notifications';
 
 const response = (error: string, code: string, status: number) => NextResponse.json({ error, code }, { status });
 
@@ -48,6 +50,8 @@ export async function POST(request: Request) {
         [`sellerApplications/${applicationId}/updatedAt`]: now,
         [`sellerNotifications/${user.uid}/welcome`]: { id: 'welcome', type: 'account', title: 'Seller account activated', message: 'Your approved Auronix seller account is active and connected to your application.', href: '/seller/dashboard', createdAt: now },
       });
+      await linkSellerToDealRoom(applicationId, user.uid);
+      await notifyPartner({ applicationId, title: 'Your Auronix seller workspace is active', body: 'Your account is active and your application is connected to a secure Partner Deal Room.', event: 'account-activated', href: '/seller/dashboard' });
     } catch (error) {
       await adminAuth.deleteUser(user.uid).catch(() => undefined);
       throw error;

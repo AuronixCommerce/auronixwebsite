@@ -7,6 +7,7 @@ import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { normalizePhone } from '@/lib/seller-phone';
 import { normalizeEmail } from '@/lib/server-seller-invitations';
 import { protectPublicRequest, publicRequestErrorResponse } from '@/lib/server-protection';
+import { appendDealRoomTimeline, EMPTY_COMMERCIAL_TERMS } from '@/lib/deal-room';
 
 export const runtime = 'nodejs';
 
@@ -174,12 +175,16 @@ export async function POST(request: Request) {
       invitationSentBy: null,
       createdAt: timestamp,
       updatedAt: timestamp,
+      revision: 1,
     };
 
     try {
       await applicationRef.set(application);
       await adminDb.ref(`sellerApplicationTrackingIndex/${trackingHash(trackingId)}`).set({ applicationId });
       await adminDb.ref(`sellerApplicationDrafts/${draftId}`).update({ status: 'submitted', submittedAt: timestamp, applicationId, trackingId, updatedAt: timestamp });
+      await adminDb.ref(`sellerApplicationHistories/${applicationId}/1`).set({ revision: 1, reason: 'submitted', snapshot: application, createdAt: timestamp });
+      await adminDb.ref(`partnerDealRooms/${applicationId}`).set({ applicationId, companyName: application.businessName, contactName: application.fullName, contactEmail: preferredContactEmail, status: 'pending', commercial: EMPTY_COMMERCIAL_TERMS, createdAt: timestamp, updatedAt: timestamp });
+      await appendDealRoomTimeline(applicationId, { type: 'status', title: 'Application submitted', description: 'The completed application entered the Auronix review queue.', actorRole: 'seller', actorEmail: preferredContactEmail, createdAt: timestamp });
       // Retain the private resume lookup so returning applicants can reach tracking.
     } catch (persistenceError) {
       await applicationRef.remove().catch(() => undefined);

@@ -5,6 +5,8 @@ import { requireAdmin } from '@/lib/server-auth';
 import { adminDb } from '@/lib/firebase-admin';
 import { sendSellerInvitationEmail } from '@/lib/server-mail';
 import { issueSellerInvitation, normalizeEmail } from '@/lib/server-seller-invitations';
+import { appendDealRoomTimeline, ensureDealRoom } from '@/lib/deal-room';
+import { writeAuditLog } from '@/lib/server-audit';
 
 function text(
   value: unknown
@@ -152,7 +154,7 @@ export async function POST(
   request: Request
 ) {
   try {
-    await requireAdmin(
+    const admin = await requireAdmin(
       request
     );
 
@@ -337,6 +339,8 @@ export async function POST(
       updatedAt:
         now,
     });
+    await ensureDealRoom(applicationId, { ...application, status: 'invited', preferredContactEmail: preferredEmail });
+    await appendDealRoomTimeline(applicationId, { type: 'status', title: 'Application approved', description: 'The application passed review and a secure account invitation was prepared.', actorRole: 'admin', actorEmail: admin.email || '', createdAt: now });
 
     try {
       await sendSellerInvitationEmail({
@@ -374,6 +378,9 @@ invitationUrl,
         updatedAt:
           Date.now(),
       });
+      const logRef = adminDb.ref('emailDeliveryLogs').push();
+      await logRef.set({ id: logRef.key, applicationId, recipient: preferredEmail, subject: 'Create your Auronix Commerce seller account', event: 'seller-invitation', status: 'sent', createdAt: Date.now(), updatedAt: Date.now() });
+      await writeAuditLog({ actorUid: admin.uid, actorEmail: admin.email, action: 'SELLER_APPLICATION_APPROVED', targetType: 'sellerApplication', targetId: applicationId, summary: 'Application approved and invitation sent.', request });
 
       return NextResponse.json({
         success: true,
@@ -426,4 +433,3 @@ invitationUrl,
     );
   }
 }
-

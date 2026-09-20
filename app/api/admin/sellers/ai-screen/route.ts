@@ -1172,6 +1172,29 @@ Perform an independent review.
   };
 }
 
+function deterministicFallbackReview(
+  checks: ReturnType<typeof deterministicChecks>
+): FirstAIResult {
+  const serious = checks.riskSignals.some(signal => /fraud|scam|malicious|credential|password|otp|payment|phishing|impersonat/i.test(signal));
+  const label: ScreeningLabel = checks.riskSignals.length
+    ? (serious ? 'HIGH_RISK' : 'NEEDS_REVIEW')
+    : checks.missing.length >= 4
+      ? 'LOOKS_BUG'
+      : checks.missing.length
+        ? 'NEEDS_REVIEW'
+        : 'LOOKS_GOOD';
+  return {
+    label,
+    confidence: Math.max(55, Math.min(90, checks.quality)),
+    summary: 'Deterministic application checks completed. Model-assisted analysis was unavailable, so manual review remains required.',
+    reasons: unique([...checks.issues, 'Model-assisted analysis was unavailable; no automatic decision was made.']),
+    positiveSignals: checks.complete ? ['All required application fields are present.'] : [],
+    riskSignals: checks.riskSignals,
+    missingInformation: checks.missing,
+    contradictions: [],
+  };
+}
+
 async function approveAndSendInvitation(
   applicationId: string,
   app: SellerApplication,
@@ -1409,10 +1432,15 @@ async function processApplication(
       app
     );
 
-  const first =
-    await firstAIReview(
-      app
-    );
+  let modelAvailable = true;
+  let first: FirstAIResult;
+  try {
+    first = await firstAIReview(app);
+  } catch (error) {
+    modelAvailable = false;
+    console.error('Seller screening model unavailable; using deterministic review:', error instanceof Error ? userFacingError(error) : 'Unknown model error');
+    first = deterministicFallbackReview(checks);
+  }
 
   /*
    * Normalize model-generated free-email risk.
@@ -1460,17 +1488,13 @@ async function processApplication(
   if (
     eligibleForSecondReview
   ) {
-    second =
-      await secondAIReview(
-        app,
-        {
-          ...first,
-
-          riskSignals:
-            filteredFirstRisk,
-        },
-        checks
-      );
+    try {
+      second = await secondAIReview(app, { ...first, riskSignals: filteredFirstRisk }, checks);
+    } catch (error) {
+      modelAvailable = false;
+      second = null;
+      console.error('Independent seller review unavailable; preserving manual-review result:', error instanceof Error ? userFacingError(error) : 'Unknown model error');
+    }
   }
 
   const secondRisk =
@@ -1502,6 +1526,8 @@ async function processApplication(
 
   const autoEligible =
     automatic &&
+
+    modelAvailable &&
 
     checks.complete &&
 
@@ -1701,7 +1727,9 @@ async function processApplication(
     confidence,
 
     summary:
-      autoEligible
+      !modelAvailable
+        ? 'Deterministic screening completed successfully. Model-assisted analysis is temporarily unavailable, so this application remains queued for manual review.'
+        : autoEligible
         ? 'The application passed deterministic validation and two independent AI reviews and is eligible for automatic onboarding.'
         : label ===
             'HIGH_RISK'
@@ -1734,6 +1762,10 @@ async function processApplication(
 
     recommendation,
 
+    screeningMode: modelAvailable ? 'model-assisted' : 'deterministic-fallback',
+
+    modelAvailable,
+
     autoEligible,
 
     firstPass: {
@@ -1764,7 +1796,7 @@ async function processApplication(
     verificationRoutes: [
       'deterministic-validation',
 
-      'first-ai-review',
+      ...(modelAvailable ? ['first-ai-review'] : ['deterministic-fallback']),
 
       ...(second
         ? [
@@ -1799,7 +1831,7 @@ async function processApplication(
       Date.now(),
 
     version:
-      'seller-screen-v7',
+      'seller-screen-v8',
   };
 
   const savedReview = await applicationRef.transaction(current => current && Number(current.revision || 0) === revision && current.status !== 'changes_requested' ? {
@@ -2001,7 +2033,7 @@ export async function POST(
          */
         if (
           version ===
-            'seller-screen-v7' &&
+            'seller-screen-v8' &&
           application.aiAutoApproved !==
             true
         ) {
@@ -2082,7 +2114,4 @@ export async function POST(
     );
   }
 }
-
-
-
 

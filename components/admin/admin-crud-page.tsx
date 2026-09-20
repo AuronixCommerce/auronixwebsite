@@ -3,9 +3,9 @@ import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useMemo, useState } from 'react';
 import { ref, onValue, push, set, update, remove } from 'firebase/database';
-import { db } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { AdminLayout } from '@/components/admin/admin-layout';
-import { confirmAction, notifyAction } from '@/components/ui/confirm-action';
+import { confirmAction, notifyAction, promptAction } from '@/components/ui/confirm-action';
 import {
   Search,
   Plus,
@@ -15,6 +15,9 @@ import {
   Save,
   Loader2,
   RefreshCw,
+  Download,
+  FileArchive,
+  ShieldCheck,
 } from 'lucide-react';
 
 export interface AdminField {
@@ -46,6 +49,7 @@ export function AdminCrudPage({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<Record<string, any>>({});
+  const [documentWorking, setDocumentWorking] = useState('');
 
   useEffect(() => {
     if (!db) return;
@@ -127,10 +131,17 @@ export function AdminCrudPage({
       const now = Date.now();
 
       if (editingId) {
+        const previousStatus = records[editingId]?.status;
         await update(ref(db, `${path}/${editingId}`), {
           ...form,
           updatedAt: now,
         });
+        if (path === 'suppliers' && form.status && form.status !== previousStatus) {
+          const token = await auth.currentUser?.getIdToken();
+          const response = await fetch('/api/admin/suppliers/status', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ supplierId: editingId, status: form.status, previousStatus }) });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(result.error || 'The supplier status notification could not be recorded.');
+        }
       } else {
         const newRef = push(ref(db, path));
 
@@ -170,6 +181,23 @@ export function AdminCrudPage({
       console.error('Failed to delete record:', error);
       notifyAction('Unable to delete this record.');
     }
+  };
+
+  const supplierDocumentAction = async (supplierId: string, documentId: string, status: string) => {
+    const note = await promptAction({ title: `Mark document ${status}?`, description: 'This decision and note are emailed to the supplier and recorded in the audit history.', label: 'Review note (optional)', confirmLabel: `Mark ${status}` });
+    if (note === null) return;
+    setDocumentWorking(documentId);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      const response = await fetch('/api/admin/suppliers/documents', { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ supplierId, documentId, status, note }) });
+      const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || 'Document review failed.'); notifyAction(`Document marked ${status}.`);
+    } catch (error) { notifyAction(error instanceof Error ? error.message : 'Unable to review this document.'); }
+    finally { setDocumentWorking(''); }
+  };
+
+  const downloadSupplierDocument = async (supplierId: string, document: any) => {
+    try { const token = await auth.currentUser?.getIdToken(); const response = await fetch(`/api/admin/suppliers/documents?supplierId=${encodeURIComponent(supplierId)}&documentId=${encodeURIComponent(document.id)}`, { headers: { Authorization: `Bearer ${token}` } }); if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || 'Download failed.'); const url = URL.createObjectURL(await response.blob()); const link = window.document.createElement('a'); link.href = url; link.download = document.name; link.click(); URL.revokeObjectURL(url); }
+    catch (error) { notifyAction(error instanceof Error ? error.message : 'Unable to download this document.'); }
   };
 
   return (
@@ -290,6 +318,8 @@ export function AdminCrudPage({
                           </div>
                         ))}
                       </div>
+                      {path === 'suppliers' && record.commercial && <div className="mt-4 grid gap-2 rounded-2xl border border-border/70 bg-background/30 p-3 text-xs sm:grid-cols-3"><span><b>Brands:</b> {record.commercial.brands || '—'}</span><span><b>MOQ:</b> {record.commercial.minimumOrderQuantity || '—'}</span><span><b>Lead time:</b> {record.commercial.leadTimeDays ? `${record.commercial.leadTimeDays} days` : '—'}</span><span><b>Pricing:</b> {record.commercial.pricingModel || '—'}</span><span><b>Currency:</b> {record.commercial.currency || '—'}</span><span><b>Incoterms:</b> {record.commercial.incoterms || '—'}</span></div>}
+                      {path === 'suppliers' && record.documents && <div className="mt-4 space-y-2"><div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-foreground-muted"><ShieldCheck className="h-4 w-4" />Private documents</div>{Object.entries(record.documents as Record<string, any>).map(([documentId, document]) => <div key={documentId} className="ac-document-row"><FileArchive className="h-5 w-5" /><div><strong>{document.name}</strong><span>{String(document.type).replace(/-/g, ' ')} · {document.status || 'pending'}</span>{document.reviewNote && <small>{document.reviewNote}</small>}</div><button onClick={() => downloadSupplierDocument(id, { ...document, id: documentId })} title="Download"><Download className="h-4 w-4" /></button><div className="flex flex-wrap gap-1">{['approved', 'rejected', 'expired'].map(status => <button key={status} disabled={documentWorking === documentId} onClick={() => supplierDocumentAction(id, documentId, status)} className="rounded-lg bg-secondary px-2 py-1 text-[10px] font-semibold capitalize">{status}</button>)}</div></div>)}</div>}
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">

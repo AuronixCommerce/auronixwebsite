@@ -12,10 +12,11 @@ import { onAuthChange, signOut } from '@/lib/auth';
 import type { UserProfile } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { AuronixMark } from '@/components/site/auronix-mark';
-import { LayoutDashboard, User, Package, FileText, LifeBuoy, Settings, LogOut, Loader2, Bell } from 'lucide-react';
+import { LayoutDashboard, User, Package, FileText, LifeBuoy, Settings, Bell, BriefcaseBusiness } from 'lucide-react';
 
 const NAV = [
   { label: 'Overview', href: '/seller/dashboard', icon: LayoutDashboard },
+  { label: 'Deal Room', href: '/seller/deal-room', icon: BriefcaseBusiness },
   { label: 'Profile', href: '/seller/profile', icon: User },
   { label: 'Products', href: '/seller/dashboard/products', icon: Package },
   { label: 'Catalogs', href: '/seller/dashboard/catalogs', icon: FileText },

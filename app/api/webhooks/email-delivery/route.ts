@@ -27,6 +27,11 @@ export async function POST(request: Request) {
       const now = Number(item?.timestamp || 0) || Date.now();
       const eventRef = adminDb.ref('newsletterDeliveryEvents').push();
       await eventRef.set({ id: eventRef.key, type, email, messageId, provider: String(item?.provider || request.headers.get('x-email-provider') || 'smtp'), rawEventId: String(item?.eventId || item?.event_id || ''), createdAt: now, receivedAt: Date.now() });
+      if (messageId) {
+        const deliveries = (await adminDb.ref('emailDeliveryLogs').get()).val() || {};
+        const match = Object.entries(deliveries as Record<string, any>).find(([, record]) => String(record?.providerMessageId || '') === messageId);
+        if (match) await adminDb.ref(`emailDeliveryLogs/${match[0]}`).update({ status: type === 'deferred' ? 'sent' : type, updatedAt: Date.now() });
+      }
       if (email && (type === 'bounced' || type === 'complained')) {
         const subscribers = (await adminDb.ref('newsletterSubscribers').get()).val() || {};
         const match = Object.entries(subscribers as Record<string, any>).find(([, record]) => normalizeNewsletterEmail(String(record?.email || '')) === email);

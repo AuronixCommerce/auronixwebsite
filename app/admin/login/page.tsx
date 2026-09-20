@@ -59,7 +59,8 @@ export default function AdminLoginPage() {
 
         toast({
           title: 'Admin profile not found',
-          description: `No RTDB profile exists at users/${result.user.uid}`,
+          description:
+            'Your Auronix administrator profile is unavailable. Contact an account owner for access.',
           variant: 'destructive',
         });
 

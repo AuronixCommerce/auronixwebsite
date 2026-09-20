@@ -351,6 +351,7 @@ export const SELLER_STATUSES = [
 
 export const ADMIN_NAV = [
   { label: 'Overview', href: '/admin', icon: 'LayoutDashboard' },
+  { label: 'Deal Rooms', href: '/admin/deal-room', icon: 'BriefcaseBusiness' },
   { label: 'Seller Applications', href: '/admin/sellers', icon: 'UserCheck' },
   { label: 'Supplier Submissions', href: '/admin/suppliers', icon: 'Package' },
   { label: 'Contact Messages', href: '/admin/contact', icon: 'Mail' },
@@ -364,6 +365,8 @@ export const ADMIN_NAV = [
   { label: 'Business Information', href: '/admin/settings/business', icon: 'Building2' },
   { label: 'Users', href: '/admin/users', icon: 'UsersRound' },
   { label: 'Audit Logs', href: '/admin/audit', icon: 'ScrollText' },
+  { label: 'Reports', href: '/admin/reports', icon: 'FileSpreadsheet' },
+  { label: 'Email Delivery', href: '/admin/email-delivery', icon: 'Send' },
   { label: 'Security', href: '/admin/security', icon: 'ShieldCheck' },
   { label: 'Settings', href: '/admin/settings', icon: 'Settings' },
 ] as const;

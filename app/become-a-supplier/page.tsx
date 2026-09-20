@@ -24,12 +24,15 @@ import {
 } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { DISTRIBUTION_MODELS } from '@/lib/constants';
-import { CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
+import { CheckCircle2, ArrowRight, FileArchive, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
 export default function BecomeSupplierPage() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [submissionId, setSubmissionId] = useState('');
+  const [catalogFile, setCatalogFile] = useState<File | null>(null);
+  const [authorizationFile, setAuthorizationFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState({
     companyName: '',
@@ -42,6 +45,13 @@ export default function BecomeSupplierPage() {
     yearsInBusiness: '',
     distributionModel: '',
     catalogUrl: '',
+    brands: '',
+    minimumOrderQuantity: '',
+    pricingModel: '',
+    currency: 'USD',
+    leadTimeDays: '',
+    incoterms: '',
+    commercialNotes: '',
     message: '',
     consent: false,
   });
@@ -84,9 +94,16 @@ export default function BecomeSupplierPage() {
         message: form.message.trim() || undefined,
         consent: form.consent,
       };
-      const response = await fetch('/api/supplier/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(submission) });
+      const payload = new FormData();
+      Object.entries({ ...submission, brands: form.brands.trim(), minimumOrderQuantity: form.minimumOrderQuantity.trim(), pricingModel: form.pricingModel.trim(), currency: form.currency.trim(), leadTimeDays: form.leadTimeDays.trim(), incoterms: form.incoterms.trim(), commercialNotes: form.commercialNotes.trim() }).forEach(([key, value]) => {
+        if (value !== undefined) payload.append(key, String(value));
+      });
+      if (catalogFile) payload.append('catalogFile', catalogFile);
+      if (authorizationFile) payload.append('authorizationFile', authorizationFile);
+      const response = await fetch('/api/supplier/apply', { method: 'POST', body: payload });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'Unable to submit supplier information.');
+      setSubmissionId(result.submissionId || '');
       setSuccess(true);
       toast({ title: 'Submission received', description: 'We will be in touch soon.' });
     } catch (err) {
@@ -118,6 +135,7 @@ export default function BecomeSupplierPage() {
               Thank you for your interest in partnering with Auronix. We have received your
               information and will review it carefully. If there is a fit, we will be in touch soon.
             </p>
+            {submissionId && <div className="ac-content-panel mb-7 px-5 py-4 text-left"><span className="block text-xs font-semibold uppercase tracking-[0.14em] text-foreground-muted">Private reference</span><strong className="mt-1 block font-mono text-sm">{submissionId}</strong></div>}
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link href="/">
                 <Button variant="outline">Return Home</Button>
@@ -249,6 +267,31 @@ export default function BecomeSupplierPage() {
                 />
               </FormField>
 
+              <div className="ac-content-panel p-5 space-y-5">
+                <div className="flex items-start gap-3">
+                  <ShieldCheck className="mt-0.5 h-5 w-5 text-accent" />
+                  <div><h2 className="font-semibold">Secure supplier documents</h2><p className="mt-1 text-sm text-foreground-muted">Upload a private catalog and brand-authorization document. Files are available only to your review team.</p></div>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-5">
+                  <FileField label="Product catalog" file={catalogFile} onChange={setCatalogFile} />
+                  <FileField label="Authorization document" file={authorizationFile} onChange={setAuthorizationFile} />
+                </div>
+                <p className="text-xs text-foreground-muted">PDF, JPG, PNG, WebP, CSV, XLS, or XLSX · 12 MB maximum per file</p>
+              </div>
+
+              <div className="space-y-5">
+                <div><span className="ac-eyebrow">Commercial profile</span><h2 className="mt-2 text-xl font-semibold">Supply terms</h2></div>
+                <div className="grid sm:grid-cols-2 gap-5">
+                  <FormField label="Brands represented"><Input value={form.brands} onChange={(e) => update('brands', e.target.value)} placeholder="Brand names or private label" /></FormField>
+                  <FormField label="Minimum order quantity"><Input value={form.minimumOrderQuantity} onChange={(e) => update('minimumOrderQuantity', e.target.value)} placeholder="e.g. 500 units" /></FormField>
+                  <FormField label="Pricing model"><Input value={form.pricingModel} onChange={(e) => update('pricingModel', e.target.value)} placeholder="Wholesale, tiers, MAP…" /></FormField>
+                  <FormField label="Currency"><Input value={form.currency} onChange={(e) => update('currency', e.target.value)} placeholder="USD" maxLength={12} /></FormField>
+                  <FormField label="Lead time (days)"><Input type="number" min="0" max="1000" value={form.leadTimeDays} onChange={(e) => update('leadTimeDays', e.target.value)} placeholder="30" /></FormField>
+                  <FormField label="Incoterms"><Input value={form.incoterms} onChange={(e) => update('incoterms', e.target.value)} placeholder="EXW, FOB, DDP…" /></FormField>
+                </div>
+                <FormField label="Commercial notes"><Textarea value={form.commercialNotes} onChange={(e) => update('commercialNotes', e.target.value)} placeholder="Volume tiers, samples, production capacity, or fulfillment details." rows={4} /></FormField>
+              </div>
+
               <FormField label="Message">
                 <Textarea
                   value={form.message}
@@ -300,4 +343,12 @@ export default function BecomeSupplierPage() {
       </Section>
     </SiteLayout>
   );
+}
+
+function FileField({ label, file, onChange }: { label: string; file: File | null; onChange: (file: File | null) => void }) {
+  return <label className="block cursor-pointer rounded-2xl border border-dashed border-border bg-background/30 p-4 transition hover:border-accent/50">
+    <span className="flex items-center gap-2 text-sm font-medium"><FileArchive className="h-4 w-4" />{label}</span>
+    <span className="mt-2 block truncate text-xs text-foreground-muted">{file ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB` : 'Choose a private file'}</span>
+    <input className="sr-only" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.csv,.xls,.xlsx" onChange={(event) => onChange(event.target.files?.[0] || null)} />
+  </label>;
 }
