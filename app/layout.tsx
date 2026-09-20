@@ -40,6 +40,7 @@ import {
 import { ThemeProvider } from '@/components/site/theme-provider';
 import { CookieConsent } from '@/components/site/cookie-consent';
 import { ConfirmActionHost, PromptActionHost } from '@/components/ui/confirm-action';
+import { LiquidGlassRuntime } from '@/components/design/liquid-glass-runtime';
 import { DEFAULT_KEYWORDS, SEO_LOGO_IMAGE, SEO_SITE_NAME, SEO_SITE_URL, SEO_SOCIAL_IMAGE } from '@/lib/seo';
 
 const inter = { variable: 'ac-system-font' };
@@ -316,6 +317,7 @@ export default async function RootLayout({
         }}
       >
         <ThemeProvider>
+          <LiquidGlassRuntime />
           <MaintenanceRefresh serverPath={pathname} blocked={false} />
           <PublicRuntime>{children}</PublicRuntime>
           <CookieConsent />

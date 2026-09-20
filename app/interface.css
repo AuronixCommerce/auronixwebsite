@@ -2238,3 +2238,261 @@ body::after {
 @keyframes ac-status-breathe {
   50% { box-shadow: 0 0 0 8px #35c87508; opacity: 0.72; }
 }
+
+/* Live optical material system — shared by public, authentication, seller and admin surfaces. */
+:root {
+  --ac-pointer-x: 50vw;
+  --ac-pointer-y: 35vh;
+  --ac-scene-x: 0px;
+  --ac-scene-y: 0px;
+  --ac-scene-x-soft: 0px;
+  --ac-scene-y-soft: 0px;
+  --ac-scene-x-deep: 0px;
+  --ac-scene-y-deep: 0px;
+  --ac-liquid-x: 50%;
+  --ac-liquid-y: 18%;
+  --ac-liquid-shift-x: 0px;
+  --ac-liquid-shift-y: 0px;
+  --ac-liquid-scale-x: 1;
+  --ac-liquid-scale-y: 1;
+  --ac-liquid-border: rgb(255 255 255 / 0.74);
+  --ac-liquid-depth: 0 30px 80px -46px rgb(24 49 78 / 0.52), 0 12px 30px -22px rgb(17 43 72 / 0.32);
+}
+.dark {
+  --ac-liquid-border: rgb(255 255 255 / 0.17);
+  --ac-liquid-depth: 0 34px 90px -38px rgb(0 0 0 / 0.82), 0 10px 28px -18px rgb(0 0 0 / 0.62);
+}
+.ac-liquid-light {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    radial-gradient(26rem 26rem at var(--ac-pointer-x) var(--ac-pointer-y), hsl(205 94% 76% / 0.11), transparent 70%),
+    radial-gradient(46rem 32rem at calc(var(--ac-pointer-x) + 12vw) calc(var(--ac-pointer-y) - 18vh), rgb(255 255 255 / 0.18), transparent 72%);
+  transition: opacity 0.4s ease;
+}
+.ac-atmosphere-orb-one {
+  translate: var(--ac-scene-x-soft) var(--ac-scene-y-soft);
+}
+.ac-atmosphere-orb-two {
+  translate: var(--ac-scene-x-deep) var(--ac-scene-y-deep);
+}
+.ac-atmosphere-plane {
+  translate: var(--ac-scene-x-deep) var(--ac-scene-y-deep);
+}
+
+:where(
+  .ac-glass,
+  .ac-nav,
+  .ac-mega,
+  .ac-content-panel,
+  .ac-form-panel,
+  .ac-application-panel,
+  .ac-feature,
+  .ac-journey-story,
+  .ac-workspace-sidebar,
+  .ac-workspace-toolbar,
+  .ac-workspace-dock,
+  [role="dialog"],
+  [role="alertdialog"],
+  [role="menu"],
+  [role="listbox"]
+) {
+  --ac-surface-base: var(--ac-material-thick);
+  position: relative;
+  isolation: isolate;
+  border-color: var(--ac-liquid-border) !important;
+  background:
+    radial-gradient(42rem 30rem at var(--ac-liquid-x) var(--ac-liquid-y), rgb(255 255 255 / 0.46), transparent 34%),
+    radial-gradient(25rem 21rem at calc(var(--ac-liquid-x) + 12%) calc(var(--ac-liquid-y) + 28%), hsl(var(--accent) / 0.075), transparent 66%),
+    linear-gradient(128deg, rgb(255 255 255 / 0.24), transparent 33%, hsl(211 64% 70% / 0.06) 70%, rgb(255 255 255 / 0.13)),
+    var(--ac-grain),
+    var(--ac-surface-base) !important;
+  backdrop-filter: blur(32px) saturate(172%) contrast(1.035) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(172%) contrast(1.035) !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.92),
+    inset 1px 0 0 rgb(255 255 255 / 0.38),
+    inset 0 -1px 0 hsl(var(--foreground) / 0.075),
+    var(--ac-liquid-depth) !important;
+  transition:
+    translate 0.5s var(--ac-ease),
+    scale 0.5s var(--ac-ease),
+    border-radius 0.5s var(--ac-ease),
+    box-shadow 0.5s var(--ac-ease),
+    background-position 0.12s linear;
+}
+.dark :where(
+  .ac-glass,
+  .ac-nav,
+  .ac-mega,
+  .ac-content-panel,
+  .ac-form-panel,
+  .ac-application-panel,
+  .ac-feature,
+  .ac-journey-story,
+  .ac-workspace-sidebar,
+  .ac-workspace-toolbar,
+  .ac-workspace-dock,
+  [role="dialog"],
+  [role="alertdialog"],
+  [role="menu"],
+  [role="listbox"]
+) {
+  background:
+    radial-gradient(40rem 28rem at var(--ac-liquid-x) var(--ac-liquid-y), rgb(255 255 255 / 0.12), transparent 36%),
+    radial-gradient(24rem 20rem at calc(var(--ac-liquid-x) + 12%) calc(var(--ac-liquid-y) + 28%), hsl(var(--accent) / 0.095), transparent 68%),
+    linear-gradient(128deg, rgb(255 255 255 / 0.075), transparent 34%, hsl(211 74% 60% / 0.055) 70%, rgb(255 255 255 / 0.04)),
+    var(--ac-grain),
+    var(--ac-surface-base) !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.2),
+    inset 1px 0 0 rgb(255 255 255 / 0.06),
+    inset 0 -1px 0 rgb(0 0 0 / 0.34),
+    var(--ac-liquid-depth) !important;
+}
+.ac-glass,
+.ac-nav,
+.ac-mega,
+.ac-workspace-sidebar,
+.ac-workspace-toolbar,
+.ac-workspace-dock {
+  --ac-surface-base: var(--ac-material-clear);
+  backdrop-filter: blur(44px) saturate(190%) contrast(1.045) !important;
+  -webkit-backdrop-filter: blur(44px) saturate(190%) contrast(1.045) !important;
+}
+
+html[data-ac-liquid="live"] [data-ac-liquid-active="true"] {
+  translate: var(--ac-liquid-shift-x) var(--ac-liquid-shift-y);
+  scale: var(--ac-liquid-scale-x) var(--ac-liquid-scale-y);
+  border-radius: calc(1em + 13px);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.98),
+    inset 1px 0 0 rgb(255 255 255 / 0.52),
+    inset 0 -1px 0 hsl(var(--foreground) / 0.08),
+    0 36px 88px -50px rgb(15 45 78 / 0.66),
+    0 13px 32px -24px rgb(12 40 72 / 0.44) !important;
+  transition-duration: 0.11s;
+}
+html[data-ac-liquid="live"] [data-ac-liquid-pressed="true"] {
+  scale: 0.975 0.955;
+  border-radius: calc(1em + 18px);
+  transition-duration: 0.08s;
+}
+
+.ac-button,
+button[class*="bg-primary"],
+a[class*="bg-primary"] {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.24);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.34),
+    inset 0 -1px 0 rgb(0 0 0 / 0.28),
+    0 15px 34px -22px hsl(var(--primary) / 0.8);
+  transition: translate 0.35s var(--ac-ease), scale 0.35s var(--ac-ease), border-radius 0.35s var(--ac-ease), box-shadow 0.35s var(--ac-ease), background 0.2s;
+}
+html[data-ac-liquid="live"] :where(.ac-button, button[class*="bg-primary"], a[class*="bg-primary"])[data-ac-liquid-active="true"] {
+  translate: var(--ac-liquid-shift-x) var(--ac-liquid-shift-y);
+  scale: var(--ac-liquid-scale-x) var(--ac-liquid-scale-y);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.42), inset 0 -1px 0 rgb(0 0 0 / 0.3), 0 19px 38px -21px hsl(var(--primary) / 0.85);
+}
+html[data-ac-liquid="live"] :where(.ac-button, button[class*="bg-primary"], a[class*="bg-primary"])[data-ac-liquid-pressed="true"] {
+  scale: 0.965 0.93;
+  border-radius: 22px;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+textarea,
+select,
+button[role="combobox"] {
+  border-color: rgb(255 255 255 / 0.68) !important;
+  background:
+    linear-gradient(180deg, hsl(var(--background) / 0.66), hsl(var(--background) / 0.48)) !important;
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.72), inset 0 2px 5px rgb(20 43 69 / 0.035), 0 8px 22px -20px rgb(18 43 71 / 0.4);
+}
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.dark textarea,
+.dark select,
+.dark button[role="combobox"] {
+  border-color: rgb(255 255 255 / 0.14) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), inset 0 2px 6px rgb(0 0 0 / 0.2);
+}
+input:focus,
+textarea:focus,
+select:focus,
+button[role="combobox"]:focus {
+  border-color: hsl(var(--accent) / 0.62) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.82), 0 0 0 4px hsl(var(--accent) / 0.105), 0 16px 36px -26px hsl(var(--accent) / 0.7) !important;
+}
+
+.ac-table-scroll,
+.ac-content-panel:has(> .overflow-x-auto) {
+  background: hsl(var(--background) / 0.54) !important;
+  backdrop-filter: blur(30px) saturate(158%);
+  -webkit-backdrop-filter: blur(30px) saturate(158%);
+}
+thead {
+  background: hsl(var(--background) / 0.38) !important;
+  backdrop-filter: blur(18px);
+}
+tbody tr {
+  transition: background 0.2s ease, translate 0.2s var(--ac-ease);
+}
+tbody tr:hover {
+  background: hsl(var(--background) / 0.48) !important;
+  translate: 2px 0;
+}
+
+.ac-workspace {
+  background:
+    radial-gradient(50rem 38rem at calc(88% + var(--ac-scene-x)) calc(6% + var(--ac-scene-y)), hsl(209 82% 72% / 0.17), transparent 68%),
+    radial-gradient(42rem 34rem at calc(4% - var(--ac-scene-x)) calc(80% - var(--ac-scene-y)), hsl(194 65% 76% / 0.12), transparent 70%),
+    hsl(var(--background-subtle));
+}
+.ac-login-screen,
+.ac-application,
+.ac-page {
+  position: relative;
+}
+.ac-login-screen::before,
+.ac-application::before {
+  content: "";
+  position: fixed;
+  width: min(54rem, 82vw);
+  aspect-ratio: 1;
+  right: -22rem;
+  top: -18rem;
+  z-index: -1;
+  border-radius: 50%;
+  border: 1px solid rgb(255 255 255 / 0.56);
+  background: radial-gradient(circle at 30% 28%, rgb(255 255 255 / 0.68), hsl(208 76% 74% / 0.16) 42%, transparent 72%);
+  translate: var(--ac-scene-x-soft) var(--ac-scene-y-soft);
+  pointer-events: none;
+}
+
+@media (max-width: 767px), (hover: none), (pointer: coarse) {
+  .ac-liquid-light {
+    background:
+      radial-gradient(28rem 24rem at 92% 10%, hsl(207 82% 75% / 0.13), transparent 72%),
+      radial-gradient(32rem 28rem at 4% 76%, hsl(194 62% 78% / 0.09), transparent 74%);
+  }
+  :where(.ac-content-panel, .ac-form-panel, .ac-application-panel, .ac-feature) {
+    backdrop-filter: blur(24px) saturate(158%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(158%) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ac-atmosphere-orb-one,
+  .ac-atmosphere-orb-two,
+  .ac-atmosphere-plane,
+  [data-ac-liquid-active="true"] {
+    translate: none !important;
+    scale: 1 !important;
+  }
+}
