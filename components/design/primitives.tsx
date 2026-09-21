@@ -88,78 +88,11 @@ export function Spinner({
     </span>
   );
 }
-export function GlassPanel({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return <div className={cn("ac-glass", className)}>{children}</div>;
-}
-export function FeatureCard({
-  title,
-  description,
-  icon,
-  index,
-}: {
-  title: string;
-  description: string;
-  icon?: ReactNode;
-  index?: number;
-}) {
-  return (
-    <article className="ac-feature">
-      <div className="ac-feature-top">
-        {icon}
-        <span>
-          {index === undefined ? null : String(index + 1).padStart(2, "0")}
-        </span>
-      </div>
-      <h3>{title}</h3>
-      <p>{description}</p>
-    </article>
-  );
-}
 export function AnimatedNumber({ value }: { value: number }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const [display, setDisplay] = useState(value);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches)
-      return;
-    let frame = 0;
-    const observer = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting) return;
-      observer.disconnect();
-      const start = performance.now();
-      const tick = (now: number) => {
-        const t = Math.min((now - start) / 650, 1);
-        setDisplay(Math.round(value * (1 - Math.pow(1 - t, 3))));
-        if (t < 1) frame = requestAnimationFrame(tick);
-      };
-      frame = requestAnimationFrame(tick);
-    });
-    observer.observe(el);
-    return () => {
-      observer.disconnect();
-      cancelAnimationFrame(frame);
-    };
-  }, [value]);
   return (
-    <span ref={ref} className="tabular-nums">
-      {display}
+    <span className="tabular-nums">
+      {value}
     </span>
-  );
-}
-export function MetricCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="ac-metric">
-      <strong>
-        <AnimatedNumber value={value} />
-      </strong>
-      <span>{label}</span>
-    </div>
   );
 }
 export function StatusBadge({

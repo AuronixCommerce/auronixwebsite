@@ -1,6 +1,5 @@
 'use client';
 
-import { MotionSystem } from '@/components/design/motion';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -12,7 +11,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
       storageKey="auronix-theme"
     >
-      <MotionSystem>{children}</MotionSystem>
+      {children}
     </NextThemesProvider>
   );
 }

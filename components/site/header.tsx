@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, ChevronDown, Menu, Search } from "lucide-react";
 import { AuronixMark } from "./auronix-mark";
 import { MobileMenu } from "./mobile-menu";
 import { ThemeToggle } from "./theme-toggle";
@@ -21,7 +20,7 @@ export function MegaMenu({
         <span className="ac-eyebrow">Explore {group.title}</span>
         <p>{group.note}</p>
         <Link href="/contact" onClick={onClose}>
-          Partner With Us <ArrowRight size={17} />
+          Partner With Us
         </Link>
       </div>
       <div className="ac-mega-links">
@@ -33,7 +32,6 @@ export function MegaMenu({
                 <strong>{page.title}</strong>
                 <span>
                   {page.category}
-                  <ArrowRight size={16} />
                 </span>
               </Link>
             )
@@ -124,7 +122,7 @@ export function Header() {
                 onClick={() => setMenu(menu === g.title ? null : g.title)}
               >
                 {g.title}
-                <ChevronDown size={13} />
+                <span aria-hidden="true" className="ac-nav-disclosure">{menu === g.title ? '−' : '+'}</span>
               </button>
             ))}
           </nav>
@@ -138,7 +136,7 @@ export function Header() {
                 openSearch();
               }}
             >
-              <Search size={19} />
+              <span>Search</span>
             </button>
             <div className="ac-desktop-action">
               <ThemeToggle />
@@ -151,7 +149,7 @@ export function Header() {
               Portal
             </Link>
             <Link href="/supplier" className="ac-button ac-desktop-action">
-              Become a Supplier <ArrowRight size={15} />
+              Become a Supplier
             </Link>
             <button
               type="button"
@@ -159,7 +157,7 @@ export function Header() {
               aria-label="Open navigation"
               onClick={() => setMobile(true)}
             >
-              <Menu size={21} />
+              <span>Menu</span>
             </button>
           </div>
         </div>
