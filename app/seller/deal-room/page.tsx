@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { BriefcaseBusiness, CheckCircle2, Clock3, Download, FileArchive, MessageSquareText, Send, ShieldCheck, UploadCloud } from 'lucide-react';
 import { SellerLayout } from '@/components/seller/seller-layout';
+import { DealRoomGuide } from '@/components/deal-room/deal-room-guide';
 import { Spinner } from '@/components/design/primitives';
 import { auth } from '@/lib/firebase';
 import { onAuthChange } from '@/lib/auth';
 import { userFacingError } from '@/lib/user-facing-error';
+import Link from 'next/link';
 
 const EMPTY = { brands: '', minimumOrderQuantity: '', pricingModel: '', currency: 'USD', leadTimeDays: '', incoterms: '', notes: '' };
 
@@ -80,12 +82,44 @@ export default function SellerDealRoomPage() {
     } catch (caught) { setError(caught instanceof Error ? userFacingError(caught) : 'Unable to download document.'); }
   };
 
+  const documents = room?.documents || [];
+  const commercialReady = Boolean(
+    commercial.brands &&
+    commercial.minimumOrderQuantity &&
+    commercial.pricingModel &&
+    commercial.leadTimeDays
+  );
+  const hasDocuments = documents.length > 0;
+  const needsReplacement = documents.some((document: any) => ['rejected', 'expired'].includes(document.status));
+  const pendingDocuments = documents.filter((document: any) => document.status === 'pending').length;
+  const latestMessage = room?.messages?.[room.messages.length - 1];
+  const replyRequested = latestMessage?.senderRole === 'admin';
+  const next = !room
+    ? { text: 'Ask support to connect your approved application.', href: '/seller/support', label: 'Contact support' }
+    : needsReplacement
+      ? { text: 'Replace a rejected or expired document.', href: '#secure-documents', label: 'Review documents' }
+      : !commercialReady
+        ? { text: 'Complete the core commercial terms for review.', href: '#commercial-terms', label: 'Complete terms' }
+        : !hasDocuments
+          ? { text: 'Upload a catalog or brand authorization document.', href: '#secure-documents', label: 'Upload a file' }
+          : replyRequested
+            ? { text: 'The Auronix review team is waiting for your reply.', href: '#deal-room-messages', label: 'Reply now' }
+            : pendingDocuments > 0
+              ? { text: `${pendingDocuments} document${pendingDocuments === 1 ? ' is' : 's are'} awaiting review.`, href: '#review-timeline', label: 'View timeline' }
+              : { text: 'Your room is current. Review the latest activity.', href: '#review-timeline', label: 'View activity' };
+
   return <SellerLayout><div className="ac-deal-room space-y-6">
     <header className="ac-workspace-hero"><div><span className="ac-eyebrow"><BriefcaseBusiness className="h-4 w-4" /> Partner Deal Room</span><h1>Commercial workspace</h1><p>Manage confidential supply terms, review documents, and talk directly with the Auronix team.</p></div>{room && <div className="ac-status-orb"><span>Application</span><strong>{String(room.status || 'active').replace(/_/g, ' ')}</strong><small>{room.applicationId}</small></div>}</header>
     {error && <div className="ac-alert ac-alert-error">{error}</div>}{notice && <div className="ac-alert ac-alert-success"><CheckCircle2 className="h-4 w-4" />{notice}</div>}
-    {loading ? <div className="ac-content-panel flex min-h-[320px] items-center justify-center"><Spinner className="h-7 w-7" /></div> : !room ? <div className="ac-content-panel p-8">Your approved application is not connected to a Deal Room yet.</div> : <div className="ac-deal-grid">
+    {!loading && <DealRoomGuide role="seller" nextAction={next.text} actionHref={next.href} actionLabel={next.label} checkpoints={room ? [
+      { label: 'Commercial profile', complete: commercialReady },
+      { label: 'Private document', complete: hasDocuments },
+      { label: 'No replacement needed', complete: !needsReplacement },
+      { label: 'Review reply current', complete: !replyRequested },
+    ] : []} />}
+    {loading ? <div className="ac-content-panel flex min-h-[320px] items-center justify-center"><Spinner className="h-7 w-7" /></div> : !room ? <div className="ac-content-panel p-8"><h2 className="text-xl font-semibold">Deal Room connection pending</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-foreground-muted">The Deal Room appears after an approved application is linked to your seller account. If you were recently approved, refresh your dashboard first; otherwise ask support to connect the application.</p><div className="mt-5 flex flex-wrap gap-3"><Link href="/seller/dashboard" className="ac-button ac-button-secondary">Open dashboard</Link><Link href="/seller/support" className="ac-button">Contact support</Link></div></div> : <div className="ac-deal-grid">
       <div className="space-y-6">
-        <section className="ac-content-panel p-6"><SectionHead icon={BriefcaseBusiness} title="Commercial terms" text="Keep MOQ, pricing, lead time, brand, and fulfillment details current." /><div className="mt-6 grid gap-4 sm:grid-cols-2">
+        <section id="commercial-terms" className="ac-content-panel scroll-mt-28 p-6"><SectionHead icon={BriefcaseBusiness} title="Commercial terms" text="Keep MOQ, pricing, lead time, brand, and fulfillment details current." /><div className="mt-6 grid gap-4 sm:grid-cols-2">
           <Field label="Brands represented" value={commercial.brands} onChange={(v) => setCommercial({ ...commercial, brands: v })} />
           <Field label="Minimum order quantity" value={commercial.minimumOrderQuantity} onChange={(v) => setCommercial({ ...commercial, minimumOrderQuantity: v })} />
           <Field label="Pricing model" value={commercial.pricingModel} onChange={(v) => setCommercial({ ...commercial, pricingModel: v })} />
@@ -93,13 +127,13 @@ export default function SellerDealRoomPage() {
           <Field label="Lead time (days)" type="number" value={commercial.leadTimeDays} onChange={(v) => setCommercial({ ...commercial, leadTimeDays: v })} />
           <Field label="Incoterms" value={commercial.incoterms} onChange={(v) => setCommercial({ ...commercial, incoterms: v })} />
         </div><label className="mt-4 block text-sm font-medium">Commercial notes<textarea className="mt-2 min-h-[110px] w-full rounded-2xl border border-border px-4 py-3" value={commercial.notes} onChange={(e) => setCommercial({ ...commercial, notes: e.target.value })} /></label><button className="ac-button mt-5" onClick={saveCommercial} disabled={!!working}>{working === 'commercial' ? <Spinner className="h-4 w-4" /> : null}Save commercial terms</button></section>
-        <section className="ac-content-panel p-6"><SectionHead icon={ShieldCheck} title="Secure documents" text="Catalogs, pricing files, compliance records, and brand authorizations remain private." /><div className="ac-upload-grid mt-6"><label className="ac-file-drop"><UploadCloud className="h-6 w-6" /><strong>{file ? file.name : 'Choose document'}</strong><span>{file ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : 'PDF, image, CSV or spreadsheet · 12 MB max'}</span><input className="sr-only" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.csv,.xls,.xlsx" onChange={(e) => setFile(e.target.files?.[0] || null)} /></label><div className="grid gap-3"><select value={documentType} onChange={(e) => setDocumentType(e.target.value)}><option value="catalog">Product catalog</option><option value="brand-authorization">Brand authorization</option><option value="pricing">Pricing</option><option value="compliance">Compliance</option><option value="other">Other</option></select><input type="date" aria-label="Document expiry date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} /><button className="ac-button" disabled={!file || !!working} onClick={upload}>{working === 'upload' ? <Spinner className="h-4 w-4" /> : <UploadCloud className="h-4 w-4" />}Upload securely</button></div></div>
+        <section id="secure-documents" className="ac-content-panel scroll-mt-28 p-6"><SectionHead icon={ShieldCheck} title="Secure documents" text="Catalogs, pricing files, compliance records, and brand authorizations remain private." /><div className="ac-upload-grid mt-6"><label className="ac-file-drop"><UploadCloud className="h-6 w-6" /><strong>{file ? file.name : 'Choose document'}</strong><span>{file ? `${(file.size / 1024 / 1024).toFixed(1)} MB` : 'PDF, image, CSV or spreadsheet · 12 MB max'}</span><input className="sr-only" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.csv,.xls,.xlsx" onChange={(e) => setFile(e.target.files?.[0] || null)} /></label><div className="grid gap-3"><select value={documentType} onChange={(e) => setDocumentType(e.target.value)}><option value="catalog">Product catalog</option><option value="brand-authorization">Brand authorization</option><option value="pricing">Pricing</option><option value="compliance">Compliance</option><option value="other">Other</option></select><input type="date" aria-label="Document expiry date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} /><button className="ac-button" disabled={!file || !!working} onClick={upload}>{working === 'upload' ? <Spinner className="h-4 w-4" /> : <UploadCloud className="h-4 w-4" />}Upload securely</button></div></div>
           <div className="mt-6 grid gap-3">{room.documents.length ? room.documents.map((doc: any) => <div className="ac-document-row" key={doc.id}><FileArchive className="h-5 w-5" /><div><strong>{doc.name}</strong><span>{doc.type.replace(/-/g, ' ')} · {(doc.size / 1024 / 1024).toFixed(1)} MB · {date(doc.uploadedAt)}</span>{doc.reviewNote && <small>{doc.reviewNote}</small>}</div><span className={`ac-status-pill ${statusTone(doc.status)}`}>{doc.status}</span><button onClick={() => download(doc)} aria-label={`Download ${doc.name}`}><Download className="h-4 w-4" /></button></div>) : <Empty text="No private documents uploaded yet." />}</div>
         </section>
       </div>
       <aside className="space-y-6">
-        <section className="ac-content-panel p-5"><SectionHead icon={MessageSquareText} title="Application messages" text="Messages stay attached to this review." /><div className="ac-message-list mt-5">{room.messages.length ? room.messages.map((item: any) => <div key={item.id} className={`ac-message ${item.senderRole === 'seller' ? 'is-own' : ''}`}><span>{item.senderRole === 'admin' ? 'Auronix review team' : 'You'} · {date(item.createdAt)}</span><p>{item.body}</p></div>) : <Empty text="No messages yet." />}</div><textarea value={message} onChange={(e) => setMessage(e.target.value)} className="mt-4 min-h-[92px] w-full rounded-2xl border border-border px-4 py-3" placeholder="Ask a question or add context…" /><button className="ac-button mt-3 w-full" onClick={sendMessage} disabled={!message.trim() || !!working}>{working === 'message' ? <Spinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}Send message</button></section>
-        <section className="ac-content-panel p-5"><SectionHead icon={Clock3} title="Review timeline" text="A permanent history of decisions and requested edits." /><div className="ac-timeline mt-5">{room.timeline.length ? room.timeline.map((item: any) => <article key={item.id}><i /><div><strong>{item.title}</strong><time>{date(item.createdAt)}</time><p>{item.description}</p>{item.fieldChanges?.map((change: any) => <small key={change.field}>{change.label}: {change.before || 'Empty'} → {change.after || 'Empty'}</small>)}</div></article>) : <Empty text="Timeline events will appear here." />}</div></section>
+        <section id="deal-room-messages" className="ac-content-panel scroll-mt-28 p-5"><SectionHead icon={MessageSquareText} title="Application messages" text="Messages stay attached to this review." /><div className="ac-message-list mt-5">{room.messages.length ? room.messages.map((item: any) => <div key={item.id} className={`ac-message ${item.senderRole === 'seller' ? 'is-own' : ''}`}><span>{item.senderRole === 'admin' ? 'Auronix review team' : 'You'} · {date(item.createdAt)}</span><p>{item.body}</p></div>) : <Empty text="No messages yet." />}</div><textarea value={message} onChange={(e) => setMessage(e.target.value)} className="mt-4 min-h-[92px] w-full rounded-2xl border border-border px-4 py-3" placeholder="Ask a question or add context…" /><button className="ac-button mt-3 w-full" onClick={sendMessage} disabled={!message.trim() || !!working}>{working === 'message' ? <Spinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}Send message</button></section>
+        <section id="review-timeline" className="ac-content-panel scroll-mt-28 p-5"><SectionHead icon={Clock3} title="Review timeline" text="A permanent history of decisions and requested edits." /><div className="ac-timeline mt-5">{room.timeline.length ? room.timeline.map((item: any) => <article key={item.id}><i /><div><strong>{item.title}</strong><time>{date(item.createdAt)}</time><p>{item.description}</p>{item.fieldChanges?.map((change: any) => <small key={change.field}>{change.label}: {change.before || 'Empty'} → {change.after || 'Empty'}</small>)}</div></article>) : <Empty text="Timeline events will appear here." />}</div></section>
       </aside>
     </div>}
   </div></SellerLayout>;

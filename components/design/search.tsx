@@ -126,6 +126,11 @@ export function CommandPalette() {
       live = false;
     };
   }, [open, loaded]);
+  useEffect(() => {
+    if (open) document.documentElement.dataset.acSearchOpen = 'true';
+    else delete document.documentElement.dataset.acSearchOpen;
+    return () => { delete document.documentElement.dataset.acSearchOpen; };
+  }, [open]);
   const results = useMemo(
     () =>
       [...initial, ...managed]

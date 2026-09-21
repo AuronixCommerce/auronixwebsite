@@ -373,6 +373,17 @@ function normalizeApplication(
   };
 }
 
+/**
+ * Compare only applicant-owned answers. Administrative writes such as status,
+ * timestamps, notifications, and a concurrent screening result must not make a
+ * valid review look stale.
+ */
+function applicationInputVersion(raw: Record<string, unknown>): string {
+  const applicantAnswers: Partial<SellerApplication> = { ...normalizeApplication(raw) };
+  delete applicantAnswers.preferredContactEmail;
+  return JSON.stringify(applicantAnswers);
+}
+
 function getPreferredEmail(
   application: SellerApplication
 ): string {
@@ -1201,7 +1212,7 @@ async function approveAndSendInvitation(
   first: FirstAIResult,
   second: SecondAIResult,
   deterministicQuality: number,
-  expectedRevision: number
+  expectedInputVersion: string
 ) {
   const applicationRef =
     adminDb.ref(
@@ -1269,7 +1280,7 @@ async function approveAndSendInvitation(
    * Save approval before sending email so
    * the decision is auditable.
    */
-  const approved = await applicationRef.transaction(current => current && Number(current.revision || 0) === expectedRevision && ['pending','under_review','screening'].includes(current.status || 'pending') ? {
+  const approved = await applicationRef.transaction(current => current && applicationInputVersion(current) === expectedInputVersion && ['pending','under_review','screening'].includes(current.status || 'pending') ? {
     ...current,
     status:
       'approved',
@@ -1415,9 +1426,9 @@ async function processApplication(
     >;
 
   if (raw.status === 'changes_requested') throw new Error('Waiting for applicant corrections.');
-  const revision = Number(raw.revision || 0);
+  const inputVersion = applicationInputVersion(raw);
   if (['pending', 'under_review', 'screening'].includes(String(raw.status || 'pending'))) {
-    const started = await applicationRef.transaction(current => current && Number(current.revision || 0) === revision && ['pending','under_review','screening'].includes(current.status || 'pending') ? { ...current, status: 'under_review', updatedAt: Date.now() } : undefined);
+    const started = await applicationRef.transaction(current => current && applicationInputVersion(current) === inputVersion && ['pending','under_review','screening'].includes(current.status || 'pending') ? { ...current, status: 'under_review', updatedAt: Date.now() } : undefined);
     if (!started.committed) throw new Error('The application changed. Review its latest version.');
     if ((raw.status || 'pending') === 'pending') await notifySellerApplication(applicationId, raw, 'Your Auronix application is being reviewed', 'The review team has started reviewing your application. Track its progress online.');
   }
@@ -1834,7 +1845,7 @@ async function processApplication(
       'seller-screen-v8',
   };
 
-  const savedReview = await applicationRef.transaction(current => current && Number(current.revision || 0) === revision && current.status !== 'changes_requested' ? {
+  const savedReview = await applicationRef.transaction(current => current && applicationInputVersion(current) === inputVersion && current.status !== 'changes_requested' ? {
     ...current,
     aiStatus:
       label,
@@ -1881,7 +1892,7 @@ async function processApplication(
           second!,
 
           checks.quality,
-          revision
+          inputVersion
         );
     } catch (
       error
@@ -2005,13 +2016,7 @@ export async function POST(
          * Never automatically re-process
          * approved or rejected records.
          */
-        if (
-          status ===
-            'approved' ||
-          status === 'changes_requested' ||
-          status ===
-            'rejected'
-        ) {
+        if (!['pending', 'under_review', 'screening'].includes(status)) {
           continue;
         }
 
@@ -2114,4 +2119,3 @@ export async function POST(
     );
   }
 }
-

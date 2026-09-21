@@ -80,8 +80,15 @@ test('compact mobile, tablet and desktop navigation remain usable', async ({ pag
     await expect(page.getByRole('button', { name: 'Search Auronix', exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Search Auronix', exact: true }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
+    if (width >= 768) await expect(page.locator('.ac-header')).toBeHidden();
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toHaveCount(0);
+    if (width < 768) {
+      await page.getByRole('button', { name: 'Open navigation' }).click();
+      await expect(page.getByRole('button', { name: 'Close navigation' })).toBeVisible();
+      await page.getByRole('button', { name: 'Close navigation' }).click();
+      await expect(page.getByRole('dialog')).toHaveCount(0);
+    }
     for (const path of ['/seller/apply', '/become-a-supplier', '/admin/login', '/seller/login']) {
       await page.goto(path);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${path} at ${width}`).toBe(true);

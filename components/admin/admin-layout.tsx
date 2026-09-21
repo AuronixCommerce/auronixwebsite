@@ -67,8 +67,11 @@ export function AdminLayout({ children }: { children: ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background-subtle">
-        <Spinner className="w-8 h-8 text-foreground-muted" />
+      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-background-subtle" role="status" aria-live="polite">
+        <div className="flex flex-col items-center gap-4 rounded-3xl border border-border bg-background/90 px-8 py-7 shadow-premium">
+          <Spinner className="h-7 w-7 text-accent" />
+          <p className="text-sm font-medium text-foreground-muted">Opening Auronix Admin…</p>
+        </div>
       </div>
     );
   }

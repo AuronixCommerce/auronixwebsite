@@ -747,6 +747,12 @@ export default function AdminDashboardPage() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 
             <QuickAction
+              href="/admin/deal-room"
+              title="Partner Deal Rooms"
+              description="Review commercial terms, secure documents, partner messages, and application history."
+            />
+
+            <QuickAction
               href="/admin/pagesmanager"
               title="Pages Manager"
               description="Test public pages, activate maintenance, and manage dedicated page popups."

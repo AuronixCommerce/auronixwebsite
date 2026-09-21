@@ -36,6 +36,7 @@ export function PublicSiteChrome({
     pathname.startsWith('/seller/activate') ||
     pathname === '/seller/login' ||
     pathname.startsWith('/seller/dashboard') ||
+    pathname === '/seller/deal-room' ||
     pathname === '/seller/profile' ||
     pathname === '/seller/settings' ||
     pathname.startsWith('/seller/support') ||

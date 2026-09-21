@@ -7,7 +7,7 @@ import { SellerLayout } from '@/components/seller/seller-layout';
 import { onAuthChange } from '@/lib/auth';
 import type { UserProfile, SellerApplication } from '@/lib/types';
 import { LoadingState } from '@/components/site/states';
-import { Package, FileText, LifeBuoy, ShieldCheck, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Package, FileText, LifeBuoy, ShieldCheck, CheckCircle2, AlertCircle, RefreshCw, BriefcaseBusiness, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { auth } from '@/lib/firebase';
 
@@ -72,6 +72,12 @@ export default function SellerDashboardPage() {
           <VerificationItem label="Business profile" complete={profileComplete} detail={profileComplete ? 'Required profile fields complete' : 'Add phone, website, and business details'} href="/seller/settings" />
         </div>
       </div>
+
+      <Link href={accountActive ? '/seller/deal-room' : '/seller/support'} className="group mb-8 grid gap-5 overflow-hidden rounded-[28px] border border-accent/20 bg-accent/[0.055] p-6 shadow-premium transition hover:border-accent/35 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center">
+        <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-accent/20 bg-background/75 text-accent"><BriefcaseBusiness className="h-5 w-5" /></span>
+        <span><span className="block text-xs font-semibold uppercase tracking-[0.12em] text-accent">Partner Deal Room</span><strong className="mt-1 block text-lg">{accountActive ? 'Open your commercial workspace' : 'Unlocks when your approved account is connected'}</strong><span className="mt-1 block text-sm leading-6 text-foreground-muted">Private terms, authorization files, review messages, document decisions, and the complete application timeline.</span></span>
+        <span className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground">{accountActive ? 'Open Deal Room' : 'Get help'}<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></span>
+      </Link>
 
       {/* Quick stats */}
       <div className="grid sm:grid-cols-3 gap-4 mb-8">

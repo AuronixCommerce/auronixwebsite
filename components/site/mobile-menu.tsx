@@ -2,13 +2,14 @@
 import Link from "next/link";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
 import { NAV_GROUPS, pageFor } from "@/lib/design/navigation";
 import { ThemeToggle } from "./theme-toggle";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, X } from "lucide-react";
 export function MobileMenu({
   open,
   onClose,
@@ -25,8 +26,10 @@ export function MobileMenu({
     >
       <DialogContent className="ac-mobile-nav">
         <div className="ac-sheet-handle" />
-        <DialogTitle>Auronix Commerce</DialogTitle>
-        <DialogDescription>Explore. Connect. Build together.</DialogDescription>
+        <div className="ac-mobile-nav-head">
+          <div><DialogTitle>Auronix Commerce</DialogTitle><DialogDescription>Explore. Connect. Build together.</DialogDescription></div>
+          <DialogClose asChild><button type="button" className="ac-mobile-nav-close" aria-label="Close navigation"><X size={18} /><span>Close</span></button></DialogClose>
+        </div>
         <nav aria-label="Mobile navigation">
           {NAV_GROUPS.map((group) => (
             <details key={group.title} open={group.title === "Company"}>

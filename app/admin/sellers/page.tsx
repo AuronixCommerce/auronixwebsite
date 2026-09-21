@@ -17,6 +17,7 @@ import {
 import {
   AlertTriangle,
   Bot,
+  BriefcaseBusiness,
   Building2,
   CheckCircle2,
   Clock,
@@ -33,6 +34,7 @@ import {
   User,
   XCircle,
 } from 'lucide-react';
+import Link from 'next/link';
 import { confirmAction, notifyAction, promptAction } from '@/components/ui/confirm-action';
 import { onAuthChange } from '@/lib/auth';
 
@@ -837,7 +839,8 @@ export default function AdminSellersPage() {
       if (
         !selected ||
         !auth.currentUser ||
-        actionLoading
+        actionLoading ||
+        autoScreening
       ) {
         return;
       }
@@ -1609,24 +1612,28 @@ export default function AdminSellersPage() {
                       </p>
                     </div>
 
+                    <div className="flex flex-wrap gap-2">
+                    <Link href={`/admin/deal-room?application=${encodeURIComponent(selected.id)}`} className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium hover:bg-secondary"><BriefcaseBusiness className="h-4 w-4" />Open Deal Room</Link>
                     <button
                       type="button"
                       onClick={
                         runAgain
                       }
                       disabled={
-                        actionLoading
+                        actionLoading ||
+                        autoScreening
                       }
                       className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-50"
                     >
-                      {actionLoading ? (
+                      {actionLoading || autoScreening ? (
                         <Spinner className="h-4 w-4" />
                       ) : (
                         <Sparkles className="h-4 w-4" />
                       )}
 
-                      Run AI Again
+                      {autoScreening ? 'Screening queue running' : 'Run AI Again'}
                     </button>
+                    </div>
                   </div>
 
                   {getStatus(selected) === 'changes_requested' && <p className="mt-5 rounded-xl border border-amber-500/30 p-4 text-sm">Waiting for applicant corrections.</p>}
