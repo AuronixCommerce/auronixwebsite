@@ -35,7 +35,7 @@ export function CommerceFlow() {
         ))}
       </dl>
       <p className="ac-flow-caption">
-        Illustrative model; live operational status appears only inside authenticated workspaces
+        Commerce model illustration · not a live operational feed
       </p>
     </div>
   );

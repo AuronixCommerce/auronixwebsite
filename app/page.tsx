@@ -1,11 +1,22 @@
+"use client";
 import Link from "next/link";
+import {
+  ArrowRight,
+  Search,
+  Store,
+  Handshake,
+  Truck,
+  ShieldCheck,
+} from "lucide-react";
 import { SiteLayout } from "@/components/site/site-layout";
 import { Section, SectionHeading } from "@/components/site/section";
 import { Reveal, StaggerGroup, StaggerItem } from "@/components/site/reveal";
 import { CommerceFlow } from "@/components/site/commerce-flow";
 import { CTASection } from "@/components/site/cta-section";
 import { CAPABILITIES, PROCESS_STEPS, WHY_AURONIX } from "@/lib/constants";
+import { FeatureCard } from "@/components/design/primitives";
 import { Timeline, SupplierJourney } from "@/components/design/journey";
+const ICON_MAP = { Search, Store, Handshake, Truck };
 export default function HomePage() {
   return (
     <SiteLayout>
@@ -27,13 +38,13 @@ export default function HomePage() {
               </p>
               <div className="ac-hero-actions">
                 <Link href="/contact" className="ac-button">
-                  Partner With Us
+                  Partner With Us <ArrowRight size={17} />
                 </Link>
                 <Link
                   href="/our-process"
                   className="ac-button ac-button-secondary"
                 >
-                  Explore Our Process
+                  Explore Our Process <ArrowRight size={17} />
                 </Link>
               </div>
               <ul className="ac-hero-signals" aria-label="Auronix capabilities">
@@ -49,7 +60,8 @@ export default function HomePage() {
           <div className="ac-hero-foot">
             <span>Procurement · Distribution · Marketplace Operations</span>
             <Link href="/company-verification">
-              Company Verification
+              <ShieldCheck size={17} /> Company Verification{" "}
+              <ArrowRight size={16} />
             </Link>
           </div>
         </div>
@@ -79,7 +91,7 @@ export default function HomePage() {
                 href="/about"
                 className="inline-flex gap-3 items-center text-sm font-semibold"
               >
-                Learn more about Auronix
+                Learn more about Auronix <ArrowRight size={17} />
               </Link>
             </div>
           </Reveal>
@@ -93,43 +105,19 @@ export default function HomePage() {
         />
         <StaggerGroup className="ac-capabilities mt-12 mb-8">
           {CAPABILITIES.map((cap, i) => {
+            const Icon = ICON_MAP[cap.icon as keyof typeof ICON_MAP];
             return (
               <StaggerItem key={cap.title}>
-                <article className="ac-feature">
-                  <div className="ac-feature-top">
-                    <span>{String(i + 1).padStart(2, "0")}</span>
-                  </div>
-                  <h3>{cap.title}</h3>
-                  <p>{cap.description}</p>
-                </article>
+                <FeatureCard
+                  title={cap.title}
+                  description={cap.description}
+                  index={i}
+                  icon={<Icon size={26} strokeWidth={1.4} />}
+                />
               </StaggerItem>
             );
           })}
         </StaggerGroup>
-      </Section>
-      <Section className="ac-product-proof-section">
-        <SectionHeading
-          eyebrow="Working tools"
-          title="Production tools for every partner stage."
-          description="Applicants and approved partners can use the same production workflows that our team reviews and manages."
-        />
-        <ol className="ac-product-proof">
-          <li>
-            <span>01</span>
-            <div><strong>Track an application</strong><p>Verify the submitted email, review progress, and respond to requested changes.</p></div>
-            <Link href="/seller/application/track">Open application tracking</Link>
-          </li>
-          <li>
-            <span>02</span>
-            <div><strong>Access the partner workspace</strong><p>Approved partners manage commercial terms, documents, messages, and review history.</p></div>
-            <Link href="/partner-portal">Open partner portal</Link>
-          </li>
-          <li>
-            <span>03</span>
-            <div><strong>Reach the support team</strong><p>Start a support request with the relevant business context attached.</p></div>
-            <Link href="/support">Open support</Link>
-          </li>
-        </ol>
       </Section>
       <Section>
         <SectionHeading
@@ -167,7 +155,7 @@ export default function HomePage() {
               distributors, manufacturers, wholesalers, and quality brands.
             </p>
             <Link href="/supplier" className="ac-button">
-              Become a Supplier
+              Become a Supplier <ArrowRight size={17} />
             </Link>
           </div>
           <SupplierJourney />

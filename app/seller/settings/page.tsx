@@ -45,10 +45,7 @@ export default function SellerSettingsPage() {
   const [notificationSaving, setNotificationSaving] = useState(false);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('auronix-reduce-motion') ?? localStorage.getItem('auronix-reduce-glass-motion');
-      setReduceMotion(saved === 'true');
-    } catch {}
+    try { setReduceMotion(localStorage.getItem('auronix-reduce-glass-motion') === 'true'); } catch {}
     const install = (event: Event) => { event.preventDefault(); setInstallPrompt(event as InstallPrompt); };
     window.addEventListener('beforeinstallprompt', install);
     return () => window.removeEventListener('beforeinstallprompt', install);
@@ -93,7 +90,7 @@ export default function SellerSettingsPage() {
     }
   };
 
-  const setMotion = (value: boolean) => { setReduceMotion(value); try { localStorage.setItem('auronix-reduce-motion', String(value)); localStorage.removeItem('auronix-reduce-glass-motion'); document.documentElement.dataset.acReduceMotion = String(value); window.dispatchEvent(new Event('auronix:motion-preference')); } catch {} };
+  const setMotion = (value: boolean) => { setReduceMotion(value); try { localStorage.setItem('auronix-reduce-glass-motion', String(value)); document.documentElement.dataset.acReduceMotion = String(value); window.dispatchEvent(new Event('auronix:motion-preference')); } catch {} };
   const saveNotifications = async () => { setNotificationSaving(true); setError(''); try { await authorized('/api/seller/deal-room', { method: 'PATCH', body: JSON.stringify({ action: 'preferences', ...preferences, push: pushInfo.subscribed }) }); setMessage('Notification preferences saved.'); } catch (caught) { setError(caught instanceof Error ? userFacingError(caught) : 'Unable to save notification preferences.'); } finally { setNotificationSaving(false); } };
   const togglePush = async () => {
     setNotificationSaving(true); setError('');
@@ -189,7 +186,7 @@ export default function SellerSettingsPage() {
             {preferences.whatsapp && <Field label="WhatsApp phone with country code" value={preferences.whatsappPhone} onChange={(value) => setPreferences({ ...preferences, whatsappPhone: value })} />}
             <button className="ac-button" onClick={saveNotifications} disabled={notificationSaving}>{notificationSaving ? <Spinner className="h-4 w-4" /> : <Save className="h-4 w-4" />}Save notification preferences</button>
           </section>
-          <section className="ac-content-panel p-6 space-y-5"><div className="flex items-start gap-3"><Gauge className="mt-0.5 h-5 w-5 text-accent" /><div><h2 className="text-lg font-semibold">Display & installation</h2><p className="mt-1 text-sm text-foreground-muted">Adjust interface movement for this device.</p></div></div><SettingToggle icon={Gauge} title="Reduce interface motion" description="Disables non-essential transitions while preserving loading and progress feedback." checked={reduceMotion} onChange={setMotion} />
+          <section className="ac-content-panel p-6 space-y-5"><div className="flex items-start gap-3"><Gauge className="mt-0.5 h-5 w-5 text-accent" /><div><h2 className="text-lg font-semibold">Display & installation</h2><p className="mt-1 text-sm text-foreground-muted">Tune the real-glass interface for this device.</p></div></div><SettingToggle icon={Gauge} title="Reduce glass motion" description="Keeps glass depth and blur while disabling pointer stretch, parallax, and elastic motion." checked={reduceMotion} onChange={setMotion} />
             <div className="ac-setting-row"><span className="ac-section-icon"><Download className="h-5 w-5" /></span><div><strong>Install Auronix</strong><p>{installPrompt ? 'Install the standalone app on this device.' : 'On iPhone or iPad, use Share → Add to Home Screen. On desktop, use your browser install control.'}</p></div>{installPrompt && <button onClick={install}>Install app</button>}</div>
           </section>
         </>}

@@ -828,7 +828,7 @@ export default function AdminPagesManagerPage() {
 
       setNotice(
         nextEnabled
-          ? 'Full website maintenance is now ON.'
+          ? '🚨 Full website maintenance is now ON.'
           : '✅ Full website maintenance is now OFF.'
       );
     } catch (
@@ -869,7 +869,7 @@ export default function AdminPagesManagerPage() {
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || 'Unable to change page maintenance.');
       setPages(old => ({ ...old, [selectedPage.path]: { ...EMPTY_PAGE, ...(data.page || next), path: selectedPage.path } }));
-      setNotice(value ? `${selectedPage.title} maintenance is now ON.` : `${selectedPage.title} maintenance is now fully OFF.`);
+      setNotice(value ? `🚨 ${selectedPage.title} maintenance is now ON.` : `✅ ${selectedPage.title} maintenance is now fully OFF.`);
     } catch (error) {
       setNotice(error instanceof Error ? userFacingError(error) : 'Unable to change page maintenance.');
       await load();
@@ -960,7 +960,7 @@ export default function AdminPagesManagerPage() {
 
       setNotice(
         nextEnabled
-          ? 'Auronix AI maintenance is now ON.'
+          ? '🤖 Auronix AI maintenance is now ON.'
           : '✅ Auronix AI maintenance is now OFF.'
       );
     } catch (
@@ -1495,8 +1495,8 @@ export default function AdminPagesManagerPage() {
                     <Zap className="h-4 w-4" />
 
                     {global.maintenanceEnabled
-                      ? 'Turn Full-Site Maintenance OFF'
-                      : 'Instant Full-Site Maintenance ON'}
+                      ? '🚨 Turn Full-Site Maintenance OFF'
+                      : '🚨 Instant Full-Site Maintenance ON'}
                   </button>
 
                   <button

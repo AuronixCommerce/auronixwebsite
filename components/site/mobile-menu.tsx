@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { NAV_GROUPS, pageFor } from "@/lib/design/navigation";
 import { ThemeToggle } from "./theme-toggle";
+import { ArrowRight, X } from "lucide-react";
 export function MobileMenu({
   open,
   onClose,
@@ -27,7 +28,7 @@ export function MobileMenu({
         <div className="ac-sheet-handle" />
         <div className="ac-mobile-nav-head">
           <div><DialogTitle>Auronix Commerce</DialogTitle><DialogDescription>Explore. Connect. Build together.</DialogDescription></div>
-          <DialogClose asChild><button type="button" className="ac-mobile-nav-close" aria-label="Close navigation"><span>Close</span></button></DialogClose>
+          <DialogClose asChild><button type="button" className="ac-mobile-nav-close" aria-label="Close navigation"><X size={18} /><span>Close</span></button></DialogClose>
         </div>
         <nav aria-label="Mobile navigation">
           {NAV_GROUPS.map((group) => (
@@ -43,6 +44,7 @@ export function MobileMenu({
                     p && (
                       <Link href={path} key={path} onClick={onClose}>
                         {p.title}
+                        <ArrowRight size={16} />
                       </Link>
                     )
                   );
@@ -54,7 +56,7 @@ export function MobileMenu({
         <div className="ac-mobile-bottom">
           <ThemeToggle showLabel />
           <Link href="/supplier" onClick={onClose} className="ac-button">
-            Become a Supplier
+            Become a Supplier <ArrowRight size={16} />
           </Link>
           <Link
             href="/partner-portal"

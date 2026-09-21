@@ -18,6 +18,7 @@ import {
   MessageCircle,
   Ticket,
   Send,
+  Sparkles,
   Square,
   Trash2,
   X,
@@ -1068,6 +1069,13 @@ export function AIChat({ initiallyOpen = false }: { initiallyOpen?: boolean } = 
               scale: 0.82,
               y: 8,
             }}
+            whileHover={{
+              scale: 1.06,
+              y: -2,
+            }}
+            whileTap={{
+              scale: 0.94,
+            }}
             type="button"
             onClick={() => setOpen(true)}
             aria-label="Open Auronix AI chat"
@@ -1117,6 +1125,7 @@ export function AIChat({ initiallyOpen = false }: { initiallyOpen?: boolean } = 
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 font-sans text-sm font-bold">
                     Auronix AI
+                    <Sparkles className="h-3.5 w-3.5 shrink-0 text-accent" />
                   </div>
 
                   <div className="font-sans text-[10px] text-foreground-muted">
@@ -1219,6 +1228,7 @@ export function AIChat({ initiallyOpen = false }: { initiallyOpen?: boolean } = 
                           <div className="font-sans">
                             {message.answerSource && (
                               <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-foreground-muted">
+                                <Sparkles className="h-3 w-3 text-accent" />
                                 Thought for {message.responseSeconds || 1} sec · {message.answerSource === 'found' ? 'Found' : 'Online'}
                               </div>
                             )}
@@ -1241,6 +1251,7 @@ export function AIChat({ initiallyOpen = false }: { initiallyOpen?: boolean } = 
                     <div className="flex justify-start">
                       <div className="ac-content-panel max-w-[96%] px-4 py-3 font-sans text-sm leading-6 text-foreground">
                         <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-foreground-muted">
+                          <Sparkles className="h-3 w-3 text-accent" />
                           Thought for {completedThinkingSeconds || 1} sec · {activeAnswerSource === 'found' ? 'Found' : 'Online'}
                         </div>
 
