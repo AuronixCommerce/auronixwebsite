@@ -5,6 +5,7 @@ import {
 } from 'next/navigation';
 
 import { AIChatLauncher } from '@/components/site/ai-chat-launcher';
+import { SelectionActions } from '@/components/site/selection-actions';
 
 import {
   SiteAnnouncementPopup,
@@ -66,7 +67,12 @@ export function PublicRuntime({
 
       <SiteAnnouncementPopup />
 
-      {pathname !== '/support/chat' && !pathname.startsWith('/seller/') && <AIChatLauncher />}
+      {pathname !== '/support/chat' && !pathname.startsWith('/seller/') && (
+        <>
+          <SelectionActions />
+          <AIChatLauncher />
+        </>
+      )}
     </>
   );
 }

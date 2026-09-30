@@ -1,9 +1,13 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Bot } from 'lucide-react';
 import { AuronixMark } from '@/components/site/auronix-mark';
+import {
+  AIO_SELECTION_EVENT,
+  type AioSelectionRequest,
+} from '@/lib/aio-selection';
 
 const DeferredAIChat = dynamic(
   () => import('@/components/site/ai-chat').then((module) => module.AIChat),
@@ -23,9 +27,27 @@ const DeferredAIChat = dynamic(
 
 export function AIChatLauncher() {
   const [active, setActive] = useState(false);
+  const [selectionRequest, setSelectionRequest] = useState<AioSelectionRequest | null>(null);
+
+  useEffect(() => {
+    const openWithSelection = (event: Event) => {
+      const request = (event as CustomEvent<AioSelectionRequest>).detail;
+
+      if (!request?.prompt) {
+        return;
+      }
+
+      setSelectionRequest(request);
+      setActive(true);
+    };
+
+    window.addEventListener(AIO_SELECTION_EVENT, openWithSelection);
+
+    return () => window.removeEventListener(AIO_SELECTION_EVENT, openWithSelection);
+  }, []);
 
   if (active) {
-    return <DeferredAIChat initiallyOpen />;
+    return <DeferredAIChat initiallyOpen selectionRequest={selectionRequest} />;
   }
 
   return (

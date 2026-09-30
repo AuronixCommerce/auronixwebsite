@@ -30,6 +30,7 @@ import {
 } from 'framer-motion';
 import { usePathname, useRouter } from 'next/navigation';
 import { AuronixMark } from '@/components/site/auronix-mark';
+import type { AioSelectionRequest } from '@/lib/aio-selection';
 import { getTimestamp, pushData } from '@/lib/firebase-db';
 import { TICKET_CATEGORIES } from '@/lib/constants';
 import {
@@ -431,7 +432,13 @@ function renderMarkdown(
   return output;
 }
 
-export function AIChat({ initiallyOpen = false }: { initiallyOpen?: boolean } = {}) {
+export function AIChat({
+  initiallyOpen = false,
+  selectionRequest = null,
+}: {
+  initiallyOpen?: boolean;
+  selectionRequest?: AioSelectionRequest | null;
+} = {}) {
   const router = useRouter();
   const [open, setOpen] = useState(initiallyOpen);
   useEffect(() => {
@@ -462,6 +469,8 @@ export function AIChat({ initiallyOpen = false }: { initiallyOpen?: boolean } = 
   >([]);
 
   const [input, setInput] = useState('');
+
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   const [loading, setLoading] = useState(false);
 
@@ -507,6 +516,26 @@ export function AIChat({ initiallyOpen = false }: { initiallyOpen?: boolean } = 
   const thinkingStartedAtRef = useRef(0);
 
   const pathname = usePathname() || '/';
+
+  useEffect(() => {
+    if (!selectionRequest?.prompt) {
+      return;
+    }
+
+    setOpen(true);
+    setError('');
+    setTicketStep('idle');
+    setTicketDraft(EMPTY_TICKET);
+    setInput(selectionRequest.prompt);
+
+    window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.setSelectionRange(
+        selectionRequest.prompt.length,
+        selectionRequest.prompt.length
+      );
+    });
+  }, [selectionRequest]);
 
   const quickQuestion = useMemo(
     () =>
@@ -1348,6 +1377,7 @@ export function AIChat({ initiallyOpen = false }: { initiallyOpen?: boolean } = 
               className="flex shrink-0 items-end gap-2 border-t border-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
             >
               <textarea
+                ref={inputRef}
                 value={input}
                 onChange={(event) =>
                   setInput(
@@ -1370,7 +1400,7 @@ export function AIChat({ initiallyOpen = false }: { initiallyOpen?: boolean } = 
                 maxLength={5000}
                 rows={1}
                 disabled={loading}
-                placeholder="Ask Auronix AI…"
+                placeholder="Ask Auronix Intelligence One…"
                 className="max-h-28 min-h-[44px] min-w-0 flex-1 resize-none rounded-2xl border border-border bg-background px-4 py-3 font-sans text-[16px] outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15 disabled:opacity-60 sm:text-sm"
               />
 
