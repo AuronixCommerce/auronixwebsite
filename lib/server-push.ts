@@ -2,6 +2,7 @@ import webpush from 'web-push';
 import { adminDb } from '@/lib/firebase-admin';
 
 let configured = false;
+type PushPayload = { title: string; body: string; href?: string; category?: 'account' | 'products' | 'catalogs' | 'support' | 'security' | 'marketing' };
 
 function configureWebPush() {
   if (configured) return true;
@@ -14,7 +15,25 @@ function configureWebPush() {
   return true;
 }
 
-async function sendWebPush(uid: string, payload: { title: string; body: string; href?: string }) {
+function categoryFor(payload: PushPayload): PushPayload['category'] {
+  if (payload.category) return payload.category;
+  const value = `${payload.href || ''} ${payload.title || ''}`.toLowerCase();
+  if (value.includes('support') || value.includes('ticket')) return 'support';
+  if (value.includes('catalog')) return 'catalogs';
+  if (value.includes('product') || value.includes('inventory') || value.includes('listing')) return 'products';
+  if (value.includes('security') || value.includes('login') || value.includes('session')) return 'security';
+  return 'account';
+}
+
+async function pushAllowed(uid: string, payload: PushPayload) {
+  const snapshot = await adminDb.ref(`sellerNotificationPreferences/${uid}`).get();
+  if (!snapshot.exists()) return true;
+  const category = categoryFor(payload) || 'account';
+  const value = snapshot.val()?.[category];
+  return value !== false;
+}
+
+async function sendWebPush(uid: string, payload: PushPayload) {
   if (!configureWebPush()) return 0;
   const snapshot = await adminDb.ref(`pushSubscriptions/${uid}`).get();
   if (!snapshot.exists()) return 0;
@@ -32,7 +51,7 @@ async function sendWebPush(uid: string, payload: { title: string; body: string; 
   return sent;
 }
 
-async function sendMobilePush(uid: string, payload: { title: string; body: string; href?: string }) {
+async function sendMobilePush(uid: string, payload: PushPayload) {
   const snapshot = await adminDb.ref(`sellerMobilePush/${uid}`).get();
   if (!snapshot.exists()) return 0;
   const records = Object.entries(snapshot.val() as Record<string, { token?: string }>).filter(([, value]) => typeof value?.token === 'string' && value.token);
@@ -62,9 +81,7 @@ async function sendMobilePush(uid: string, payload: { title: string; body: strin
         await adminDb.ref(`sellerMobilePush/${uid}/${id}`).update({ lastUsedAt: Date.now() });
         return;
       }
-      if (receipt?.details?.error === 'DeviceNotRegistered') {
-        await adminDb.ref(`sellerMobilePush/${uid}/${id}`).remove();
-      }
+      if (receipt?.details?.error === 'DeviceNotRegistered') await adminDb.ref(`sellerMobilePush/${uid}/${id}`).remove();
     }));
     return sent;
   } catch (error) {
@@ -73,11 +90,9 @@ async function sendMobilePush(uid: string, payload: { title: string; body: strin
   }
 }
 
-export async function sendSellerPush(uid: string, payload: { title: string; body: string; href?: string }) {
-  if (!uid) return { sent: 0, webSent: 0, mobileSent: 0 };
-  const [webSent, mobileSent] = await Promise.all([
-    sendWebPush(uid, payload),
-    sendMobilePush(uid, payload),
-  ]);
-  return { sent: webSent + mobileSent, webSent, mobileSent };
+export async function sendSellerPush(uid: string, payload: PushPayload) {
+  if (!uid) return { sent: 0, webSent: 0, mobileSent: 0, blocked: false };
+  if (!(await pushAllowed(uid, payload))) return { sent: 0, webSent: 0, mobileSent: 0, blocked: true };
+  const [webSent, mobileSent] = await Promise.all([sendWebPush(uid, payload), sendMobilePush(uid, payload)]);
+  return { sent: webSent + mobileSent, webSent, mobileSent, blocked: false };
 }
