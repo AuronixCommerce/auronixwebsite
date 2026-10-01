@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
-import { cleanText, listFromNode, sellerContext, sellerProducts } from '@/lib/server-seller-os';
+import { cleanText, listFromNode, sellerContext, sellerProducts, type SellerRecord } from '@/lib/server-seller-os';
 import { userFacingError } from '@/lib/user-facing-error';
 
 export const dynamic = 'force-dynamic';
+
+type SupplierRecord = SellerRecord & { productCount: number; catalogCount: number };
 
 function input(body: Record<string, any>, existing: Record<string, any> = {}) {
   const name = cleanText(body.name ?? existing.name, 180);
@@ -29,11 +31,12 @@ export async function GET(request: Request) {
       adminDb.ref(`sellerSuppliers/${uid}`).get(), sellerProducts(uid), adminDb.ref(`sellerData/${uid}/catalogs`).get(),
     ]);
     const catalogs = listFromNode<Record<string, any>>(catalogsSnapshot.val());
-    const suppliers = listFromNode<Record<string, any>>(snapshot.val()).map(supplier => ({
+    const suppliers: SupplierRecord[] = listFromNode<Record<string, any>>(snapshot.val()).map((supplier): SupplierRecord => ({
       ...supplier,
       productCount: products.filter(product => product.supplier === supplier.name || product.supplierId === supplier.id).length,
       catalogCount: catalogs.filter(catalog => catalog.supplier === supplier.name || catalog.supplierId === supplier.id).length,
-    })).sort((a,b) => String(a.name).localeCompare(String(b.name)));
+    } as SupplierRecord));
+    suppliers.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
     return NextResponse.json({ suppliers }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) { return NextResponse.json({ error: userFacingError(error, 'Unable to load suppliers.') }, { status: 401 }); }
 }
