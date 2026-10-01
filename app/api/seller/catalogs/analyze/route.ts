@@ -48,13 +48,15 @@ const numberOrNull = (value: unknown) => {
 };
 
 export async function POST(request: Request) {
+  let failurePath = '';
   try {
     const { uid } = await sellerContext(request);
     const body = await request.json();
     const id = cleanText(body.id, 160);
     if (!id) return NextResponse.json({ error: 'Catalog ID is required.' }, { status: 400 });
 
-    const ref = adminDb.ref(`sellerData/${uid}/catalogs/${id}`);
+    failurePath = `sellerData/${uid}/catalogs/${id}`;
+    const ref = adminDb.ref(failurePath);
     const snapshot = await ref.get();
     if (!snapshot.exists()) return NextResponse.json({ error: 'Catalog not found.' }, { status: 404 });
     const catalog = snapshot.val() || {};
@@ -74,7 +76,7 @@ export async function POST(request: Request) {
 
     const sample = rows.slice(0, 121);
     const header = sample[0];
-    const records = sample.slice(1).map((values, index) => Object.fromEntries(header.map((key, column) => [key || `column_${column + 1}`, values[column] || ''])));
+    const records = sample.slice(1).map(values => Object.fromEntries(header.map((key, column) => [key || `column_${column + 1}`, values[column] || ''])));
     const prompt = `Analyze this supplier catalog sample for a seller workspace. Return ONLY a JSON array, maximum 30 objects. Never invent marketplace demand, Amazon rank, buy box, fees, selling price, profitability, approvals, or sales data that is not present in the catalog. Each object may contain: productName, sku, upc, brand, category, supplierCost, suggestedSellingPrice, estimatedFees, estimatedProfit, roi, riskFlags, marketplace, source, status. Use null for unavailable numeric values. source must be "catalog-only" unless marketplace evidence is actually in the supplied rows. riskFlags should identify only concrete catalog-data issues such as missing identifiers, missing cost, missing brand, duplicate-looking rows, or incomplete fields.\n\nCatalog: ${cleanText(catalog.name, 180)}\nSupplier: ${cleanText(catalog.supplier, 180) || 'Not recorded'}\nHeaders: ${JSON.stringify(header)}\nRows: ${JSON.stringify(records).slice(0, 42000)}`;
     const response = await generateGroqResponse('You are Auronix Intelligence catalog analysis. Be conservative, structured, and never manufacture marketplace facts.', prompt, 2600);
     const raw = jsonFromAi(response);
@@ -106,14 +108,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, opportunities, itemCount: Math.max(0, rows.length - 1), analyzedSampleCount: records.length });
   } catch (error) {
     console.error('Seller catalog analysis failed:', error);
-    try {
-      const body = await request.clone().json().catch(() => ({}));
-      const id = cleanText(body?.id, 160);
-      if (id) {
-        const { uid } = await sellerContext(request.clone());
-        await adminDb.ref(`sellerData/${uid}/catalogs/${id}`).update({ aiStatus: 'failed', status: 'needs-review', updatedAt: Date.now() }).catch(() => undefined);
-      }
-    } catch {}
+    if (failurePath) await adminDb.ref(failurePath).update({ aiStatus: 'failed', status: 'needs-review', updatedAt: Date.now() }).catch(() => undefined);
     return NextResponse.json({ error: userFacingError(error, 'Unable to analyze this catalog.') }, { status: 500 });
   }
 }
