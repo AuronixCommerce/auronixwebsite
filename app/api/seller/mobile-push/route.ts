@@ -22,6 +22,13 @@ export async function POST(request: Request) {
     if (!validExpoToken(token)) return NextResponse.json({ error: 'A valid mobile push token is required.' }, { status: 400 });
     const id = tokenId(token);
     const now = Date.now();
+    const ownerRef = adminDb.ref(`sellerMobilePushTokenOwners/${id}`);
+    const ownerSnapshot = await ownerRef.get();
+    const previousOwner = cleanText(ownerSnapshot.val()?.uid, 160);
+    if (previousOwner && previousOwner !== uid) {
+      await adminDb.ref(`sellerMobilePush/${previousOwner}/${id}`).remove();
+    }
+
     const ref = adminDb.ref(`sellerMobilePush/${uid}/${id}`);
     const previous = await ref.get();
     await ref.set({
@@ -33,6 +40,7 @@ export async function POST(request: Request) {
       updatedAt: now,
       lastUsedAt: now,
     });
+    await ownerRef.set({ uid, updatedAt: now });
     return NextResponse.json({ success: true, id });
   } catch (error) {
     return NextResponse.json({ error: userFacingError(error, 'Unable to register mobile notifications.') }, { status: 500 });
@@ -44,7 +52,11 @@ export async function DELETE(request: Request) {
     const { uid } = await sellerContext(request);
     const token = cleanText(new URL(request.url).searchParams.get('token'), 500);
     if (!validExpoToken(token)) return NextResponse.json({ error: 'A valid mobile push token is required.' }, { status: 400 });
-    await adminDb.ref(`sellerMobilePush/${uid}/${tokenId(token)}`).remove();
+    const id = tokenId(token);
+    await adminDb.ref(`sellerMobilePush/${uid}/${id}`).remove();
+    const ownerRef = adminDb.ref(`sellerMobilePushTokenOwners/${id}`);
+    const owner = await ownerRef.get();
+    if (cleanText(owner.val()?.uid, 160) === uid) await ownerRef.remove();
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: userFacingError(error, 'Unable to unregister mobile notifications.') }, { status: 500 });
