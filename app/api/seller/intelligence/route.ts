@@ -83,8 +83,8 @@ export async function POST(request: Request) {
     const supplied = Array.isArray(body.messages) ? body.messages : [];
     const messages: ChatMessage[] = supplied
       .filter((item: any) => item && (item.role === 'user' || item.role === 'assistant'))
-      .map((item: any) => ({ role: item.role, content: cleanText(item.content, 5000), createdAt: Number(item.createdAt || Date.now()) }))
-      .filter(item => item.content)
+      .map((item: any): ChatMessage => ({ role: item.role, content: cleanText(item.content, 5000), createdAt: Number(item.createdAt || Date.now()) }))
+      .filter((item: ChatMessage) => Boolean(item.content))
       .slice(-20);
     const lastUser = [...messages].reverse().find(item => item.role === 'user');
     if (!lastUser) return NextResponse.json({ error: 'Enter a question for Auronix Intelligence.' }, { status: 400 });
