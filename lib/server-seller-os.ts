@@ -6,6 +6,8 @@ export type SellerContext = {
   profile: Record<string, any>;
 };
 
+export type SellerRecord = Record<string, any> & { id: string };
+
 export function cleanText(value: unknown, max = 2000) {
   return String(value ?? '').trim().slice(0, max);
 }
@@ -40,15 +42,7 @@ export function productFinancials(product: Record<string, any>) {
     : sellingPrice - cost - marketplaceFees - fulfillmentFees;
   const margin = sellingPrice && estimatedProfit !== null ? (estimatedProfit / sellingPrice) * 100 : null;
   const roi = cost && estimatedProfit !== null ? (estimatedProfit / cost) * 100 : null;
-  return {
-    sellingPrice,
-    cost,
-    marketplaceFees,
-    fulfillmentFees,
-    estimatedProfit,
-    margin,
-    roi,
-  };
+  return { sellingPrice, cost, marketplaceFees, fulfillmentFees, estimatedProfit, margin, roi };
 }
 
 export function productAttention(product: Record<string, any>) {
@@ -67,7 +61,7 @@ export function productAttention(product: Record<string, any>) {
   return warnings;
 }
 
-export function normalizeProduct(id: string, product: Record<string, any>) {
+export function normalizeProduct(id: string, product: Record<string, any>): SellerRecord {
   const financials = productFinancials(product);
   return {
     id,
@@ -79,24 +73,24 @@ export function normalizeProduct(id: string, product: Record<string, any>) {
     lowStockThreshold: asNumber(product.lowStockThreshold) ?? 0,
     ...financials,
     attention: productAttention(product),
-  };
+  } as SellerRecord;
 }
 
-export async function sellerProducts(uid: string) {
+export async function sellerProducts(uid: string): Promise<SellerRecord[]> {
   const snapshot = await adminDb.ref(`sellerData/${uid}/products`).get();
   return listFromNode<Record<string, any>>(snapshot.val())
     .map(item => normalizeProduct(item.id, item))
     .sort((a, b) => Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0));
 }
 
-export async function sellerTickets(uid: string) {
+export async function sellerTickets(uid: string): Promise<SellerRecord[]> {
   const snapshot = await adminDb.ref('tickets').get();
   return listFromNode<Record<string, any>>(snapshot.val())
     .filter(ticket => ticket.sellerUid === uid)
     .map(ticket => ({
       ...ticket,
       messages: listFromNode<Record<string, any>>(ticket.messages).sort((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0)),
-    }))
+    } as SellerRecord))
     .sort((a, b) => Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0));
 }
 
