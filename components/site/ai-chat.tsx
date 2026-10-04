@@ -13,13 +13,18 @@ import {
 import {
   ArrowRight,
   Bot,
+  ChevronDown,
+  Copy,
   ExternalLink,
-  Loader2,
   MessageCircle,
+  Plus,
+  RefreshCw,
   Ticket,
   Send,
   Sparkles,
   Square,
+  ThumbsDown,
+  ThumbsUp,
   Trash2,
   X,
 } from 'lucide-react';
@@ -31,7 +36,8 @@ import {
 import { usePathname, useRouter } from 'next/navigation';
 import { AuronixMark } from '@/components/site/auronix-mark';
 import type { AioSelectionRequest } from '@/lib/aio-selection';
-import { getTimestamp, pushData } from '@/lib/firebase-db';
+import { auth } from '@/lib/firebase';
+import type { AioAction, AioSource, AioStreamEvent } from '@/lib/aio/types';
 import { TICKET_CATEGORIES } from '@/lib/constants';
 import {
   AlertDialog,
@@ -50,13 +56,24 @@ type ChatMessage = {
   id: string;
   role: Role;
   content: string;
-  answerSource?: 'found' | 'online';
-  responseSeconds?: number;
+  answerSource?: 'premade' | 'auronix' | 'general';
+  sources?: AioSource[];
+  actions?: AioAction[];
+  requestId?: string;
+  interrupted?: boolean;
   sessionBoundary?: boolean;
   endedAt?: number;
 };
 
-type TicketStep = 'idle' | 'name' | 'email' | 'category' | 'subject' | 'message' | 'creating';
+type TicketStep =
+  | 'idle'
+  | 'name'
+  | 'email'
+  | 'category'
+  | 'subject'
+  | 'message'
+  | 'confirm'
+  | 'creating';
 type TicketDraft = { name: string; email: string; category: string; subject: string; message: string };
 
 const EMPTY_TICKET: TicketDraft = { name: '', email: '', category: '', subject: '', message: '' };
@@ -474,14 +491,11 @@ export function AIChat({
 
   const [loading, setLoading] = useState(false);
 
-  const [thinkingSeconds, setThinkingSeconds] =
-    useState(0);
-
-  const [completedThinkingSeconds, setCompletedThinkingSeconds] =
-    useState(0);
+  const [activityLabel, setActivityLabel] =
+    useState('AIO is analyzing…');
 
   const [activeAnswerSource, setActiveAnswerSource] =
-    useState<'found' | 'online'>('online');
+    useState<'premade' | 'auronix' | 'general'>('general');
 
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
 
@@ -506,14 +520,11 @@ export function AIChat({
   const abortRef =
     useRef<AbortController | null>(null);
 
-  const typingTimerRef =
-    useRef<ReturnType<typeof setInterval> | null>(
-      null
-    );
-
   const currentAnswerRef = useRef('');
-
-  const thinkingStartedAtRef = useRef(0);
+  const currentSourcesRef = useRef<AioSource[]>([]);
+  const currentActionsRef = useRef<AioAction[]>([]);
+  const currentRequestIdRef = useRef('');
+  const conversationIdRef = useRef(makeId());
 
   const pathname = usePathname() || '/';
 
@@ -622,23 +633,6 @@ export function AIChat({
   }, [messages, localMemoryReady]);
 
   useEffect(() => {
-    if (!loading || visibleAnswer) {
-      return;
-    }
-
-    const startedAt = Date.now();
-    setThinkingSeconds(0);
-
-    const timer = window.setInterval(() => {
-      setThinkingSeconds(
-        Math.max(1, Math.floor((Date.now() - startedAt) / 1000))
-      );
-    }, 250);
-
-    return () => window.clearInterval(timer);
-  }, [loading, visibleAnswer]);
-
-  useEffect(() => {
     const node = scrollRef.current;
 
     if (!node) {
@@ -659,49 +653,37 @@ export function AIChat({
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
-
-      if (typingTimerRef.current) {
-        clearInterval(
-          typingTimerRef.current
-        );
-      }
     };
   }, []);
 
   const stopAnswer = () => {
     abortRef.current?.abort();
 
-    if (typingTimerRef.current) {
-      clearInterval(
-        typingTimerRef.current
-      );
-
-      typingTimerRef.current = null;
-    }
-
-    // Keep only what the visitor has actually seen. The full answer is already
-    // buffered in currentAnswerRef while the typewriter animation is running.
-    const partial = visibleAnswer;
+    const partial = currentAnswerRef.current || visibleAnswer;
 
     if (partial.trim()) {
       setMessages((existing) => [
         ...existing,
         {
-          id: makeId(),
+          id: currentRequestIdRef.current || makeId(),
           role: 'assistant',
           content: partial,
           answerSource: activeAnswerSource,
-          responseSeconds: completedThinkingSeconds || 1,
+          sources: currentSourcesRef.current,
+          actions: currentActionsRef.current,
+          requestId: currentRequestIdRef.current || undefined,
+          interrupted: true,
         },
       ]);
     }
 
     currentAnswerRef.current = '';
+    currentSourcesRef.current = [];
+    currentActionsRef.current = [];
+    currentRequestIdRef.current = '';
 
     setVisibleAnswer('');
-
-    setThinkingSeconds(0);
-
+    setActivityLabel('AIO is analyzing…');
     setLoading(false);
   };
 
@@ -710,20 +692,18 @@ export function AIChat({
     setClearingMemory(true);
     abortRef.current?.abort();
 
-    if (typingTimerRef.current) {
-      clearInterval(typingTimerRef.current);
-      typingTimerRef.current = null;
-    }
-
-    await new Promise((resolve) => window.setTimeout(resolve, 650));
+    await new Promise((resolve) => window.setTimeout(resolve, 250));
 
     currentAnswerRef.current = '';
+    currentSourcesRef.current = [];
+    currentActionsRef.current = [];
+    currentRequestIdRef.current = '';
+    conversationIdRef.current = makeId();
     setMessages([]);
     setVisibleAnswer('');
     setInput('');
     setError('');
-    setThinkingSeconds(0);
-    setCompletedThinkingSeconds(0);
+    setActivityLabel('AIO is analyzing…');
     setQuickIndex((previous) => {
       if (QUICK_QUESTIONS.length <= 1) return 0;
       let next = Math.floor(Math.random() * QUICK_QUESTIONS.length);
@@ -736,82 +716,6 @@ export function AIChat({
     setClearDialogOpen(false);
   };
 
-  const typeAnswer = (
-    answer: string,
-    answerSource: 'found' | 'online',
-    responseSeconds: number
-  ) => {
-    if (typingTimerRef.current) {
-      clearInterval(
-        typingTimerRef.current
-      );
-    }
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setMessages(existing => [...existing, { id: makeId(), role: 'assistant', content: answer, answerSource, responseSeconds }]); setVisibleAnswer(''); setLoading(false); return; }
-
-    currentAnswerRef.current = answer;
-
-    setVisibleAnswer('');
-
-    let cursor = 0;
-
-    typingTimerRef.current =
-      setInterval(() => {
-        if (cursor >= answer.length) {
-          if (typingTimerRef.current) {
-            clearInterval(
-              typingTimerRef.current
-            );
-
-            typingTimerRef.current = null;
-          }
-
-          setMessages((existing) => [
-            ...existing,
-            {
-              id: makeId(),
-              role: 'assistant',
-              content: answer,
-              answerSource,
-              responseSeconds,
-            },
-          ]);
-
-          currentAnswerRef.current = '';
-
-          setVisibleAnswer('');
-
-          setLoading(false);
-
-          return;
-        }
-
-        const remaining =
-          answer.length - cursor;
-
-        let amount = 1;
-
-        if (
-          answer[cursor] === '\n' ||
-          answer[cursor] === ' '
-        ) {
-          amount = 1;
-        } else if (remaining > 180) {
-          amount = 3;
-        } else if (remaining > 80) {
-          amount = 2;
-        }
-
-        cursor = Math.min(
-          answer.length,
-          cursor + amount
-        );
-
-        setVisibleAnswer(
-          answer.slice(0, cursor)
-        );
-      }, 22);
-  };
 
   const ticketPrompt = (content: string): ChatMessage => ({
     id: makeId(),
@@ -860,31 +764,76 @@ export function AIChat({
       return askAgain('Finally, describe what happened and what you need help with.');
     }
 
+    if (ticketStep === 'confirm') {
+      if (/^(cancel|no|stop)$/i.test(answer)) {
+        setTicketStep('idle');
+        setTicketDraft(EMPTY_TICKET);
+        return askAgain('Support-ticket creation cancelled. No ticket was created.');
+      }
+
+      if (!/^(confirm|yes|submit|create)$/i.test(answer)) {
+        return askAgain('Type **Confirm** to create this support ticket, or **Cancel** to stop.');
+      }
+
+      setTicketStep('creating');
+      setLoading(true);
+
+      try {
+        const response = await fetch('/api/aio/support-ticket', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...ticketDraft, confirmed: true }),
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data?.success || !data?.ticketId) {
+          throw new Error(data?.error || 'AIO could not create the support ticket.');
+        }
+
+        window.sessionStorage.setItem(
+          'auronix-support-handoff',
+          JSON.stringify({ ticketId: data.ticketId, subject: ticketDraft.subject })
+        );
+        setMessages([
+          ...baseMessages,
+          ticketPrompt(
+            `Your support ticket was created successfully. Reference: **${data.ticketId}**.\n\n[Open Support Chat](/support/chat)`
+          ),
+        ]);
+        setTicketStep('idle');
+        setTicketDraft(EMPTY_TICKET);
+      } catch (caught) {
+        setTicketStep('confirm');
+        askAgain(
+          caught instanceof Error
+            ? userFacingError(caught)
+            : 'AIO could not create the support ticket. Please try again.'
+        );
+      } finally {
+        setLoading(false);
+      }
+
+      return;
+    }
+
     if (ticketStep !== 'message') return;
-    if (answer.length < 10) return askAgain('Please add a little more detail so the team can understand the issue.');
+    if (answer.length < 10) {
+      return askAgain('Please add a little more detail so the team can understand the issue.');
+    }
 
     const completedTicket = { ...ticketDraft, message: answer };
     setTicketDraft(completedTicket);
-    setTicketStep('creating');
-    setLoading(true);
-    try {
-      const now = getTimestamp();
-      const ticketId = await pushData('tickets', {
-        ...completedTicket,
-        status: 'open',
-        createdAt: now,
-        updatedAt: now,
-      });
-      window.sessionStorage.setItem('auronix-support-handoff', JSON.stringify({ ticketId, subject: completedTicket.subject }));
-      setMessages([...baseMessages, ticketPrompt(`Your support ticket has been created. Reference: ${ticketId}. Opening support chat now…`)]);
-      setTicketStep('idle');
-      setLoading(false);
-      window.setTimeout(() => router.push('/support/chat'), 500);
-    } catch (caught) {
-      setTicketStep('message');
-      setLoading(false);
-      askAgain(caught instanceof Error ? userFacingError(caught) : 'I could not create the ticket. Please try again.');
-    }
+    setTicketStep('confirm');
+    return askAgain(
+      [
+        '**Review this support ticket before submission:**',
+        `- **Category:** ${completedTicket.category}`,
+        `- **Subject:** ${completedTicket.subject}`,
+        `- **Reply email:** ${completedTicket.email}`,
+        '',
+        'Type **Confirm** to create the ticket or **Cancel** to stop.',
+      ].join('\n')
+    );
   };
 
   const submitTicketValue = (value: string) => {
@@ -934,127 +883,282 @@ export function AIChat({
     }
 
     setLoading(true);
-
-    setThinkingSeconds(0);
-
-    setCompletedThinkingSeconds(0);
-
-    setActiveAnswerSource('online');
-
-    thinkingStartedAtRef.current = Date.now();
-
+    setActivityLabel('AIO is analyzing…');
+    setActiveAnswerSource('general');
     setVisibleAnswer('');
 
     currentAnswerRef.current = '';
+    currentSourcesRef.current = [];
+    currentActionsRef.current = [];
+    currentRequestIdRef.current = '';
 
     abortRef.current?.abort();
-
-    const controller =
-      new AbortController();
-
+    const controller = new AbortController();
     abortRef.current = controller;
 
+    let streamedAnswer = '';
+    let streamedSources: AioSource[] = [];
+    let streamedActions: AioAction[] = [];
+    let streamedRequestId = makeId();
+    let streamedAnswerSource: 'premade' | 'auronix' | 'general' = 'general';
+
     try {
-      const response = await fetch(
-        '/api/chat',
-        {
-          method: 'POST',
+      const token = auth.currentUser
+        ? await auth.currentUser.getIdToken().catch(() => null)
+        : null;
 
-          headers: {
-            'Content-Type':
-              'application/json',
-
-            Accept:
-              'application/json',
+      const response = await fetch('/api/aio/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          pathname,
+          conversationId: conversationIdRef.current,
+          requestId: streamedRequestId,
+          messages: nextMessages
+            .filter((message) => !message.sessionBoundary && message.content.trim())
+            .map((message) => ({
+              role: message.role,
+              content: message.content,
+            })),
+          context: {
+            selectedText: selectionRequest?.selectedText || undefined,
+            pageTitle:
+              typeof document !== 'undefined'
+                ? document.title.slice(0, 240)
+                : undefined,
           },
+        }),
+        signal: controller.signal,
+      });
 
-          body: JSON.stringify({
-            pathname,
-
-            messages:
-              nextMessages.filter((message) => !message.sessionBoundary && message.content.trim()).map(
-                (message) => ({
-                  role:
-                    message.role,
-
-                  content:
-                    message.content,
-                })
-              ),
-          }),
-
-          signal:
-            controller.signal,
+      if (!response.ok) {
+        let message = 'Unable to get an AIO response.';
+        try {
+          const data = await response.json();
+          if (typeof data?.error === 'string') message = data.error;
+        } catch {
+          // The public error above is intentionally generic.
         }
-      );
-
-      let data: any = null;
-
-      try {
-        data = await response.json();
-      } catch {
-        throw new Error(
-          'The AI server returned an invalid response.'
-        );
+        throw new Error(message);
       }
 
-      if (
-        !response.ok ||
-        !data?.success
-      ) {
-        throw new Error(
-          data?.error ||
-            'Unable to get an AI response.'
-        );
+      if (!response.body) {
+        throw new Error('AIO streaming is unavailable in this browser.');
       }
 
-      const answer =
-        typeof data.response === 'string'
-          ? data.response.trim()
-          : '';
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-      if (!answer) {
-        throw new Error(
-          'The AI returned an empty response.'
-        );
+      const handleEvent = (event: AioStreamEvent) => {
+        if (event.type === 'message_start') {
+          streamedRequestId = event.requestId;
+          currentRequestIdRef.current = event.requestId;
+          return;
+        }
+
+        if (event.type === 'status') {
+          setActivityLabel(event.label);
+          return;
+        }
+
+        if (event.type === 'source') {
+          if (!streamedSources.some((source) => source.id === event.source.id)) {
+            streamedSources = [...streamedSources, event.source];
+            currentSourcesRef.current = streamedSources;
+          }
+          return;
+        }
+
+        if (event.type === 'action') {
+          if (!streamedActions.some((action) => action.id === event.action.id)) {
+            streamedActions = [...streamedActions, event.action];
+            currentActionsRef.current = streamedActions;
+          }
+          return;
+        }
+
+        if (event.type === 'token') {
+          streamedAnswer += event.token;
+          currentAnswerRef.current = streamedAnswer;
+          setVisibleAnswer(streamedAnswer);
+          return;
+        }
+
+        if (event.type === 'message_complete') {
+          streamedAnswerSource = event.answerSource;
+          setActiveAnswerSource(event.answerSource);
+          return;
+        }
+
+        if (event.type === 'error') {
+          throw new Error(event.message);
+        }
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+
+        const frames = buffer.split('\n\n');
+        buffer = frames.pop() || '';
+
+        for (const frame of frames) {
+          const dataLine = frame
+            .split('\n')
+            .find((line) => line.startsWith('data: '));
+
+          if (!dataLine) continue;
+
+          let event: AioStreamEvent;
+          try {
+            event = JSON.parse(dataLine.slice(6)) as AioStreamEvent;
+          } catch {
+            continue;
+          }
+
+          handleEvent(event);
+        }
+
+        if (done) break;
       }
 
-      const responseSeconds = Math.max(
-        1,
-        Math.round(
-          (Date.now() - thinkingStartedAtRef.current) / 1000
-        )
-      );
-      const answerSource = data.answerSource === 'premade-memory'
-        ? 'found'
-        : 'online';
+      if (!streamedAnswer.trim()) {
+        throw new Error('AIO returned an empty response.');
+      }
 
-      setCompletedThinkingSeconds(responseSeconds);
-      setActiveAnswerSource(answerSource);
-      typeAnswer(answer, answerSource, responseSeconds);
+      setMessages((existing) => [
+        ...existing,
+        {
+          id: streamedRequestId,
+          role: 'assistant',
+          content: streamedAnswer.trim(),
+          answerSource: streamedAnswerSource,
+          sources: streamedSources,
+          actions: streamedActions,
+          requestId: streamedRequestId,
+        },
+      ]);
+
+      currentAnswerRef.current = '';
+      currentSourcesRef.current = [];
+      currentActionsRef.current = [];
+      currentRequestIdRef.current = '';
+      setVisibleAnswer('');
     } catch (caught) {
-      if (
-        controller.signal.aborted
-      ) {
+      if (controller.signal.aborted) {
         return;
       }
 
-      setLoading(false);
-
-      setVisibleAnswer('');
+      if (streamedAnswer.trim()) {
+        setMessages((existing) => [
+          ...existing,
+          {
+            id: streamedRequestId,
+            role: 'assistant',
+            content: streamedAnswer.trim(),
+            answerSource: streamedAnswerSource,
+            sources: streamedSources,
+            actions: streamedActions,
+            requestId: streamedRequestId,
+            interrupted: true,
+          },
+        ]);
+      }
 
       currentAnswerRef.current = '';
-
+      currentSourcesRef.current = [];
+      currentActionsRef.current = [];
+      currentRequestIdRef.current = '';
+      setVisibleAnswer('');
       setError(
         caught instanceof Error
           ? userFacingError(caught)
-          : 'Sorry, I am temporarily unable to respond.'
+          : 'AIO is temporarily unable to respond.'
       );
     } finally {
-      if (
-        abortRef.current === controller
-      ) {
+      setLoading(false);
+      setActivityLabel('AIO is analyzing…');
+
+      if (abortRef.current === controller) {
         abortRef.current = null;
+      }
+    }
+  };
+
+  const startNewChat = () => {
+    if (loading) return;
+    abortRef.current?.abort();
+    conversationIdRef.current = makeId();
+    currentAnswerRef.current = '';
+    currentSourcesRef.current = [];
+    currentActionsRef.current = [];
+    currentRequestIdRef.current = '';
+    setVisibleAnswer('');
+    setError('');
+    setTicketStep('idle');
+    setTicketDraft(EMPTY_TICKET);
+    setInput('');
+    setMessages((existing) => {
+      const hasConversation = existing.some(
+        (message) => !message.sessionBoundary && message.content.trim()
+      );
+
+      return hasConversation
+        ? [
+            ...existing,
+            {
+              id: makeId(),
+              role: 'assistant',
+              content: '',
+              sessionBoundary: true,
+              endedAt: Date.now(),
+            },
+          ]
+        : existing;
+    });
+    window.requestAnimationFrame(() => inputRef.current?.focus());
+  };
+
+  const submitFeedback = async (
+    message: ChatMessage,
+    rating: 'helpful' | 'not_helpful'
+  ) => {
+    if (!message.requestId) return;
+
+    try {
+      await fetch('/api/aio/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          responseId: message.requestId,
+          conversationId: conversationIdRef.current,
+          rating,
+        }),
+      });
+    } catch {
+      // Feedback is optional and must never break the conversation.
+    }
+  };
+
+  const regenerateMessage = (messageIndex: number) => {
+    if (loading) return;
+
+    for (let index = messageIndex - 1; index >= 0; index -= 1) {
+      const candidate = messages[index];
+      if (candidate?.role === 'user' && candidate.content.trim()) {
+        setMessages((existing) => existing.slice(0, messageIndex));
+        setInput(candidate.content);
+        window.setTimeout(() => {
+          document
+            .querySelector<HTMLFormElement>('[data-auronix-ai-form]')
+            ?.requestSubmit();
+        }, 40);
+        return;
       }
     }
   };
@@ -1153,17 +1257,27 @@ export function AIChat({
 
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 font-sans text-sm font-bold">
-                    Auronix AI
-                    <Sparkles className="h-3.5 w-3.5 shrink-0 text-accent" />
+                    Auronix Intelligence One
                   </div>
 
                   <div className="font-sans text-[10px] text-foreground-muted">
-                    Commerce assistant
+                    AIO • Online
                   </div>
                 </div>
               </div>
 
               <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={startNewChat}
+                  disabled={loading}
+                  aria-label="Start a new AIO conversation"
+                  title="New chat"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-secondary/60 text-foreground-muted transition-colors hover:bg-secondary hover:text-foreground disabled:opacity-40"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+
                 <button
                   type="button"
                   onClick={() => beginTicketFlow()}
@@ -1258,12 +1372,46 @@ export function AIChat({
                             {message.answerSource && (
                               <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-foreground-muted">
                                 <Sparkles className="h-3 w-3 text-accent" />
-                                Thought for {message.responseSeconds || 1} sec · {message.answerSource === 'found' ? 'Found' : 'Online'}
+                                {message.answerSource === 'auronix'
+                                  ? 'Verified Auronix context'
+                                  : message.answerSource === 'premade'
+                                    ? 'Auronix knowledge'
+                                    : 'General guidance'}
+                                {message.interrupted ? ' · Stopped' : ''}
                               </div>
                             )}
-                            {renderMarkdown(
-                              message.content
-                            )}
+                            {renderMarkdown(message.content)}
+                            <AioMessageSources sources={message.sources || []} />
+                            <AioMessageActions
+                              actions={message.actions || []}
+                              onNavigate={(href) => router.push(href)}
+                            />
+                            <div className="mt-3 flex flex-wrap items-center gap-1 border-t border-border/60 pt-2 text-foreground-muted">
+                              <MessageUtilityButton
+                                label="Copy"
+                                onClick={() => void navigator.clipboard?.writeText(message.content)}
+                              >
+                                <Copy className="h-3.5 w-3.5" />
+                              </MessageUtilityButton>
+                              <MessageUtilityButton
+                                label="Regenerate"
+                                onClick={() => regenerateMessage(messages.indexOf(message))}
+                              >
+                                <RefreshCw className="h-3.5 w-3.5" />
+                              </MessageUtilityButton>
+                              <MessageUtilityButton
+                                label="Helpful"
+                                onClick={() => void submitFeedback(message, 'helpful')}
+                              >
+                                <ThumbsUp className="h-3.5 w-3.5" />
+                              </MessageUtilityButton>
+                              <MessageUtilityButton
+                                label="Not helpful"
+                                onClick={() => void submitFeedback(message, 'not_helpful')}
+                              >
+                                <ThumbsDown className="h-3.5 w-3.5" />
+                              </MessageUtilityButton>
+                            </div>
                           </div>
                         ) : (
                           <div className="whitespace-pre-wrap break-words">
@@ -1281,7 +1429,7 @@ export function AIChat({
                       <div className="ac-content-panel max-w-[96%] px-4 py-3 font-sans text-sm leading-6 text-foreground">
                         <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-foreground-muted">
                           <Sparkles className="h-3 w-3 text-accent" />
-                          Thought for {completedThinkingSeconds || 1} sec · {activeAnswerSource === 'found' ? 'Found' : 'Online'}
+                          {activityLabel || 'AIO is responding…'}
                         </div>
 
                         <div className="font-sans">
@@ -1316,7 +1464,7 @@ export function AIChat({
                       <div className="ac-content-panel px-4 py-3">
                         <div className="flex items-center gap-2 font-sans text-sm text-foreground-muted">
                           <Spinner className="h-4 w-4" />
-                          Thinking… {thinkingSeconds}s
+                          {activityLabel || 'AIO is analyzing…'}
                         </div>
                       </div>
                     </div>
@@ -1334,6 +1482,13 @@ export function AIChat({
                   {TICKET_CATEGORIES.map((category) => (
                     <button type="button" key={category} onClick={() => submitTicketValue(category)}>{category}</button>
                   ))}
+                </div>
+              )}
+
+              {ticketStep === 'confirm' && (
+                <div className="ac-ai-ticket-categories" aria-label="Confirm support ticket">
+                  <button type="button" onClick={() => submitTicketValue('Confirm')}>Confirm & create</button>
+                  <button type="button" onClick={() => submitTicketValue('Cancel')}>Cancel</button>
                 </div>
               )}
             </div>
@@ -1469,4 +1624,102 @@ export default AIChat;
 
 function ChatBrandMark({ className }: { className?: string }) {
   return <span className={`relative inline-flex shrink-0 ${className || ''}`}><AuronixMark className="h-full w-full shadow-none" /><span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-background bg-accent text-white shadow-sm"><Bot className="h-2.5 w-2.5" /></span></span>;
+}
+
+function AioMessageSources({ sources }: { sources: AioSource[] }) {
+  const [open, setOpen] = useState(false);
+
+  if (!sources.length) return null;
+
+  return (
+    <div className="mt-3 border-t border-border/60 pt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground-muted transition hover:text-foreground"
+        aria-expanded={open}
+      >
+        Sources · {sources.length}
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="mt-2 space-y-2">
+          {sources.map((source) => {
+            const href = source.route || source.url;
+            return (
+              <div key={source.id} className="rounded-xl border border-border bg-secondary/35 p-3">
+                <div className="text-xs font-semibold">{source.title}</div>
+                {source.excerpt && (
+                  <div className="mt-1 line-clamp-3 text-[11px] leading-5 text-foreground-muted">
+                    {source.excerpt}
+                  </div>
+                )}
+                {href && (
+                  <a
+                    href={href}
+                    target={source.url ? '_blank' : undefined}
+                    rel={source.url ? 'noopener noreferrer' : undefined}
+                    className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-accent"
+                  >
+                    Open source
+                    {source.url ? <ExternalLink className="h-3 w-3" /> : <ArrowRight className="h-3 w-3" />}
+                  </a>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AioMessageActions({
+  actions,
+  onNavigate,
+}: {
+  actions: AioAction[];
+  onNavigate: (href: string) => void;
+}) {
+  if (!actions.length) return null;
+
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {actions.map((action) => (
+        <button
+          type="button"
+          key={action.id}
+          onClick={() => onNavigate(action.href)}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-accent/25 bg-accent/10 px-3 py-2 text-xs font-semibold text-accent transition hover:bg-accent/15"
+        >
+          {action.label}
+          <ArrowRight className="h-3 w-3" />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function MessageUtilityButton({
+  children,
+  label,
+  onClick,
+}: {
+  children: React.ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      onClick={onClick}
+      className="inline-flex h-8 items-center gap-1 rounded-lg px-2 text-[11px] transition hover:bg-secondary hover:text-foreground"
+    >
+      {children}
+      <span>{label}</span>
+    </button>
+  );
 }
