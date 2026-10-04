@@ -110,7 +110,7 @@ class GroqAioProvider implements AIProvider {
     this.fallbackModel = config.fallbackModel;
   }
 
-  private completionArgs(request: AioProviderRequest, model: string, stream: boolean) {
+  private commonArgs(request: AioProviderRequest, model: string) {
     return {
       model,
       messages: request.messages,
@@ -118,7 +118,6 @@ class GroqAioProvider implements AIProvider {
       max_completion_tokens: Math.min(Math.max(request.maxTokens, 120), 4000),
       reasoning_effort: 'medium' as const,
       include_reasoning: false,
-      stream,
     };
   }
 
@@ -131,9 +130,10 @@ class GroqAioProvider implements AIProvider {
     for (let index = 0; index < models.length; index += 1) {
       const model = models[index];
       try {
-        const completion = await this.client.chat.completions.create(
-          this.completionArgs(request, model, false)
-        );
+        const completion = await this.client.chat.completions.create({
+          ...this.commonArgs(request, model),
+          stream: false,
+        });
         if ('choices' in completion) {
           const text = completion.choices?.[0]?.message?.content?.trim() || '';
           if (text) {
@@ -168,9 +168,10 @@ class GroqAioProvider implements AIProvider {
       let emitted = false;
 
       try {
-        const stream = await this.client.chat.completions.create(
-          this.completionArgs(request, model, true)
-        );
+        const stream = await this.client.chat.completions.create({
+          ...this.commonArgs(request, model),
+          stream: true,
+        });
 
         for await (const chunk of stream) {
           const token = chunk.choices?.[0]?.delta?.content || '';
