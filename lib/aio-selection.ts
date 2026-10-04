@@ -3,6 +3,7 @@ export const AIO_SELECTION_EVENT = 'auronix:aio-selection';
 export type AioSelectionRequest = {
   id: string;
   prompt: string;
+  selectedText?: string;
 };
 
 export function askAioAboutSelection(text: string) {
@@ -19,6 +20,7 @@ export function askAioAboutSelection(text: string) {
   const request: AioSelectionRequest = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     prompt: `Explain this selected text clearly in the context of Auronix Commerce:\n\n“${excerpt}”`,
+    selectedText: excerpt,
   };
 
   window.dispatchEvent(
