@@ -48,31 +48,27 @@ export function Header() {
   const [mobile, setMobile] = useState(false);
   const [menu, setMenu] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
-  const [hidden, setHidden] = useState(false);
-  const previous = useRef(0);
   const header = useRef<HTMLElement>(null);
   useEffect(() => {
     let ticking = false;
+    let frame = 0;
     const scroll = () => {
       if (ticking) return;
       ticking = true;
-      requestAnimationFrame(() => {
-        const y = window.scrollY;
-        setScrolled(y > 24);
-        if (Math.abs(y - previous.current) > 8) {
-          setHidden(y > 180 && y > previous.current);
-          previous.current = y;
-        }
+      frame = requestAnimationFrame(() => {
+        setScrolled(window.scrollY > 24);
         ticking = false;
       });
     };
     window.addEventListener("scroll", scroll, { passive: true });
-    return () => window.removeEventListener("scroll", scroll);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", scroll);
+    };
   }, []);
   useEffect(() => {
     setMenu(null);
     setMobile(false);
-    setHidden(false);
   }, [pathname]);
   useEffect(() => {
     if (!menu) return;
@@ -100,8 +96,6 @@ export function Header() {
         ref={header}
         className="ac-header"
         data-compressed={scrolled}
-        data-hidden={hidden && !menu && !mobile}
-        onFocus={() => setHidden(false)}
         onBlur={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget)) setMenu(null);
         }}

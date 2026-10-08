@@ -1,7 +1,7 @@
 import { AuronixMark } from "./auronix-mark";
 export function CommerceFlow() {
   return (
-    <div className="ac-flow ac-glass">
+    <div className="ac-flow">
       <div className="ac-flow-title">
         <span>COMMERCE FLOW</span>
         <span className="ac-flow-state"><i /> MODEL 01 — 05</span>

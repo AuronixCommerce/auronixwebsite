@@ -11,6 +11,7 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [requestId, setRequestId] = useState('');
   const [error, setError] = useState('');
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
@@ -26,6 +27,7 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     setError('');
     setSent(false);
+    setRequestId('');
 
     try {
       const response = await fetch(
@@ -54,6 +56,7 @@ export default function ForgotPasswordPage() {
         throw new Error(data.error || 'Auronix Auth could not accept the reset request.');
       }
 
+      setRequestId(String(data.requestId || ''));
       setSent(true);
     } catch (err) {
       console.error('Password reset request failed:', err);
@@ -111,6 +114,12 @@ export default function ForgotPasswordPage() {
               <p className="text-xs text-foreground-muted mt-3">
                 Allow a few minutes, then check your inbox and spam or junk folder.
               </p>
+
+              {requestId && (
+                <p className="mt-3 text-xs text-foreground-muted">
+                  Delivery reference: <span className="font-mono">{requestId}</span>
+                </p>
+              )}
 
               <div className="mt-7 flex flex-col items-center gap-3">
                 <Link

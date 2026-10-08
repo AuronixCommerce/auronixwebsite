@@ -45,6 +45,35 @@ function getVisibleSelectionRect(range: Range) {
   return visibleRect ?? range.getBoundingClientRect();
 }
 
+function copyWithSelectionFallback(text: string) {
+  const selection = window.getSelection();
+  const savedRanges = selection
+    ? Array.from({ length: selection.rangeCount }, (_, index) =>
+        selection.getRangeAt(index).cloneRange()
+      )
+    : [];
+  const copyTarget = document.createElement('textarea');
+
+  copyTarget.value = text;
+  copyTarget.setAttribute('readonly', '');
+  copyTarget.style.position = 'fixed';
+  copyTarget.style.left = '-9999px';
+  copyTarget.style.opacity = '0';
+  document.body.appendChild(copyTarget);
+  copyTarget.select();
+
+  const copied = document.execCommand('copy');
+
+  copyTarget.remove();
+
+  if (selection && savedRanges.length > 0) {
+    selection.removeAllRanges();
+    savedRanges.forEach((range) => selection.addRange(range));
+  }
+
+  return copied;
+}
+
 export function SelectionActions() {
   const pathname = usePathname();
   const toolbarRef = useRef<HTMLDivElement | null>(null);
@@ -165,9 +194,24 @@ export function SelectionActions() {
     }
 
     try {
+      let didCopy = false;
+
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(selectionState.text);
-      } else if (!document.execCommand('copy')) {
+        try {
+          await navigator.clipboard.writeText(selectionState.text);
+          didCopy = true;
+        } catch {
+          // Some embedded and privacy-restricted browsers deny Clipboard API
+          // access even during a user gesture. The selection fallback below
+          // preserves the original page selection while copying its text.
+        }
+      }
+
+      if (!didCopy) {
+        didCopy = copyWithSelectionFallback(selectionState.text);
+      }
+
+      if (!didCopy) {
         throw new Error('Copy is unavailable');
       }
 

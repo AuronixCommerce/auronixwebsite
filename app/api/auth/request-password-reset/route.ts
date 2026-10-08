@@ -1,7 +1,8 @@
 ﻿import { NextResponse } from 'next/server';
-import { adminAuth } from '@/lib/firebase-admin';
-import { sendPasswordResetEmail } from '@/lib/server-mail';
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { sendPasswordResetEmail, sendPasswordResetFallback } from '@/lib/server-mail';
 import { protectPublicRequest, publicRequestErrorResponse } from '@/lib/server-protection';
+import { reportOperationalError } from '@/lib/server-audit';
 
 export async function POST(request: Request) {
   try {
@@ -16,8 +17,29 @@ export async function POST(request: Request) {
       );
     }
 
+    const now = Date.now();
+    const deliveryRef = adminDb.ref('emailDeliveryLogs').push();
+    const requestId = deliveryRef.key || `reset-${now}`;
+    const updateDelivery = async (value: Record<string, unknown>) => {
+      await deliveryRef.update(value).catch(error => {
+        console.error('Auronix password reset delivery logging failed:', error);
+      });
+    };
+    await deliveryRef.set({
+      id: requestId,
+      recipient: email,
+      subject: 'Reset your Auronix Commerce password',
+      event: 'password-reset',
+      status: 'queued',
+      createdAt: now,
+      updatedAt: now,
+    }).catch(error => {
+      console.error('Auronix password reset delivery logging failed:', error);
+    });
+
     const accepted = () => NextResponse.json({
       success: true,
+      requestId,
       message:
         'If an account exists for this email, reset instructions have been requested.',
     });
@@ -27,10 +49,16 @@ export async function POST(request: Request) {
     try {
       user = await adminAuth.getUserByEmail(email);
     } catch (error: any) {
-      if (error?.code === 'auth/user-not-found') return accepted();
+      if (error?.code === 'auth/user-not-found') {
+        await updateDelivery({ status: 'accepted', updatedAt: Date.now() });
+        return accepted();
+      }
       throw error;
     }
-    if (!user.email) return accepted();
+    if (!user.email) {
+      await updateDelivery({ status: 'accepted', updatedAt: Date.now() });
+      return accepted();
+    }
 
     try {
       const baseUrl = (
@@ -45,10 +73,24 @@ export async function POST(request: Request) {
       const resetCode = actionUrl.searchParams.get('oobCode');
       if (!resetCode) throw new Error('Auronix Auth returned an invalid password-reset link.');
       const resetLink = `${baseUrl}/reset-password?oobCode=${encodeURIComponent(resetCode)}`;
-      await sendPasswordResetEmail({ email: accountEmail, name: user.displayName || '', resetUrl: resetLink });
+      try {
+        const result: any = await sendPasswordResetEmail({ email: accountEmail, name: user.displayName || '', resetUrl: resetLink });
+        await updateDelivery({ status: 'sent', providerMessageId: String(result?.messageId || '').slice(0, 500), updatedAt: Date.now() });
+      } catch (primaryError) {
+        console.error('Auronix password reset primary delivery failed:', primaryError);
+        try {
+          const fallback: any = await sendPasswordResetFallback({ email: accountEmail, continueUrl: `${baseUrl}/seller/login` });
+          await updateDelivery({ status: 'sent', deliveryChannel: 'account-recovery', providerMessageId: String(fallback?.messageId || '').slice(0, 500), updatedAt: Date.now() });
+        } catch (fallbackError) {
+          console.error('Auronix password reset recovery delivery failed:', fallbackError);
+          await updateDelivery({ status: 'failed', error: 'Password reset delivery failed after both secure delivery attempts.', updatedAt: Date.now() });
+          await reportOperationalError('password-reset-delivery', new Error('Password reset delivery failed after both secure delivery attempts.'), { requestId });
+        }
+      }
     } catch (error) {
-      // Log operational delivery failures without exposing whether the account exists.
-      console.error('Auronix password reset delivery failed:', error);
+      console.error('Auronix password reset generation failed:', error);
+      await updateDelivery({ status: 'failed', error: 'A secure password reset link could not be generated.', updatedAt: Date.now() });
+      await reportOperationalError('password-reset-generation', new Error('A secure password reset link could not be generated.'), { requestId });
     }
 
     return accepted();

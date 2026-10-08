@@ -4,7 +4,7 @@ const ts = require('typescript');
 const root = path.resolve(__dirname, '../..');
 function harness(initial = {}) {
   const data = structuredClone(initial), accesses = [], mails = [];
-  let sequence = 0, code = '', admin = true, mailFailure = false, passwordResetFailure = false, authUser = null, authFailure = null;
+  let sequence = 0, code = '', admin = true, mailFailure = false, passwordResetFailure = false, passwordResetFallbackFailure = false, authUser = null, authFailure = null;
   const read = p => p.split('/').filter(Boolean).reduce((v, k) => v?.[k], data);
   const write = (p, v) => { const parts = p.split('/').filter(Boolean), key = parts.pop(); let obj = data; for (const part of parts) obj = obj[part] ??= {}; if (v === null) delete obj[key]; else obj[key] = structuredClone(v); };
   const snap = p => ({ exists: () => read(p) != null, val: () => structuredClone(read(p) ?? null) });
@@ -34,6 +34,7 @@ function harness(initial = {}) {
       sendSellerEmailVerification: async value => { code = value.code; },
       sendSellerResumeIdEmail: async () => {},
       sendPasswordResetEmail: async value => { if (passwordResetFailure) throw Error('Test reset mail unavailable'); mails.push({ type: 'password-reset', ...value }); },
+      sendPasswordResetFallback: async value => { if (passwordResetFallbackFailure) throw Error('Test reset fallback unavailable'); const result = { type: 'password-reset-fallback', ...value, messageId: 'fallback-test-message' }; mails.push(result); return result; },
       sendProfessionalEmail: async value => { if (mailFailure) throw Error('Test mail unavailable'); mails.push(value); },
     },
   };
@@ -56,6 +57,7 @@ function harness(initial = {}) {
     setAdmin: value => { admin = value; },
     failMail: value => { mailFailure = value; },
     failPasswordResetMail: value => { passwordResetFailure = value; },
+    failPasswordResetFallback: value => { passwordResetFallbackFailure = value; },
     setAuthUser: value => { authUser = value; },
     failAuth: value => { authFailure = value; },
   };

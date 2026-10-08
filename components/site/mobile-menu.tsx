@@ -9,7 +9,9 @@ import {
 } from "@/components/ui/dialog";
 import { NAV_GROUPS, pageFor } from "@/lib/design/navigation";
 import { ThemeToggle } from "./theme-toggle";
-import { ArrowRight, X } from "lucide-react";
+import { ArrowRight, Search, Sparkles, X } from "lucide-react";
+import { openSearch } from "@/components/design/search-trigger";
+import { openAio } from "@/lib/aio-selection";
 export function MobileMenu({
   open,
   onClose,
@@ -54,6 +56,14 @@ export function MobileMenu({
           ))}
         </nav>
         <div className="ac-mobile-bottom">
+          <div className="ac-mobile-utilities">
+            <button type="button" onClick={() => { onClose(); openSearch(); }}>
+              <Search size={17} /> Search
+            </button>
+            <button type="button" onClick={() => { onClose(); openAio('How can Auronix Commerce help me?'); }}>
+              <Sparkles size={17} /> Ask AIO
+            </button>
+          </div>
           <ThemeToggle showLabel />
           <Link href="/supplier" onClick={onClose} className="ac-button">
             Become a Supplier <ArrowRight size={16} />

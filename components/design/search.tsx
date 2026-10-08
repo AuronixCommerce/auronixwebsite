@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, ArrowUpRight, CornerDownLeft } from "lucide-react";
+import { ArrowUpRight, CornerDownLeft, Sparkles } from "lucide-react";
 import {
   Command,
   CommandInput,
@@ -23,6 +23,7 @@ import { getList } from "@/lib/firebase-db";
 import type { FAQ } from "@/lib/types";
 import { SegmentedControl } from "./primitives";
 import pageContent from "@/lib/design/public-search.json";
+import { openAio } from "@/lib/aio-selection";
 type Result = {
   id: string;
   title: string;
@@ -216,6 +217,22 @@ export function CommandPalette() {
               ))}
             </CommandGroup>
           </CommandList>
+          <button
+            type="button"
+            className="ac-command-aio"
+            onClick={() => {
+              setOpen(false);
+              openAio(
+                query.trim()
+                  ? `Help me with this request and use relevant Auronix Commerce information: ${query.trim()}`
+                  : 'Help me find the right Auronix Commerce page, service, or support option.'
+              );
+            }}
+          >
+            <Sparkles size={17} />
+            <span>{query.trim() ? `Ask AIO about “${query.trim().slice(0, 54)}${query.trim().length > 54 ? '…' : ''}”` : 'Ask Auronix Intelligence One'}</span>
+            <ArrowUpRight size={16} />
+          </button>
           <div className="ac-command-footer">
             <span>↑ ↓ Navigate</span>
             <span>

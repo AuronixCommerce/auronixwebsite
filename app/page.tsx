@@ -1,4 +1,3 @@
-"use client";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -25,16 +24,15 @@ export default function HomePage() {
           <div className="ac-home-masthead">
             <span className="ac-eyebrow">Auronix Commerce LLC</span>
             <h1>
-              <span className="ac-hero-line">Powering the next generation</span>
-              <span className="ac-hero-line ac-hero-accent">of commerce.</span>
+              <span className="ac-hero-line">Structured commerce,</span>
+              <span className="ac-hero-line ac-hero-accent">from source to marketplace.</span>
             </h1>
           </div>
           <div className="ac-hero-layout">
             <div className="ac-home-brief">
               <p>
-                Auronix Commerce LLC connects quality suppliers, brands, and
-                online marketplaces through smarter procurement, distribution,
-                and e-commerce operations.
+                We connect suppliers, brands, and marketplaces through disciplined
+                sourcing, procurement, distribution, and marketplace operations.
               </p>
               <div className="ac-hero-actions">
                 <Link href="/contact" className="ac-button">
@@ -64,13 +62,18 @@ export default function HomePage() {
               <ArrowRight size={16} />
             </Link>
           </div>
+          <dl className="ac-home-proof" aria-label="How Auronix operates">
+            <div><dt>01</dt><dd><strong>Supplier-first review</strong><span>Every opportunity follows a structured application and due-diligence process.</span></dd></div>
+            <div><dt>02</dt><dd><strong>Operational visibility</strong><span>Partners can track applications, documents, requests, and next actions.</span></dd></div>
+            <div><dt>03</dt><dd><strong>Responsible access</strong><span>Dedicated seller workspaces and controlled administrative review.</span></dd></div>
+          </dl>
         </div>
       </section>
       <Section className="border-t border-border">
         <div className="grid items-start gap-10 lg:grid-cols-2 lg:gap-24">
           <Reveal>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold leading-tight">
-              Commerce built around better connections.
+              Commerce built around accountable partnerships.
             </h2>
           </Reveal>
           <Reveal>
@@ -83,9 +86,9 @@ export default function HomePage() {
                 that modern commerce demands.
               </p>
               <p className="text-lg leading-relaxed text-foreground-muted">
-                Our approach is structured: we evaluate every opportunity, build
-                relationships with the right partners, and manage the full
-                lifecycle from sourcing to marketplace performance.
+                Our approach is practical and traceable: evaluate the opportunity,
+                align commercial terms, verify documents, and manage the lifecycle
+                from sourcing to marketplace performance.
               </p>
               <Link
                 href="/about"

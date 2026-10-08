@@ -54,15 +54,18 @@ async function sendWithSender(sender: string, options: MailOptions) {
   if (!options.to || (Array.isArray(options.to) && !options.to.length)) throw new Error('Email recipient is required.');
   if (!SMTP_PASSWORD) throw new Error('Email service is not configured. Set SMTP_PASSWORD or SMTP_PASS.');
   let lastError: unknown;
-  for (const candidate of mailTransportCandidates()) {
-    try {
-      const result = await createMailTransport(candidate.port, candidate.secure).sendMail({ from: { name: options.fromName || MAIL_FROM_NAME, address: sender }, to: options.to, subject: options.subject, html: options.html, text: options.text, replyTo: options.replyTo || SUPPORT_EMAIL });
-      if (!Array.isArray(result.accepted) || result.accepted.length === 0) {
-        throw new Error('The email service did not accept the recipient.');
+  const senders = Array.from(new Set([sender, SMTP_USER].map(value => value.trim()).filter(Boolean)));
+  for (const senderAddress of senders) {
+    for (const candidate of mailTransportCandidates()) {
+      try {
+        const result = await createMailTransport(candidate.port, candidate.secure).sendMail({ from: { name: options.fromName || MAIL_FROM_NAME, address: senderAddress }, to: options.to, subject: options.subject, html: options.html, text: options.text, replyTo: options.replyTo || SUPPORT_EMAIL });
+        if (!Array.isArray(result.accepted) || result.accepted.length === 0) {
+          throw new Error('The email service did not accept the recipient.');
+        }
+        return result;
+      } catch (error) {
+        lastError = error;
       }
-      return result;
-    } catch (error) {
-      lastError = error;
     }
   }
   throw lastError || new Error('The email service is unavailable.');
@@ -89,6 +92,34 @@ export async function sendPasswordResetEmail(input: { email: string; name?: stri
   const url = safeAbsoluteUrl(input.resetUrl, `${SITE_URL}/forgot-password`);
   const html = emailShell({ preheader: 'Use this secure link to reset your Auronix password.', title: 'Reset your password', footerNote: 'This security link is time-limited and can only be used once.', body: `<h1 style="margin:0 0 16px;font-size:27px;line-height:1.2">Reset your password</h1><p>Hello ${escapeHtml(input.name || 'there')},</p><p>We received a request to reset your Auronix Commerce account password.</p>${cta('Reset password', url)}<p style="color:#6b7280;font-size:13px">If you did not request a password reset, you can safely ignore this email. Your password will not change.</p>` });
   return sendNotificationMail({ to: input.email, subject: 'Reset your Auronix Commerce password', html, text: `Hello ${input.name || 'there'},\n\nReset your password using this secure link:\n${url}\n\nIf you did not request this, ignore this email. Contact ${SUPPORT_EMAIL} if you need help.` });
+}
+
+export async function sendPasswordResetFallback(input: { email: string; continueUrl: string }) {
+  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.trim();
+  if (!apiKey) throw new Error('Auronix Auth recovery delivery is not configured.');
+
+  const response = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${encodeURIComponent(apiKey)}`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Referer: input.continueUrl,
+      },
+      body: JSON.stringify({
+        requestType: 'PASSWORD_RESET',
+        email: input.email,
+        continueUrl: input.continueUrl,
+      }),
+      cache: 'no-store',
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('Auronix Auth recovery delivery was not accepted.');
+  }
+
+  return { accepted: [input.email], messageId: `auronix-auth-${Date.now()}` };
 }
 
 export async function sendSellerEmailVerification(input: { email: string; code: string; expiresAt: number }) {

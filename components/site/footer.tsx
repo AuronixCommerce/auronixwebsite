@@ -569,6 +569,6 @@ export function Footer() {
         </div>
 
       </div>
-    <div aria-hidden="true" className="ac-footer-signature">AURONIX</div></footer>
+    </footer>
   );
 }
