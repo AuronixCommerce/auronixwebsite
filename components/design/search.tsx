@@ -103,12 +103,13 @@ export function CommandPalette() {
   useEffect(() => {
     if (!open || loaded) return;
     let live = true;
-    getList<FAQ>("faqs", "order")
+    getList<FAQ>("faqs")
       .then((data) => {
         if (live) {
           setManaged(
             data
               .filter((f) => f.active !== false)
+              .sort((a, b) => Number(a.order || 0) - Number(b.order || 0))
               .map((f) => ({
                 id: `managed-${f.id}`,
                 title: f.question,

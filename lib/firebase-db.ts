@@ -16,7 +16,7 @@ import { db } from './firebase';
 import type { DatabaseError } from './types';
 
 function handleError(error: unknown, operation: string): never {
-  console.error(`[firebase-db] ${operation} failed:`, error);
+  console.error(`[Auronix data] ${operation} failed:`, error);
   const message =
     error instanceof Error
       ? error.message.includes('permission')
