@@ -182,6 +182,7 @@ body {
 .ac-command-aio svg:first-child,
 .ac-network-status svg { color: hsl(var(--accent)); }
 .ac-hero-accent { color: hsl(var(--foreground-muted)); }
+.ac-hero-signals li { border-radius: 999px; }
 .ac-hero-signals li::before,
 .ac-flow-state > i { background: hsl(var(--accent)) !important; }
 
@@ -238,7 +239,17 @@ a[class*="bg-primary"] {
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7), 0 5px 15px rgb(47 55 68 / 0.08) !important;
 }
 .dark .ac-workspace-links a[aria-current="page"] { background: rgb(255 255 255 / 0.1) !important; }
-.ac-supplier-section { box-shadow: var(--ac-shadow-2); }
+.ac-supplier-section {
+  border-color: rgb(255 255 255 / 0.2) !important;
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.16), transparent 55%), rgb(23 33 49 / 0.91) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 22px 58px rgb(30 39 54 / 0.21) !important;
+  color: #f9fafb;
+}
+.ac-supplier-section .ac-eyebrow { color: #ffc181; }
+.ac-supplier-section .ac-button { border-color: rgb(255 255 255 / 0.82); }
+.dark .ac-supplier-section {
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.09), transparent 55%), rgb(23 33 49 / 0.91) !important;
+}
 
 /* Forms use milky glass fields and a strong, legible focus ring. */
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
@@ -325,6 +336,14 @@ tbody tr:hover { background: hsl(var(--accent) / 0.07); }
   .ac-workspace-dock { border-radius: 22px; }
   .ac-mobile-nav { border-radius: 24px !important; }
   .ac-login-layout form { padding: 24px; }
+  :is(.ac-content-panel, .ac-form-panel, .ac-success, .ac-application-panel,
+    .ac-feature, .ac-journey-story, .ac-status-orb, .ac-export-card,
+    .ac-deal-index, .ac-support-start, .ac-support-workspace,
+    .ac-team-conversation, .ac-support-room .ac-conversation,
+    .ac-login-layout form, .ac-recovery-card, .ac-supplier-section) {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
