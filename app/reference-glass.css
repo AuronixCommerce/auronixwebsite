@@ -1,0 +1,334 @@
+/* Auronix glass material system: a calm, app-like surface with real depth. */
+:root {
+  --ac-radius-sm: 12px;
+  --ac-radius-md: 18px;
+  --ac-radius-lg: 24px;
+  --ac-radius-xl: 30px;
+  --ac-canvas: #e5e8ed;
+  --ac-surface-1: rgb(255 255 255 / 0.71);
+  --ac-surface-2: rgb(247 248 250 / 0.62);
+  --ac-surface-3: rgb(234 237 242 / 0.7);
+  --ac-surface-glass: rgb(255 255 255 / 0.56);
+  --ac-edge: rgb(255 255 255 / 0.8);
+  --ac-edge-strong: rgb(255 255 255 / 0.96);
+  --ac-shadow-1: inset 0 1px 0 rgb(255 255 255 / 0.86), 0 1px 2px rgb(47 55 68 / 0.05), 0 14px 32px rgb(47 55 68 / 0.09);
+  --ac-shadow-2: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 2px 4px rgb(47 55 68 / 0.05), 0 26px 66px rgb(47 55 68 / 0.17);
+  --background: 218 22% 91%;
+  --background-subtle: 218 25% 89%;
+  --foreground: 220 24% 14%;
+  --foreground-muted: 218 10% 39%;
+  --card: 0 0% 100%;
+  --popover: 0 0% 100%;
+  --secondary: 216 24% 94%;
+  --muted: 216 22% 93%;
+  --accent: 28 91% 47%;
+  --accent-foreground: 0 0% 100%;
+  --border: 216 16% 78%;
+  --border-strong: 216 16% 67%;
+  --input: 218 15% 78%;
+  --ring: 28 91% 47%;
+}
+
+.dark {
+  --ac-canvas: #121720;
+  --ac-surface-1: rgb(34 41 53 / 0.82);
+  --ac-surface-2: rgb(27 34 45 / 0.78);
+  --ac-surface-3: rgb(47 54 65 / 0.72);
+  --ac-surface-glass: rgb(35 42 53 / 0.68);
+  --ac-edge: rgb(255 255 255 / 0.13);
+  --ac-edge-strong: rgb(255 255 255 / 0.22);
+  --ac-shadow-1: inset 0 1px 0 rgb(255 255 255 / 0.09), 0 14px 32px rgb(0 0 0 / 0.18);
+  --ac-shadow-2: inset 0 1px 0 rgb(255 255 255 / 0.12), 0 26px 66px rgb(0 0 0 / 0.34);
+  --background: 220 23% 9%;
+  --background-subtle: 220 20% 12%;
+  --foreground: 210 20% 96%;
+  --foreground-muted: 215 12% 69%;
+  --accent: 29 94% 60%;
+  --border: 220 16% 29%;
+  --border-strong: 220 16% 39%;
+  --input: 220 14% 37%;
+  --ring: 29 94% 60%;
+}
+
+html,
+body {
+  background-color: var(--ac-canvas);
+}
+
+body {
+  background-image:
+    radial-gradient(ellipse 35% 46% at 11% 14%, rgb(184 197 214 / 0.58), transparent 90%),
+    radial-gradient(ellipse 38% 40% at 92% 6%, rgb(205 215 227 / 0.75), transparent 88%),
+    radial-gradient(ellipse 42% 35% at 58% 64%, rgb(255 255 255 / 0.55), transparent 85%),
+    linear-gradient(138deg, rgb(255 255 255 / 0.45), transparent 42%, rgb(184 194 207 / 0.3));
+  background-attachment: fixed;
+}
+
+.dark body {
+  background-image:
+    radial-gradient(ellipse 42% 48% at 12% 8%, rgb(64 79 101 / 0.36), transparent 85%),
+    radial-gradient(ellipse 40% 45% at 94% 70%, rgb(59 66 75 / 0.35), transparent 88%),
+    linear-gradient(150deg, #171e29, #10151d 58%, #1b222b);
+}
+
+/* Content remains over the canvas so the material has something to diffuse. */
+.ac-page,
+.ac-home-hero,
+.ac-page-hero,
+.ac-workspace,
+.ac-login-screen,
+.ac-recovery-screen {
+  background: transparent !important;
+}
+
+.ac-section.bg-background-subtle,
+.ac-footer {
+  background: rgb(246 248 250 / 0.34) !important;
+  border-block: 1px solid rgb(255 255 255 / 0.55);
+}
+
+.dark .ac-section.bg-background-subtle,
+.dark .ac-footer {
+  background: rgb(18 24 33 / 0.28) !important;
+  border-color: var(--ac-edge);
+}
+
+/* The glass hierarchy: broad panes diffuse lightly; controls stay sharp. */
+:is(.ac-content-panel, .ac-form-panel, .ac-success, .ac-application-panel,
+  .ac-feature, .ac-journey-story, .ac-status-orb, .ac-export-card,
+  .ac-deal-index, .ac-support-start, .ac-support-workspace,
+  .ac-team-conversation, .ac-support-room .ac-conversation,
+  .ac-login-layout form, .ac-recovery-card, .ac-supplier-section) {
+  border: 1px solid var(--ac-edge-strong) !important;
+  border-radius: var(--ac-radius-lg) !important;
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.26), transparent 52%), var(--ac-surface-glass) !important;
+  box-shadow: var(--ac-shadow-2) !important;
+  backdrop-filter: blur(10px) saturate(115%) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(115%) !important;
+}
+
+.dark :is(.ac-content-panel, .ac-form-panel, .ac-success, .ac-application-panel,
+  .ac-feature, .ac-journey-story, .ac-status-orb, .ac-export-card,
+  .ac-deal-index, .ac-support-start, .ac-support-workspace,
+  .ac-team-conversation, .ac-support-room .ac-conversation,
+  .ac-login-layout form, .ac-recovery-card, .ac-supplier-section) {
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.05), transparent 60%), var(--ac-surface-glass) !important;
+}
+
+:is(.ac-admin-document, .ac-revision, .ac-setting-row, .ac-document-row,
+  .ac-commercial-readout > div, .ac-kpi-strip > span, .ac-report-kpis article,
+  .ac-notification-list > article, .ac-inbox-empty, .ac-support-choices > a,
+  .ac-seller-help-options > a, .ac-principles > article) {
+  border: 1px solid var(--ac-edge) !important;
+  border-radius: var(--ac-radius-md) !important;
+  background: var(--ac-surface-2) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.48), 0 8px 20px rgb(35 44 57 / 0.06) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.dark :is(.ac-admin-document, .ac-revision, .ac-setting-row, .ac-document-row,
+  .ac-commercial-readout > div, .ac-kpi-strip > span, .ac-report-kpis article,
+  .ac-notification-list > article, .ac-inbox-empty, .ac-support-choices > a,
+  .ac-seller-help-options > a, .ac-principles > article) {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 8px 20px rgb(0 0 0 / 0.12) !important;
+}
+
+.ac-header { inset: 14px var(--ac-gutter) auto; }
+.ac-nav,
+.ac-workspace-toolbar,
+.ac-workspace-sidebar,
+.ac-workspace-dock,
+.ac-workspace-sheet,
+.ac-mobile-nav,
+.auronix-ai-window,
+.ac-selection-actions,
+.ac-network-status,
+[role="dialog"],
+[role="alertdialog"] {
+  border: 1px solid var(--ac-edge-strong) !important;
+  background: linear-gradient(150deg, rgb(255 255 255 / 0.28), transparent 55%), var(--ac-surface-glass) !important;
+  box-shadow: var(--ac-shadow-2) !important;
+  backdrop-filter: blur(18px) saturate(125%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(125%) !important;
+}
+
+.dark :where(.ac-nav, .ac-workspace-toolbar, .ac-workspace-sidebar,
+  .ac-workspace-dock, .ac-workspace-sheet, .ac-mobile-nav,
+  .auronix-ai-window, .ac-selection-actions, .ac-network-status,
+  [role="dialog"], [role="alertdialog"]) {
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.07), transparent 60%), var(--ac-surface-glass) !important;
+}
+
+.ac-nav { border-radius: 23px; padding-inline: 14px; }
+.ac-desktop-nav button,
+.ac-portal-link,
+.ac-icon-button { border-radius: 14px; }
+.ac-desktop-nav button:hover,
+.ac-icon-button:hover,
+.ac-portal-link:hover,
+.ac-workspace-links a:hover {
+  background: rgb(255 255 255 / 0.42);
+}
+.dark :where(.ac-desktop-nav button:hover, .ac-icon-button:hover,
+  .ac-portal-link:hover, .ac-workspace-links a:hover) {
+  background: rgb(255 255 255 / 0.09);
+}
+
+/* A small orange focus point echoes the reference without recoloring the business UI. */
+.ac-eyebrow,
+.ac-home-proof dt,
+.ac-journey-number,
+.ac-command-aio svg:first-child,
+.ac-network-status svg { color: hsl(var(--accent)); }
+.ac-hero-accent { color: hsl(var(--foreground-muted)); }
+.ac-hero-signals li::before,
+.ac-flow-state > i { background: hsl(var(--accent)) !important; }
+
+.ac-button,
+button[class*="bg-primary"],
+a[class*="bg-primary"] {
+  border-radius: 16px;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.15), 0 8px 20px rgb(17 23 34 / 0.13);
+}
+.ac-button-secondary {
+  border: 1px solid var(--ac-edge-strong);
+  background: rgb(255 255 255 / 0.48);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.8), 0 8px 18px rgb(35 44 57 / 0.08);
+}
+.ac-button:active,
+.ac-icon-button:active,
+.ac-workspace-links a:active { transform: scale(0.97); }
+
+.ac-home-hero { padding-top: 50px; }
+.ac-hero-layout { gap: clamp(2rem, 5vw, 5rem); }
+.ac-flow {
+  border: 1px solid var(--ac-edge-strong);
+  border-radius: 30px;
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.34), transparent 58%), var(--ac-surface-glass);
+  box-shadow: var(--ac-shadow-2);
+  backdrop-filter: blur(12px) saturate(118%);
+  -webkit-backdrop-filter: blur(12px) saturate(118%);
+}
+.ac-flow li {
+  border: 1px solid var(--ac-edge) !important;
+  border-radius: 16px;
+  background: rgb(255 255 255 / 0.4);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.66), 0 8px 18px rgb(39 47 59 / 0.05);
+}
+.dark .ac-flow li { background: rgb(255 255 255 / 0.06); }
+.ac-flow li:nth-child(2) {
+  border-color: rgb(255 255 255 / 0.18) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 16px 28px rgb(21 28 41 / 0.19);
+}
+.ac-home-proof { border: 0; gap: 12px; }
+.ac-home-proof > div {
+  border: 1px solid var(--ac-edge) !important;
+  border-radius: 18px;
+  background: var(--ac-surface-glass);
+  box-shadow: var(--ac-shadow-1);
+}
+.ac-feature { min-height: 245px; }
+.ac-feature-top > span,
+.ac-section-icon { border-radius: 15px; background: hsl(var(--accent) / 0.1); color: hsl(var(--accent)); }
+.ac-journey-index button[aria-current="step"],
+.ac-workspace-links a[aria-current="page"] {
+  border: 1px solid var(--ac-edge) !important;
+  background: rgb(255 255 255 / 0.5) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7), 0 5px 15px rgb(47 55 68 / 0.08) !important;
+}
+.dark .ac-workspace-links a[aria-current="page"] { background: rgb(255 255 255 / 0.1) !important; }
+.ac-supplier-section { box-shadow: var(--ac-shadow-2); }
+
+/* Forms use milky glass fields and a strong, legible focus ring. */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+textarea,
+select,
+button[role="combobox"] {
+  border: 1px solid var(--ac-edge) !important;
+  border-radius: 15px;
+  background: rgb(255 255 255 / 0.52) !important;
+  box-shadow: inset 0 1px 2px rgb(37 46 58 / 0.04), inset 0 1px 0 rgb(255 255 255 / 0.7) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.dark :where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), textarea, select, button[role="combobox"]) {
+  background: rgb(255 255 255 / 0.07) !important;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+textarea:focus,
+select:focus,
+button[role="combobox"]:focus {
+  border-color: hsl(var(--accent) / 0.62) !important;
+  box-shadow: 0 0 0 3px hsl(var(--accent) / 0.14) !important;
+}
+.ac-file-drop,
+.ac-upload { border: 1px dashed hsl(var(--accent) / 0.36); border-radius: 18px; background: var(--ac-surface-2); }
+.ac-table-scroll {
+  border-color: var(--ac-edge) !important;
+  border-radius: var(--ac-radius-md);
+  background: var(--ac-surface-glass);
+  box-shadow: var(--ac-shadow-1);
+}
+thead { background: rgb(255 255 255 / 0.28); }
+.dark thead { background: rgb(255 255 255 / 0.06); }
+tbody tr:hover { background: hsl(var(--accent) / 0.07); }
+.ac-status-pill,
+.ac-delivery-status,
+.ac-source-pill { border-radius: 999px; }
+
+/* Admin and seller: stationary material; no scrolling blur or animated wallpaper. */
+.ac-workspace-sidebar { border-radius: 24px; }
+.ac-workspace-toolbar { border-radius: 20px; }
+.ac-workspace > .ac-workspace-main { position: relative; }
+.ac-workspace-content h1 { letter-spacing: -0.045em; }
+.ac-workspace-dock a[aria-current="page"] { color: hsl(var(--accent)); }
+.ac-workspace-sheet-close,
+.ac-mobile-nav-close { border: 1px solid var(--ac-edge); background: var(--ac-surface-2); }
+
+.auronix-ai-launcher {
+  border-color: rgb(255 255 255 / 0.54) !important;
+  border-radius: 18px !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.24), 0 12px 28px rgb(26 33 44 / 0.21) !important;
+}
+.auronix-ai-window { border-radius: 26px !important; }
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .ac-hero-layout { grid-template-columns: 1fr; }
+  .ac-flow { max-width: 760px; width: 100%; margin-inline: auto; }
+  .ac-capabilities { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ac-home-proof { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ac-home-proof > div { display: block; padding: 18px; }
+  .ac-home-proof dd { margin-top: 10px; }
+}
+
+@media (max-width: 767px) {
+  body { background-attachment: scroll; }
+  .ac-shell { padding-top: 80px; }
+  .ac-header { inset: 8px 10px auto; }
+  .ac-nav { min-height: 60px; border-radius: 20px; }
+  .ac-home-hero { padding-top: 24px; }
+  .ac-home-hero h1 { font-size: clamp(2.55rem, 12vw, 3.7rem); }
+  .ac-hero-layout { gap: 24px; margin-top: 28px; }
+  .ac-flow { padding: 17px; border-radius: 24px; }
+  .ac-flow ol { gap: 7px; }
+  .ac-flow li { border-radius: 13px; }
+  .ac-home-proof { grid-template-columns: 1fr; gap: 9px; margin-top: 18px; }
+  .ac-home-proof > div { padding: 17px; }
+  .ac-home-proof > div + div { border-top: 1px solid var(--ac-edge) !important; }
+  .ac-capabilities,
+  .ac-principles { grid-template-columns: 1fr; }
+  .ac-feature { min-height: auto; }
+  .ac-page-hero { padding-top: 18px; }
+  .ac-workspace-sidebar { border-radius: 0; }
+  .ac-workspace-toolbar { border-radius: 17px; }
+  .ac-workspace-dock { border-radius: 22px; }
+  .ac-mobile-nav { border-radius: 24px !important; }
+  .ac-login-layout form { padding: 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ac-button,
+  .ac-icon-button,
+  .ac-workspace-links a { transition-duration: 0.01ms !important; }
+}
