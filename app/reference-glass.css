@@ -239,7 +239,7 @@ a[class*="bg-primary"] {
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7), 0 5px 15px rgb(47 55 68 / 0.08) !important;
 }
 .dark .ac-workspace-links a[aria-current="page"] { background: rgb(255 255 255 / 0.1) !important; }
-.ac-supplier-section {
+.ac-page .ac-supplier-section {
   border-color: rgb(255 255 255 / 0.2) !important;
   background: linear-gradient(145deg, rgb(255 255 255 / 0.16), transparent 55%), rgb(23 33 49 / 0.91) !important;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 22px 58px rgb(30 39 54 / 0.21) !important;
@@ -247,7 +247,7 @@ a[class*="bg-primary"] {
 }
 .ac-supplier-section .ac-eyebrow { color: #ffc181; }
 .ac-supplier-section .ac-button { border-color: rgb(255 255 255 / 0.82); }
-.dark .ac-supplier-section {
+.dark .ac-page .ac-supplier-section {
   background: linear-gradient(145deg, rgb(255 255 255 / 0.09), transparent 55%), rgb(23 33 49 / 0.91) !important;
 }
 
