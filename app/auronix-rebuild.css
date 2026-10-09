@@ -12,6 +12,8 @@
   --foreground: 224 38% 12%;
   --foreground-muted: 219 15% 42%;
   --accent: 220 88% 54%;
+  --primary: 220 88% 54%;
+  --primary-foreground: 0 0% 100%;
   --ring: 220 88% 54%;
   --border: 219 30% 88%;
   --input: 219 30% 84%;
@@ -29,6 +31,8 @@
   --foreground: 220 30% 97%;
   --foreground-muted: 216 16% 70%;
   --accent: 218 90% 64%;
+  --primary: 218 90% 64%;
+  --primary-foreground: 224 38% 10%;
   --ring: 218 90% 64%;
   --border: 220 22% 25%;
 }
@@ -71,6 +75,18 @@ body { background-image: none !important; }
 }
 .ac-workspace-links a[aria-current="page"] { background: #2768ef !important; color: #fff !important; }
 .ac-workspace-content h1, .ac-workspace-hero h1 { letter-spacing: -.055em; font-weight: 800; }
+.ac-application { background: #f4f7fc; padding-block: clamp(130px, 12vw, 190px) 100px; }
+.dark .ac-application { background: #121c30; }
+.ac-application-intro h1 { font-size: clamp(3.4rem, 4.8vw, 5.5rem); font-weight: 850; letter-spacing: -.07em; line-height: 1; }
+.ac-application-steps li[aria-current="step"] { background: #e9f0ff; box-shadow: none; color: #1c58d7; font-weight: 750; }
+.ac-application-progress progress { appearance: none; border-radius: 999px; overflow: hidden; background: #dfe8f8; }
+.ac-application-progress progress::-webkit-progress-bar { background: #dfe8f8; }
+.ac-application-progress progress::-webkit-progress-value { background: #2768ef; border-radius: 999px; }
+.ac-application-progress progress::-moz-progress-bar { background: #2768ef; border-radius: 999px; }
+.ac-application-panel, .ac-application-form > .ac-content-panel { background: #fff !important; }
+.ac-application-panel h2 { letter-spacing: -.05em; font-weight: 800; }
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), textarea, select, button[role="combobox"] { border: 1px solid var(--ac-edge) !important; background: var(--ac-surface-1) !important; box-shadow: none !important; border-radius: 14px; }
+input:focus-visible, textarea:focus-visible, select:focus-visible, button[role="combobox"]:focus-visible { outline: 3px solid rgb(39 104 239 / .18); outline-offset: 1px; border-color: #2768ef !important; }
 .ac-footer { border-top: 1px solid var(--ac-edge); }
 .ac-footer nav a:hover { color: #2768ef; }
 .ac-footer > div { max-width: 1540px; padding-top: clamp(70px, 7vw, 110px); padding-bottom: 42px; }
