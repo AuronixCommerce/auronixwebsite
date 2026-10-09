@@ -58,7 +58,7 @@ body { background-image: none !important; }
 ::selection { background: var(--nx-lime); color: #111715; }
 .ac-page { color: hsl(var(--foreground)); background: var(--nx-paper) !important; }
 .ac-container { max-width: 1480px; }
-.ac-shell { min-width: 0; }
+.ac-shell { min-width: 0; padding-top: 0 !important; }
 
 /* Navigation: dark control surface with a single line of hierarchy. */
 .ac-header { inset: 18px 22px auto !important; max-width: none; }
