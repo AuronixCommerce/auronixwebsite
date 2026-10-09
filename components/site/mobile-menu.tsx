@@ -33,8 +33,15 @@ export function MobileMenu({
           <DialogClose asChild><button type="button" className="ac-mobile-nav-close" aria-label="Close navigation"><X size={18} /><span>Close</span></button></DialogClose>
         </div>
         <nav aria-label="Mobile navigation">
+          <div className="aur-mobile-primary">
+            <Link href="/" onClick={onClose}>Home <ArrowRight size={18} /></Link>
+            <Link href="/solutions" onClick={onClose}>Solutions <ArrowRight size={18} /></Link>
+            <Link href="/portfolio" onClick={onClose}>Products <ArrowRight size={18} /></Link>
+            <Link href="/our-process" onClick={onClose}>Our process <ArrowRight size={18} /></Link>
+            <Link href="/contact" onClick={onClose}>Contact <ArrowRight size={18} /></Link>
+          </div>
           {NAV_GROUPS.map((group) => (
-            <details key={group.title} open={group.title === "Company"}>
+            <details key={group.title}>
               <summary>
                 {group.title}
                 <span>+</span>

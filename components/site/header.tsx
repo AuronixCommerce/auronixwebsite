@@ -108,19 +108,16 @@ export function Header() {
             </span>
           </Link>
           <nav className="ac-desktop-nav" aria-label="Main navigation">
-            {NAV_GROUPS.map((g) => (
-              <button
-                key={g.title}
-                type="button"
-                data-current={g.paths.some((path) => pathname === path || pathname.startsWith(`${path}/`)) || undefined}
-                aria-expanded={menu === g.title}
-                aria-controls={`menu-${g.title}`}
-                onClick={() => setMenu(menu === g.title ? null : g.title)}
-              >
-                {g.title}
-                <ChevronDown size={13} />
-              </button>
-            ))}
+            <Link href="/" aria-current={pathname === "/" ? "page" : undefined}>Home</Link>
+            <button type="button" data-current={NAV_GROUPS[0].paths.some(path => pathname === path) || undefined}
+              aria-expanded={menu === "Company"} aria-controls="menu-Company"
+              onClick={() => setMenu(menu === "Company" ? null : "Company")}>Company <ChevronDown size={13} /></button>
+            <Link href="/solutions" aria-current={pathname === "/solutions" ? "page" : undefined}>Solutions</Link>
+            <Link href="/portfolio" aria-current={pathname === "/portfolio" ? "page" : undefined}>Products</Link>
+            <Link href="/our-process" aria-current={pathname === "/our-process" ? "page" : undefined}>Our process</Link>
+            <Link href="/contact" aria-current={pathname === "/contact" ? "page" : undefined}>Contact</Link>
+            <button type="button" className="ac-nav-more" aria-expanded={menu === "Resources"} aria-controls="menu-Resources"
+              onClick={() => setMenu(menu === "Resources" ? null : "Resources")}>More <ChevronDown size={13} /></button>
           </nav>
           <div className="ac-nav-actions">
             <button
