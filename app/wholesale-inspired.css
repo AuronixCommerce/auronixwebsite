@@ -95,6 +95,7 @@ html, body, .ac-page { background: var(--nx-paper) !important; color: hsl(var(--
 .wc-search { display: flex; align-items: center; gap: 14px; width: min(100%, 705px); min-height: 68px; margin: 0 auto; padding: 6px 6px 6px 20px; background: #fff; border: 1px solid #b8d0ec; border-radius: 9px; box-shadow: 0 12px 24px rgb(27 100 180 / .12); animation: wc-enter .7s .18s both; }
 .wc-search > svg { color: #425978; flex: none; }
 .wc-search input { width: 100%; min-width: 0; flex: 1; padding: 10px 0; background: transparent !important; border: 0 !important; outline: 0 !important; box-shadow: none !important; font-size: 16px; color: #243349; }
+.wc-search input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) { border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; }
 .wc-search input::placeholder { color: #738297; }
 .wc-search button { display: inline-flex; align-items: center; justify-content: center; gap: 12px; align-self: stretch; min-width: 155px; padding: 0 21px; border-radius: 7px; background: var(--wc-blue); color: white; font-weight: 700; transition: background .2s, transform .2s; }
 .wc-search button:hover { background: var(--wc-blue-dark); transform: scale(.985); }
