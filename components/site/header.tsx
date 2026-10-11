@@ -108,16 +108,16 @@ export function Header() {
             </span>
           </Link>
           <nav className="ac-desktop-nav" aria-label="Main navigation">
-            <Link href="/" aria-current={pathname === "/" ? "page" : undefined}>Home</Link>
+            <button type="button" data-current={NAV_GROUPS[1].paths.some(path => pathname === path) || undefined}
+              aria-expanded={menu === "Commerce"} aria-controls="menu-Commerce"
+              onClick={() => setMenu(menu === "Commerce" ? null : "Commerce")}><Menu size={18} /> Explore <ChevronDown size={13} /></button>
+            <Link href="/solutions" aria-current={pathname === "/solutions" ? "page" : undefined}>Solutions</Link>
+            <Link href="/portfolio" aria-current={pathname === "/portfolio" ? "page" : undefined}>Products</Link>
             <button type="button" data-current={NAV_GROUPS[0].paths.some(path => pathname === path) || undefined}
               aria-expanded={menu === "Company"} aria-controls="menu-Company"
               onClick={() => setMenu(menu === "Company" ? null : "Company")}>Company <ChevronDown size={13} /></button>
-            <Link href="/solutions" aria-current={pathname === "/solutions" ? "page" : undefined}>Solutions</Link>
-            <Link href="/portfolio" aria-current={pathname === "/portfolio" ? "page" : undefined}>Products</Link>
-            <Link href="/our-process" aria-current={pathname === "/our-process" ? "page" : undefined}>Our process</Link>
-            <Link href="/contact" aria-current={pathname === "/contact" ? "page" : undefined}>Contact</Link>
             <button type="button" className="ac-nav-more" aria-expanded={menu === "Resources"} aria-controls="menu-Resources"
-              onClick={() => setMenu(menu === "Resources" ? null : "Resources")}>More <ChevronDown size={13} /></button>
+              onClick={() => setMenu(menu === "Resources" ? null : "Resources")}>Resources <ChevronDown size={13} /></button>
           </nav>
           <div className="ac-nav-actions">
             <button
@@ -139,10 +139,10 @@ export function Header() {
               className="ac-portal-link"
               aria-current={pathname.startsWith('/partner-portal') ? 'page' : undefined}
             >
-              Portal
+              Sign in
             </Link>
             <Link href="/supplier" className="ac-button ac-desktop-action">
-              Become a Supplier <ArrowRight size={15} />
+              Apply as supplier <ArrowRight size={15} />
             </Link>
             <button
               type="button"

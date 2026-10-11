@@ -23,7 +23,7 @@ export default function NotFound() {
               Return Home
               <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
-            <button type="button" className="ac-button ac-button-secondary" onClick={openSearch}>
+            <button type="button" className="ac-button ac-button-secondary" onClick={() => openSearch()}>
               <Search className="h-4 w-4" /> Search the site
             </button>
             <button type="button" className="ac-button ac-button-secondary" onClick={() => openAio('Help me find the right page on Auronix Commerce.')}>

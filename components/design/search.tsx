@@ -78,15 +78,18 @@ export function fuzzyScore(text: string, query: string) {
   }
   return 0;
 }
-export function CommandPalette() {
+export function CommandPalette({ initialQuery = "" }: { initialQuery?: string }) {
   const [open, setOpen] = useState(true);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState("All");
   const [managed, setManaged] = useState<Result[]>([]);
   const [loaded, setLoaded] = useState(false);
   const router = useRouter();
   useEffect(() => {
-    const show = () => setOpen(true);
+    const show = (event: Event) => {
+      setQuery((event as CustomEvent<{ query?: string }>).detail?.query || "");
+      setOpen(true);
+    };
     const key = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();

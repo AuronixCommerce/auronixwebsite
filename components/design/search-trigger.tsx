@@ -6,8 +6,8 @@ const LazyCommand = dynamic(
   () => import("./search").then((m) => m.CommandPalette),
   { ssr: false },
 );
-export function openSearch() {
-  window.dispatchEvent(new Event("auronix:search"));
+export function openSearch(query = "") {
+  window.dispatchEvent(new CustomEvent("auronix:search", { detail: { query } }));
 }
 export function SearchField({
   className = "",
@@ -19,7 +19,7 @@ export function SearchField({
   return (
     <button
       type="button"
-      onClick={openSearch}
+      onClick={() => openSearch()}
       className={`ac-search-field ${className}`}
     >
       <Search size={19} />
@@ -31,8 +31,12 @@ export function SearchField({
 export const GlobalSearch = SearchField;
 export function SearchHost() {
   const [activated, setActivated] = useState(false);
+  const [initialQuery, setInitialQuery] = useState("");
   useEffect(() => {
-    const show = () => setActivated(true);
+    const show = (event: Event) => {
+      setInitialQuery((event as CustomEvent<{ query?: string }>).detail?.query || "");
+      setActivated(true);
+    };
     const key = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -46,5 +50,5 @@ export function SearchHost() {
       window.removeEventListener("keydown", key);
     };
   }, []);
-  return activated ? <LazyCommand /> : null;
+  return activated ? <LazyCommand initialQuery={initialQuery} /> : null;
 }
