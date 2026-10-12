@@ -21,16 +21,31 @@ const opportunities = [
 
 export default function HomePage() {
   return <SiteLayout>
-    <section className="wc-hero">
-      <div className="wc-hero-inner">
-        <div className="wc-kicker"><span className="wc-kicker-dot" /> U.S. COMMERCE · SUPPLIER PARTNERSHIPS</div>
-        <h1>Connect <span className="wc-inline-illustration wc-inline-one"><Building2 size={29} /></span> with the right partners<br className="wc-hero-break" /> &amp; move products <span className="wc-inline-illustration wc-inline-two"><Boxes size={31} /></span> forward.</h1>
-        <p>From supplier relationships to marketplace operations, Auronix connects quality products with the channels where they belong.</p>
-        <DiscoverySearch />
-        <div className="wc-search-hint">Explore Auronix by service, product, process, or question <span>⌘ / Ctrl + K</span></div>
+    <section className="wc-hero ng-hero">
+      <div className="ng-hero-grid">
+        <div className="wc-hero-inner ng-hero-copy">
+          <div className="ng-hero-meta"><span><i /> U.S. COMMERCE · SUPPLIER PARTNERSHIPS</span><span>EST. FLORIDA / USA</span></div>
+          <h1>Connect with the <em>right partners</em> &amp; move products forward<span className="ng-hero-period">.</span></h1>
+          <p>From supplier relationships to marketplace operations, Auronix connects quality products with the channels where they belong.</p>
+          <div className="ng-hero-actions"><Link href="/supplier" className="ng-action-primary">Become a supplier <ArrowUpRight size={19} /></Link><Link href="/solutions" className="ng-action-secondary">Explore our work <ArrowRight size={18} /></Link></div>
+          <div className="ng-hero-search"><span className="ng-search-label">FIND YOUR WAY / 001</span><DiscoverySearch /><div className="wc-search-hint">Explore Auronix by service, product, process, or question <span>⌘ / Ctrl + K</span></div></div>
+        </div>
+        <div className="ng-network" aria-label="Auronix commerce network illustration">
+          <div className="ng-network-top"><span>THE COMMERCE NETWORK</span><span>AX / 01</span></div>
+          <div className="ng-network-field">
+            <div className="ng-network-ring ng-ring-one" /><div className="ng-network-ring ng-ring-two" />
+            <div className="ng-network-core"><span className="ng-core-symbol"><Boxes size={44} strokeWidth={1.15} /></span><strong>AURONIX</strong><small>COMMERCE LLC</small></div>
+            <div className="ng-network-node ng-node-supplier"><Building2 size={20} /><span><small>01 / ORIGIN</small><strong>Suppliers</strong></span></div>
+            <div className="ng-network-node ng-node-catalog"><PackageSearch size={20} /><span><small>02 / SELECTION</small><strong>Products</strong></span></div>
+            <div className="ng-network-node ng-node-market"><Store size={20} /><span><small>03 / DESTINATION</small><strong>Marketplaces</strong></span></div>
+            <div className="ng-network-scan" aria-hidden="true" />
+          </div>
+          <div className="ng-network-bottom"><span>Structured partnerships.<br />Purposeful distribution.</span><span>SCROLL TO EXPLORE <ArrowRight size={15} /></span></div>
+        </div>
       </div>
+      <div className="ng-hero-index"><span>DISCOVER THE AURONIX ECOSYSTEM</span><span>01 — 06</span></div>
       <div className="wc-shortcuts" aria-label="Explore Auronix">
-        {shortcuts.map(({ title, href, icon: Icon }) => <Link href={href} key={title} className="wc-shortcut"><span><Icon size={25} strokeWidth={1.8} /></span><strong>{title}</strong></Link>)}
+        {shortcuts.map(({ title, href, icon: Icon }, index) => <Link href={href} key={title} className="wc-shortcut"><span className="ng-shortcut-index">0{index + 1}</span><Icon size={24} strokeWidth={1.5} /><strong>{title}</strong><ArrowUpRight className="ng-shortcut-arrow" size={16} /></Link>)}
       </div>
     </section>
 

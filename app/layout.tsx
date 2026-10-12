@@ -6,6 +6,7 @@ import './support-interface.css';
 import './modernization.css';
 import './auronix-rebuild.css';
 import './wholesale-inspired.css';
+import './next-generation.css';
 
 import type {
   Metadata,
