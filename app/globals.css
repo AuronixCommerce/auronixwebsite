@@ -6,28 +6,28 @@
   :root {
     /* Auronix Design System â€” Light */
     --background: 0 0% 100%;
-    --background-subtle: 220 14% 98%;
+    --background-subtle: 0 0% 98%;
     --foreground: 0 0% 9%;
-    --foreground-muted: 220 9% 46%;
+    --foreground-muted: 0 0% 46%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 9%;
-    --primary: 222 47% 11%;
+    --primary: 0 0% 11%;
     --primary-foreground: 0 0% 98%;
     --secondary: 220 14% 96%;
     --secondary-foreground: 222 47% 11%;
     --muted: 220 14% 96%;
     --muted-foreground: 220 9% 46%;
-    --accent: 217 91% 60%;
+    --accent: 0 0% 60%;
     --accent-foreground: 0 0% 100%;
     --accent-soft: 214 95% 93%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 220 13% 91%;
+    --border: 0 0% 91%;
     --border-strong: 220 11% 80%;
-    --input: 220 13% 91%;
-    --ring: 217 91% 60%;
+    --input: 0 0% 91%;
+    --ring: 0 0% 60%;
     --chart-1: 217 91% 60%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
@@ -39,29 +39,29 @@
   }
 
   .dark {
-    --background: 222 47% 6%;
-    --background-subtle: 222 40% 9%;
+    --background: 0 0% 6%;
+    --background-subtle: 0 0% 9%;
     --foreground: 0 0% 98%;
-    --foreground-muted: 220 14% 65%;
+    --foreground-muted: 0 0% 65%;
     --card: 222 40% 9%;
     --card-foreground: 0 0% 98%;
     --popover: 222 40% 9%;
     --popover-foreground: 0 0% 98%;
     --primary: 0 0% 98%;
-    --primary-foreground: 222 47% 11%;
+    --primary-foreground: 0 0% 11%;
     --secondary: 222 30% 15%;
     --secondary-foreground: 0 0% 98%;
     --muted: 222 30% 15%;
     --muted-foreground: 220 14% 65%;
-    --accent: 217 91% 60%;
+    --accent: 0 0% 60%;
     --accent-foreground: 0 0% 100%;
     --accent-soft: 222 40% 18%;
     --destructive: 0 62% 40%;
     --destructive-foreground: 0 0% 98%;
-    --border: 222 25% 18%;
+    --border: 0 0% 18%;
     --border-strong: 222 20% 30%;
-    --input: 222 25% 18%;
-    --ring: 217 91% 60%;
+    --input: 0 0% 18%;
+    --ring: 0 0% 60%;
   }
 }
 
@@ -85,7 +85,7 @@
   html { color-scheme: light; }
   html.dark { color-scheme: dark; }
   ::selection {
-    background-color: hsl(217 91% 60% / 0.15);
+    background-color: hsl(0 0% 60% / 0.15);
   }
 }
 
@@ -98,12 +98,12 @@
   }
   .bg-grid {
     background-image:
-      linear-gradient(to right, hsl(220 13% 91% / 0.4) 1px, transparent 1px),
-      linear-gradient(to bottom, hsl(220 13% 91% / 0.4) 1px, transparent 1px);
+      linear-gradient(to right, hsl(0 0% 91% / 0.4) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(0 0% 91% / 0.4) 1px, transparent 1px);
     background-size: 56px 56px;
   }
   .bg-dots {
-    background-image: radial-gradient(hsl(220 13% 80% / 0.35) 1px, transparent 1px);
+    background-image: radial-gradient(hsl(0 0% 80% / 0.35) 1px, transparent 1px);
     background-size: 24px 24px;
   }
   .gradient-text {
@@ -113,13 +113,13 @@
     @apply bg-gradient-to-r from-accent to-blue-400 bg-clip-text text-transparent;
   }
   .shadow-premium {
-    box-shadow: 0 1px 2px hsl(220 25% 50% / 0.04), 0 4px 12px hsl(220 25% 50% / 0.06);
+    box-shadow: 0 1px 2px hsl(0 0% 50% / 0.04), 0 4px 12px hsl(0 0% 50% / 0.06);
   }
   .shadow-premium-lg {
-    box-shadow: 0 2px 4px hsl(220 25% 50% / 0.05), 0 12px 32px hsl(220 25% 50% / 0.1);
+    box-shadow: 0 2px 4px hsl(0 0% 50% / 0.05), 0 12px 32px hsl(0 0% 50% / 0.1);
   }
   .shadow-glow {
-    box-shadow: 0 0 0 1px hsl(217 91% 60% / 0.1), 0 4px 24px hsl(217 91% 60% / 0.12);
+    box-shadow: 0 0 0 1px hsl(0 0% 60% / 0.1), 0 4px 24px hsl(0 0% 60% / 0.12);
   }
 }
 
@@ -137,12 +137,12 @@
   border: 2px solid hsl(var(--background));
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(220 13% 75%);
+  background: hsl(0 0% 75%);
 }
 
 /* Focus visible */
 :focus-visible {
-  outline: 2px solid hsl(217 91% 60%);
+  outline: 2px solid hsl(0 0% 60%);
   outline-offset: 2px;
 }
 
