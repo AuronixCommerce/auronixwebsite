@@ -34,6 +34,8 @@
   --input: 0 0% 89%;
 }
 .dark {
+  --wc-blue: #f1f1f1; --wc-blue-dark: #d5d5d5; --wc-text: #f3f3f3;
+  --wc-muted: #c3c3c3; --wc-line: #494949; --wc-ice: #2c2c2c; --wc-sky: #333333;
   --nx-ink: #f4f4f4; --nx-stone: #242424; --nx-paper: #181818;
   --nx-muted: #bfbfbf; --nx-line: #414141; --nx-lime: #a0a0a0;
   --ac-canvas: #181818; --ac-surface-1: #292929; --ac-surface-2: #242424;
@@ -194,6 +196,12 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button[role="
 .dark .wc-opportunity, .dark .wc-capability, .dark .wc-process-step, .dark .wc-audience-panel { background: #292929; border-color: #4a4a4a; }.dark .wc-audience-section, .dark .wc-process, .dark .wc-trust, .dark .wc-final, .dark .ac-footer { background: #232323 !important; }.dark .wc-opportunity h3, .dark .wc-capability h3, .dark .wc-process h3, .dark .wc-audience h3, .dark .wc-trust-points h3 { color: #f5f5f5; }.dark .wc-shortcut { color: #e8e8e8; }.dark .wc-shortcut > span, .dark .wc-capability-icon, .dark .wc-audience-benefits > div > span { background: #3c3c3c; border-color: #5b5b5b; }
 .dark .wc-search { background: #303030; border-color: #636363; }.dark .wc-search input { background: transparent !important; color: #f5f5f5; }.dark .wc-search input::placeholder { color: #b7b7b7; }
 .dark .ac-workspace { background: #181818 !important; }.dark .ac-workspace-sidebar, .dark .ac-workspace-toolbar { background: #292929 !important; border-color: #4a4a4a !important; }.dark .ac-workspace-brand, .dark .ac-workspace-brand span { color: #f5f5f5 !important; }.dark .ac-workspace-links a { color: #cbcbcb !important; }
+.dark :is(.ac-button, .wc-primary-link, .wc-search button, .auronix-ai-launcher, .ac-workspace-dock [aria-current="page"]) { color: #171717 !important; }
+.dark .ac-button-secondary { background: transparent !important; color: #f1f1f1 !important; }
+.dark .ac-brand > span:first-child > span { background: #171717 !important; }
+.dark .ac-mega { background: #292929 !important; color: #f3f3f3; }
+.dark .ac-mega :is(a, strong) { color: #ededed; }
+.dark .ac-footer-grid h3 { color: #ededed; }
 
 /* Keep status, form, and dashboard utility colors on the same neutral scale. */
 :is(
