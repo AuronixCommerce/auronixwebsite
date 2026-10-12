@@ -1,5 +1,6 @@
 /* Auronix discovery experience. Shared presentation for public and workspace routes. */
 :root {
+  color-scheme: light;
   --wc-blue: #111111;
   --wc-blue-dark: #333333;
   --wc-text: #1f1f1f;
@@ -34,6 +35,7 @@
   --input: 0 0% 89%;
 }
 .dark {
+  color-scheme: dark;
   --wc-blue: #f1f1f1; --wc-blue-dark: #d5d5d5; --wc-text: #f3f3f3;
   --wc-muted: #c3c3c3; --wc-line: #494949; --wc-ice: #2c2c2c; --wc-sky: #333333;
   --nx-ink: #f4f4f4; --nx-stone: #242424; --nx-paper: #181818;
