@@ -58,9 +58,15 @@ export function AudienceSwitch() {
   const [active, setActive] = useState<keyof typeof audiences>("suppliers");
   const audience = audiences[active];
   return <div className="wc-audience">
-    <div className="wc-audience-tabs" role="tablist" aria-label="Partnership type">
-      <button id="wc-tab-suppliers" role="tab" aria-selected={active === "suppliers"} aria-controls="wc-audience-panel" onClick={() => setActive("suppliers")}>For suppliers</button>
-      <button id="wc-tab-partners" role="tab" aria-selected={active === "partners"} aria-controls="wc-audience-panel" onClick={() => setActive("partners")}>For partners</button>
+    <div className="wc-audience-tabs" role="tablist" aria-label="Partnership type" onKeyDown={(event) => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const next = event.key === 'Home' ? 'suppliers' : event.key === 'End' ? 'partners' : active === 'suppliers' ? 'partners' : 'suppliers';
+      setActive(next);
+      event.currentTarget.querySelector<HTMLButtonElement>(`#wc-tab-${next}`)?.focus();
+    }}>
+      <button type="button" id="wc-tab-suppliers" role="tab" tabIndex={active === "suppliers" ? 0 : -1} aria-selected={active === "suppliers"} aria-controls="wc-audience-panel" onClick={() => setActive("suppliers")}>For suppliers</button>
+      <button type="button" id="wc-tab-partners" role="tab" tabIndex={active === "partners" ? 0 : -1} aria-selected={active === "partners"} aria-controls="wc-audience-panel" onClick={() => setActive("partners")}>For partners</button>
     </div>
     <div id="wc-audience-panel" role="tabpanel" aria-labelledby={`wc-tab-${active}`} key={active} className="wc-audience-panel">
       <div className="wc-audience-copy"><span className="wc-overline">{audience.eyebrow}</span><h3>{audience.title}</h3><p>{audience.text}</p><Link href={audience.href} className="wc-primary-link">{audience.action} <ArrowRight size={18} /></Link></div>

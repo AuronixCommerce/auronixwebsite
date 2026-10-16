@@ -30,7 +30,7 @@ export default function HomePage() {
           <div className="ng-hero-actions"><Link href="/supplier" className="ng-action-primary">Become a supplier <ArrowUpRight size={19} /></Link><Link href="/solutions" className="ng-action-secondary">Explore our work <ArrowRight size={18} /></Link></div>
           <div className="ng-hero-search"><span className="ng-search-label">FIND YOUR WAY / 001</span><DiscoverySearch /><div className="wc-search-hint">Explore Auronix by service, product, process, or question <span>⌘ / Ctrl + K</span></div></div>
         </div>
-        <div className="ng-network" aria-label="Auronix commerce network illustration">
+        <div className="ng-network" role="img" aria-label="Auronix connects suppliers, products, and marketplaces through structured partnerships and distribution.">
           <div className="ng-network-top"><span>THE COMMERCE NETWORK</span><span>AX / 01</span></div>
           <div className="ng-network-field">
             <div className="ng-network-ring ng-ring-one" /><div className="ng-network-ring ng-ring-two" />

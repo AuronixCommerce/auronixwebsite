@@ -460,6 +460,7 @@ export function Footer() {
             >
               <input
                 type="email"
+                aria-label="Newsletter email address"
                 required
                 value={
                   email
@@ -567,6 +568,8 @@ export function Footer() {
             </Link>
           </div>
         </div>
+
+        <div className="ng-footer-signature" aria-hidden="true"><span>AURONIX</span><small>COMMERCE / LLC</small></div>
 
       </div>
     </footer>
