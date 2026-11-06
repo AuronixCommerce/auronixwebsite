@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
 
@@ -15,16 +15,16 @@ import {
 
 const firebaseConfig = {
   apiKey:
-    process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '',
+    process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'missing-firebase-api-key',
 
   authDomain:
     process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || '',
 
   databaseURL:
-    process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL || '',
+    process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL || 'http://127.0.0.1:9000?ns=missing-firebase-project',
 
   projectId:
-    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '',
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'missing-firebase-project',
 
   storageBucket:
     process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || '',
@@ -73,7 +73,7 @@ function validateConfig() {
   ];
 
   for (const [name, value] of required) {
-    if (!value) {
+    if (!value || value === 'missing-firebase-api-key' || value === 'missing-firebase-project' || value === 'http://127.0.0.1:9000?ns=missing-firebase-project') {
       missing.push(name);
     }
   }
