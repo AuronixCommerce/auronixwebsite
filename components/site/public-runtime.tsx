@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import {
   usePathname,
@@ -30,7 +30,7 @@ export function PublicRuntime({
    * THE PUBLIC EXPERIENCE.
    */
   if (
-    pathname === '/admin' ||
+    pathname === '/ui-preview' || pathname === '/admin' ||
     pathname.startsWith(
       '/admin/'
     )
@@ -38,7 +38,7 @@ export function PublicRuntime({
     return (
       <>
         {children}
-        <ThemeToggle className="fixed bottom-5 right-5 z-[100] shadow-lg" />
+
       </>
     );
   }

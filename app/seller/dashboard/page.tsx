@@ -51,84 +51,12 @@ export default function SellerDashboardPage() {
   if (loading) return <SellerLayout><LoadingState /></SellerLayout>;
   if (error) return <SellerLayout><div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6 text-sm text-red-700 dark:text-red-300">{error}</div></SellerLayout>;
 
-  return (
-    <SellerLayout>
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-        <h1 className="text-2xl font-semibold tracking-tight mb-2">Welcome back{profile?.name ? `, ${profile.name}` : ''}.</h1>
-        <p className="text-sm text-foreground-muted">Live account, verification, and workspace status.</p>
-        </div>
-        <button type="button" onClick={manualRefresh} disabled={syncing} className="inline-flex items-center justify-center gap-2 ac-content-panel px-4 py-2.5 text-sm font-medium hover:bg-secondary disabled:opacity-50">{syncing ? <Spinner className="h-4 w-4"/> : <RefreshCw className="h-4 w-4"/>}Refresh status</button>
-      </div>
-
-      <div className="mb-8 ac-content-panel p-6">
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <div><div className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-accent" /><h2 className="font-semibold">Verification center</h2></div><p className="mt-1 text-sm text-foreground-muted">Automatically refreshes every 15 seconds while this page is open.</p></div>
-          {lastSynced && <span className="text-xs text-foreground-muted">Synced {new Date(lastSynced).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <VerificationItem label="Seller account" complete={accountActive} detail={accountActive ? 'Active and connected' : `Application: ${application?.status || 'unavailable'}`} href="/seller/support" />
-          <VerificationItem label="Email address" complete={emailVerified} detail={emailVerified ? 'Email verified with Auronix Auth' : 'Email verification pending'} href="/seller/settings" />
-          <VerificationItem label="Business profile" complete={profileComplete} detail={profileComplete ? 'Required profile fields complete' : 'Add phone, website, and business details'} href="/seller/settings" />
-        </div>
-      </div>
-
-      <Link href={accountActive ? '/seller/deal-room' : '/seller/support'} className="group mb-8 grid gap-5 overflow-hidden rounded-[28px] border border-accent/20 bg-accent/[0.055] p-6 shadow-premium transition hover:border-accent/35 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center">
-        <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-accent/20 bg-background/75 text-accent"><BriefcaseBusiness className="h-5 w-5" /></span>
-        <span><span className="block text-xs font-semibold uppercase tracking-[0.12em] text-accent">Partner Deal Room</span><strong className="mt-1 block text-lg">{accountActive ? 'Open your commercial workspace' : 'Unlocks when your approved account is connected'}</strong><span className="mt-1 block text-sm leading-6 text-foreground-muted">Private terms, authorization files, review messages, document decisions, and the complete application timeline.</span></span>
-        <span className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground">{accountActive ? 'Open Deal Room' : 'Get help'}<ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></span>
-      </Link>
-
-      {/* Quick stats */}
-      <div className="grid sm:grid-cols-3 gap-4 mb-8">
-        {[
-          { icon: Package, label: 'Products', value: String(counts.products), href: '/seller/dashboard/products' },
-          { icon: FileText, label: 'Catalogs', value: String(counts.catalogs), href: '/seller/dashboard/catalogs' },
-          { icon: LifeBuoy, label: 'Support Tickets', value: String(counts.tickets), href: '/seller/support' },
-        ].map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <Link key={stat.label} href={stat.href}>
-              <div className="group ac-content-panel p-5 hover:shadow-premium transition-shadow">
-                <div className="w-10 h-10 rounded-lg bg-primary/5 border border-border flex items-center justify-center mb-4 group-hover:bg-accent/10 transition-colors">
-                  <Icon className="w-4 h-4 text-foreground-muted group-hover:text-accent transition-colors" />
-                </div>
-                <p className="text-xs font-medium text-foreground-muted uppercase tracking-wider mb-1">{stat.label}</p>
-                <p className="text-xl font-semibold"><AnimatedNumber value={Number(stat.value)}/></p>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-
-      {/* Business info */}
-      {application && (
-        <div className="ac-content-panel p-6">
-          <h2 className="text-lg font-semibold tracking-tight mb-4">Business Information</h2>
-          <dl className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <dt className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Business Name</dt>
-              <dd className="text-sm text-foreground mt-1">{application.businessName}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Business Type</dt>
-              <dd className="text-sm text-foreground mt-1">{application.businessType}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Product Categories</dt>
-              <dd className="text-sm text-foreground mt-1">{application.productCategories}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-foreground-muted uppercase tracking-wider">Country</dt>
-              <dd className="text-sm text-foreground mt-1">{application.country}</dd>
-            </div>
-          </dl>
-        </div>
-      )}
-    </SellerLayout>
-  );
+  return <SellerLayout><div className="ax-partner-overview">
+    <div className="ax-page-heading"><div><span className="ax-kicker">YOUR PARTNER WORKSPACE</span><h1>Welcome back{profile?.name ? `, ${profile.name}` : ''}.</h1><p>Your products, relationships, and next steps. All in one place.</p></div><button type="button" onClick={manualRefresh} disabled={syncing} className="ax-btn ax-btn-outline">{syncing?<Spinner className="h-4 w-4"/>:<RefreshCw size={15}/>}Refresh status</button></div>
+    <div className="ax-stat-grid ax-partner-stats">{[{icon:Package,label:'Products',value:counts.products,href:'/seller/dashboard/products',note:'Your product submissions'},{icon:FileText,label:'Catalogs',value:counts.catalogs,href:'/seller/dashboard/catalogs',note:'Shared product catalogs'},{icon:LifeBuoy,label:'Support tickets',value:counts.tickets,href:'/seller/support',note:'Your conversations'}].map(({icon:Icon,label,value,href,note})=><Link href={href} className="ax-stat-card" key={label}><div><span className="ax-stat-icon"><Icon size={19}/></span><ArrowRight size={17}/></div><span>{label}</span><strong><AnimatedNumber value={value}/></strong><small><span className="ax-stat-dot"/>{note}</small></Link>)}</div>
+    <div className="ax-partner-room"><span className="ax-room-icon"><BriefcaseBusiness size={26}/></span><div><span className="ax-kicker">PARTNER DEAL ROOM</span><h2>{accountActive?'Your next conversation starts here.':'Your partnership, taking shape.'}</h2><p>Private terms, shared documents, and partner conversations in one dedicated space.</p></div><Link href={accountActive?'/seller/deal-room':'/seller/support'} className="ax-btn ax-btn-mint">{accountActive?'Open deal room':'Get help'}<ArrowRight size={16}/></Link></div>
+    <div className="ax-partner-grid"><section className="ax-panel"><div className="ax-panel-heading"><div><h2>Account readiness</h2><p>Your verification and profile at a glance.</p></div><ShieldCheck size={20}/></div><div className="ax-verifications"><VerificationItem label="Seller account" complete={accountActive} detail={accountActive?'Active and connected':`Application: ${application?.status||'unavailable'}`} href="/seller/support"/><VerificationItem label="Email address" complete={emailVerified} detail={emailVerified?'Email verified with Auronix Auth':'Email verification pending'} href="/seller/settings"/><VerificationItem label="Business profile" complete={profileComplete} detail={profileComplete?'Required profile fields complete':'Add phone, website, and business details'} href="/seller/settings"/></div><div className="ax-partner-sync">{lastSynced?`Last synced ${new Date(lastSynced).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`:'Awaiting account status'} · Refreshes every 15 seconds</div></section>
+    <section className="ax-panel"><div className="ax-panel-heading"><div><h2>Business profile</h2><p>The details behind your partnership.</p></div><Link href="/seller/profile" className="ax-text-link">View <ArrowRight size={14}/></Link></div>{application?<dl className="ax-business-details">{[['Business name',application.businessName],['Business type',application.businessType],['Product categories',application.productCategories],['Country',application.country]].map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value||'Not provided'}</dd></div>)}</dl>:<div className="p-6 text-sm text-foreground-muted">Your business details will appear once your application is connected.</div>}</section></div>
+  </div></SellerLayout>;
 }
-
-function VerificationItem({ label, complete, detail, href }: { label: string; complete: boolean; detail: string; href: string }) {
-  return <Link href={href} className="flex items-start gap-3 rounded-xl border border-border/80 bg-background/60 p-4 transition hover:bg-secondary/60">{complete ? <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600" /> : <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />}<span><span className="block text-sm font-semibold">{label}</span><span className="mt-0.5 block text-xs text-foreground-muted">{detail}</span></span></Link>;
-}
+function VerificationItem({label,complete,detail,href}:{label:string;complete:boolean;detail:string;href:string}) {return <Link href={href} className="ax-verification">{complete?<CheckCircle2 size={19} className="text-green-600"/>:<AlertCircle size={19} className="text-amber-600"/>}<div><strong>{label}</strong><span>{detail}</span></div><ArrowRight size={15}/></Link>}

@@ -1,4 +1,6 @@
 'use client';
+import { onAuthStateChanged } from 'firebase/auth';
+import { OperationsOverview } from '@/components/admin/operations-overview';
 import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
@@ -72,6 +74,8 @@ export default function AdminDashboardPage() {
     INITIAL_COUNTS
   );
 
+  const [availabilityLoaded, setAvailabilityLoaded] = useState(false);
+
   const [
     availability,
     setAvailability,
@@ -138,6 +142,10 @@ export default function AdminDashboardPage() {
       );
     };
 
+    const stopAuth = onAuthStateChanged(auth, (user) => {
+      unsubscribers.splice(0).forEach(unsubscribe => unsubscribe());
+      if (!user) return;
+      setLoading(true);
     subscribeToCount(
       'suppliers',
       (
@@ -358,7 +366,9 @@ export default function AdminDashboardPage() {
       }
     );
 
+    });
     return () => {
+      stopAuth();
       unsubscribers.forEach(
         (
           unsubscribe
@@ -411,9 +421,8 @@ export default function AdminDashboardPage() {
           typeof data.online ===
             'boolean'
         ) {
-          setAvailability(
-            data.online
-          );
+          setAvailability(data.online);
+          setAvailabilityLoaded(true);
         }
       } catch (
         error
@@ -425,9 +434,10 @@ export default function AdminDashboardPage() {
       }
     }
 
-    loadAvailability();
+    const stopAuth = onAuthStateChanged(auth, user => { if (user) void loadAvailability(); });
 
     return () => {
+      stopAuth();
       active =
         false;
     };
@@ -505,476 +515,5 @@ export default function AdminDashboardPage() {
       }
     };
 
-  return (
-    <AdminLayout>
-      <div className="space-y-8">
-
-        {/* HEADER */}
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div>
-            <div className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-accent">
-              AURONIX ADMIN
-            </div>
-
-            <h1 className="text-3xl font-semibold tracking-tight">
-              Dashboard
-            </h1>
-
-            <p className="mt-2 text-sm text-foreground-muted">
-              Overview of your Auronix Commerce operations.
-            </p>
-          </div>
-
-          <Link
-            href="/"
-            target="_blank"
-            className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium hover:bg-secondary"
-          >
-            View Website
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-
-        {/* ADMIN AVAILABILITY */}
-        <div
-          className={`rounded-2xl border p-5 ${
-            availability
-              ? 'border-green-500/20 bg-green-500/5'
-              : 'border-yellow-500/20 bg-yellow-500/5'
-          }`}
-        >
-          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-
-            <div className="flex items-start gap-4">
-
-              <div
-                className={`flex h-11 w-11 items-center justify-center rounded-xl ${
-                  availability
-                    ? 'bg-green-500/10'
-                    : 'bg-yellow-500/10'
-                }`}
-              >
-                {availability ? (
-                  <Wifi className="h-5 w-5 text-green-700" />
-                ) : (
-                  <WifiOff className="h-5 w-5 text-yellow-700" />
-                )}
-              </div>
-
-              <div>
-
-                <div className="flex items-center gap-2">
-
-                  <h2 className="font-semibold">
-                    Admin is{' '}
-                    {availability
-                      ? 'Online'
-                      : 'Offline'}
-                  </h2>
-
-                  <span
-                    className={`h-2 w-2 rounded-full ${
-                      availability
-                        ? 'animate-pulse bg-green-500'
-                        : 'bg-yellow-500'
-                    }`}
-                  />
-
-                </div>
-
-                <p className="mt-1 max-w-2xl text-sm text-foreground-muted">
-                  {availability
-                    ? 'Manual support is active. AI will assist when requested.'
-                    : 'AI support automation is active for tickets. Seller and partner applications remain manual.'}
-                </p>
-
-              </div>
-
-            </div>
-
-            <button
-              type="button"
-              onClick={
-                toggleAvailability
-              }
-              disabled={
-                updatingAvailability
-              }
-              className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 ${
-                availability
-                  ? 'bg-yellow-600 hover:bg-yellow-700'
-                  : 'bg-green-600 hover:bg-green-700'
-              }`}
-            >
-              {updatingAvailability ? (
-                <Spinner className="h-4 w-4" />
-              ) : availability ? (
-                <WifiOff className="h-4 w-4" />
-              ) : (
-                <Wifi className="h-4 w-4" />
-              )}
-
-              {availability
-                ? 'Go Offline'
-                : 'Go Online'}
-            </button>
-
-          </div>
-        </div>
-
-        {/* STATS */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-
-          <Stat
-            href="/admin/suppliers"
-            label="Supplier Submissions"
-            value={
-              counts.suppliers
-            }
-            icon={
-              <Building2 className="h-5 w-5" />
-            }
-          />
-
-          <Stat
-            href="/admin/contact"
-            label="Contact Messages"
-            value={
-              counts.contacts
-            }
-            icon={
-              <Mail className="h-5 w-5" />
-            }
-          />
-
-          <Stat
-            href="/admin/tickets"
-            label="Support Tickets"
-            value={
-              counts.tickets
-            }
-            icon={
-              <Ticket className="h-5 w-5" />
-            }
-          />
-
-          <Stat
-            href="/admin/sellers"
-            label="Seller Applications"
-            value={
-              counts.sellers
-            }
-            icon={
-              <Users className="h-5 w-5" />
-            }
-          />
-
-          <Stat
-            href="/admin/blog"
-            label="Published Articles"
-            value={
-              counts.blog
-            }
-            icon={
-              <FileText className="h-5 w-5" />
-            }
-          />
-
-          <Stat
-            href="/admin/careers"
-            label="Active Jobs"
-            value={
-              counts.careers
-            }
-            icon={
-              <Briefcase className="h-5 w-5" />
-            }
-          />
-
-          <Stat
-            href="/admin/partners"
-            label="Active Partners"
-            value={
-              counts.partners
-            }
-            icon={
-              <ShoppingBag className="h-5 w-5" />
-            }
-          />
-
-          <Stat
-            href="/admin/newsletter"
-            label="Newsletter Subscribers"
-            value={
-              counts.newsletterSubscribers
-            }
-            icon={
-              <Newspaper className="h-5 w-5" />
-            }
-          />
-
-          <Stat
-            href="/admin/pagesmanager"
-            label="Pages Manager"
-            value="Manage"
-            icon={
-              <Globe className="h-5 w-5" />
-            }
-          />
-
-          <Stat
-            href="/admin/ai"
-            label="AI Workspace"
-            value="AI"
-            icon={
-              <Bot className="h-5 w-5" />
-            }
-          />
-
-        </div>
-
-        {/* QUICK ACTIONS */}
-        <div>
-
-          <div className="mb-4 flex items-center gap-2">
-            <Activity className="h-4 w-4 text-accent" />
-
-            <h2 className="text-lg font-semibold">
-              Quick actions
-            </h2>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-
-            <QuickAction
-              href="/admin/deal-room"
-              title="Partner Deal Rooms"
-              description="Review commercial terms, secure documents, partner messages, and application history."
-            />
-
-            <QuickAction
-              href="/admin/pagesmanager"
-              title="Pages Manager"
-              description="Test public pages, activate maintenance, and manage dedicated page popups."
-            />
-
-            <QuickAction
-              href="/admin/sellers"
-              title="Review Sellers"
-              description="Manage seller applications and approvals."
-            />
-
-            <QuickAction
-              href="/admin/suppliers"
-              title="Review Suppliers"
-              description="Review incoming supplier submissions."
-            />
-
-            <QuickAction
-              href="/admin/tickets"
-              title="Support Tickets"
-              description="Review tickets and use AI-assisted support."
-            />
-
-            <QuickAction
-              href="/admin/blog"
-              title="Manage Blog"
-              description="Create, edit, publish, and delete articles."
-            />
-
-            <QuickAction
-              href="/admin/newsletter"
-              title="Newsletter Manager"
-              description="Generate, review, and send newsletters to subscribers."
-            />
-
-            <QuickAction
-              href="/admin/ai"
-              title="AI Workspace"
-              description="Manage AI-assisted administrative workflows."
-            />
-
-          </div>
-        </div>
-
-        {/* PAGE CONTROL STATUS */}
-        <div className="ac-content-panel p-6">
-
-          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-
-            <div>
-              <div className="flex items-center gap-2">
-                <Globe className="h-5 w-5 text-accent" />
-
-                <h2 className="font-semibold">
-                  Website Operations
-                </h2>
-              </div>
-
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-foreground-muted">
-                Pages Manager lets you test public routes,
-                temporarily disable individual pages, create
-                page-specific announcements, or place the
-                entire public website into maintenance mode.
-              </p>
-            </div>
-
-            <Link
-              href="/admin/pagesmanager"
-              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground"
-            >
-              Open Pages Manager
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-
-          </div>
-        </div>
-
-        {/* NEWSLETTER */}
-        <div className="ac-content-panel p-6">
-
-          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-
-            <div>
-
-              <div className="flex items-center gap-2">
-                <Mail className="h-5 w-5 text-accent" />
-
-                <h2 className="font-semibold">
-                  Newsletter
-                </h2>
-              </div>
-
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-foreground-muted">
-                You currently have{' '}
-                <strong className="text-foreground">
-                  {
-                    counts.newsletterSubscribers
-                  }
-                </strong>{' '}
-                active newsletter subscriber
-                {counts.newsletterSubscribers ===
-                1
-                  ? ''
-                  : 's'}
-                . Generate, review, and send campaigns from
-                Newsletter Manager.
-              </p>
-
-            </div>
-
-            <Link
-              href="/admin/newsletter"
-              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground"
-            >
-              Open Newsletter Manager
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-
-          </div>
-
-        </div>
-
-        {/* SYSTEM */}
-        <div className="ac-content-panel p-6">
-
-          <h2 className="font-semibold">
-            System overview
-          </h2>
-
-          <p className="mt-2 text-sm leading-relaxed text-foreground-muted">
-            Your administration workspace is connected to
-            Auronix data services. Admin availability controls
-            support automation, while Pages Manager provides
-            independent public-site maintenance and announcement
-            controls. Seller, supplier, partner, support, blog,
-            newsletter, and other workflows continue to use their
-            dedicated administration areas.
-          </p>
-
-        </div>
-
-        {loading && (
-          <div className="flex items-center justify-center gap-2 py-4 text-xs text-foreground-muted">
-            <Spinner className="h-4 w-4" />
-            Syncing dashboard data...
-          </div>
-        )}
-
-      </div>
-    </AdminLayout>
-  );
-}
-
-function Stat({
-  href,
-  label,
-  value,
-  icon,
-}: {
-  href: string;
-  label: string;
-  value:
-    | number
-    | string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      className="ac-content-panel p-5 transition-colors hover:bg-secondary/40"
-    >
-      <div className="flex items-center justify-between">
-
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary text-foreground-muted">
-          {icon}
-        </div>
-
-        <ArrowRight className="h-4 w-4 text-foreground-muted" />
-
-      </div>
-
-      <div className="mt-5 text-3xl font-semibold">
-        {value}
-      </div>
-
-      <div className="mt-1 text-sm text-foreground-muted">
-        {label}
-      </div>
-
-    </Link>
-  );
-}
-
-function QuickAction({
-  href,
-  title,
-  description,
-}: {
-  href: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="ac-content-panel p-5 transition-colors hover:bg-secondary/40"
-    >
-      <div className="flex items-center justify-between gap-4">
-
-        <div>
-          <h3 className="font-semibold">
-            {title}
-          </h3>
-
-          <p className="mt-1 text-sm text-foreground-muted">
-            {description}
-          </p>
-        </div>
-
-        <ArrowRight className="h-4 w-4 shrink-0 text-foreground-muted" />
-
-      </div>
-    </Link>
-  );
+  return <AdminLayout><OperationsOverview counts={counts} loading={loading} availability={availabilityLoaded ? availability : null} updatingAvailability={updatingAvailability} onToggleAvailability={toggleAvailability} /></AdminLayout>;
 }

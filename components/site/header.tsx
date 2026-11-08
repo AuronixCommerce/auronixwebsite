@@ -1,168 +1,20 @@
-"use client";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { ArrowRight, ChevronDown, Menu, Search } from "lucide-react";
-import { AuronixMark } from "./auronix-mark";
-import { MobileMenu } from "./mobile-menu";
-import { ThemeToggle } from "./theme-toggle";
-import { NAV_GROUPS, pageFor } from "@/lib/design/navigation";
-import { openSearch } from "@/components/design/search-trigger";
-export function MegaMenu({
-  group,
-  onClose,
-}: {
-  group: (typeof NAV_GROUPS)[number];
-  onClose: () => void;
-}) {
-  return (
-    <div className="ac-mega" id={`menu-${group.title}`}>
-      <div className="ac-mega-intro">
-        <span className="ac-eyebrow">Explore {group.title}</span>
-        <p>{group.note}</p>
-        <Link href="/contact" onClick={onClose}>
-          Partner With Us <ArrowRight size={17} />
-        </Link>
-      </div>
-      <div className="ac-mega-links">
-        {group.paths.map((path) => {
-          const page = pageFor(path);
-          return (
-            page && (
-              <Link href={path} key={path} onClick={onClose}>
-                <strong>{page.title}</strong>
-                <span>
-                  {page.category}
-                  <ArrowRight size={16} />
-                </span>
-              </Link>
-            )
-          );
-        })}
-      </div>
-    </div>
-  );
+'use client';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowUpRight, ChevronDown, Menu, Search } from 'lucide-react';
+import { AuronixMark } from './auronix-mark';
+import { MobileMenu } from './mobile-menu';
+import { ThemeToggle } from './theme-toggle';
+import { NAV_GROUPS, pageFor } from '@/lib/design/navigation';
+import { openSearch } from '@/components/design/search-trigger';
+export function MegaMenu({group,onClose}:{group:(typeof NAV_GROUPS)[number];onClose:()=>void}) {
+ return <div className="ax-mega" id={`menu-${group.title}`}><div><span className="ax-kicker">EXPLORE {group.title}</span><h2>Make your next connection.</h2><p>{group.note}</p><Link href="/contact" onClick={onClose}>Talk to Auronix <ArrowUpRight size={16}/></Link></div><div className="ax-mega-links">{group.paths.map(path=>{const page=pageFor(path);return page&&<Link key={path} href={path} onClick={onClose}><span><strong>{page.title}</strong><small>{page.category}</small></span><ArrowUpRight size={16}/></Link>})}</div></div>;
 }
 export function Header() {
-  const pathname = usePathname();
-  const [mobile, setMobile] = useState(false);
-  const [menu, setMenu] = useState<string | null>(null);
-  const [scrolled, setScrolled] = useState(false);
-  const header = useRef<HTMLElement>(null);
-  useEffect(() => {
-    let ticking = false;
-    let frame = 0;
-    const scroll = () => {
-      if (ticking) return;
-      ticking = true;
-      frame = requestAnimationFrame(() => {
-        setScrolled(window.scrollY > 24);
-        ticking = false;
-      });
-    };
-    window.addEventListener("scroll", scroll, { passive: true });
-    return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", scroll);
-    };
-  }, []);
-  useEffect(() => {
-    setMenu(null);
-    setMobile(false);
-  }, [pathname]);
-  useEffect(() => {
-    if (!menu) return;
-    const click = (e: PointerEvent) => {
-      if (!header.current?.contains(e.target as Node)) setMenu(null);
-    };
-    const key = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        header.current
-          ?.querySelector<HTMLButtonElement>(`[aria-controls="menu-${menu}"]`)
-          ?.focus();
-        setMenu(null);
-      }
-    };
-    document.addEventListener("pointerdown", click);
-    document.addEventListener("keydown", key);
-    return () => {
-      document.removeEventListener("pointerdown", click);
-      document.removeEventListener("keydown", key);
-    };
-  }, [menu]);
-  return (
-    <>
-      <header
-        ref={header}
-        className="ac-header"
-        data-compressed={scrolled}
-        onBlur={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget)) setMenu(null);
-        }}
-      >
-        <div className="ac-nav">
-          <Link href="/" className="ac-brand" aria-label="Auronix Commerce LLC">
-            <AuronixMark />
-            <span>
-              AURONIX<small>COMMERCE LLC</small>
-            </span>
-          </Link>
-          <nav className="ac-desktop-nav" aria-label="Main navigation">
-            <button type="button" data-current={NAV_GROUPS[1].paths.some(path => pathname === path) || undefined}
-              aria-expanded={menu === "Commerce"} aria-controls="menu-Commerce"
-              onClick={() => setMenu(menu === "Commerce" ? null : "Commerce")}><Menu size={18} /> Explore <ChevronDown size={13} /></button>
-            <Link href="/solutions" aria-current={pathname === "/solutions" ? "page" : undefined}>Solutions</Link>
-            <Link href="/portfolio" aria-current={pathname === "/portfolio" ? "page" : undefined}>Products</Link>
-            <button type="button" data-current={NAV_GROUPS[0].paths.some(path => pathname === path) || undefined}
-              aria-expanded={menu === "Company"} aria-controls="menu-Company"
-              onClick={() => setMenu(menu === "Company" ? null : "Company")}>Company <ChevronDown size={13} /></button>
-            <button type="button" className="ac-nav-more" aria-expanded={menu === "Resources"} aria-controls="menu-Resources"
-              onClick={() => setMenu(menu === "Resources" ? null : "Resources")}>Resources <ChevronDown size={13} /></button>
-          </nav>
-          <div className="ac-nav-actions">
-            <button
-              type="button"
-              className="ac-icon-button"
-              aria-label="Search Auronix"
-              onClick={() => {
-                setMenu(null);
-                openSearch();
-              }}
-            >
-              <Search size={19} />
-            </button>
-            <div className="ac-desktop-action">
-              <ThemeToggle />
-            </div>
-            <Link
-              href="/partner-portal"
-              className="ac-portal-link"
-              aria-current={pathname.startsWith('/partner-portal') ? 'page' : undefined}
-            >
-              Sign in
-            </Link>
-            <Link href="/supplier" className="ac-button ac-desktop-action">
-              Apply as supplier <ArrowRight size={15} />
-            </Link>
-            <button
-              type="button"
-              className="ac-icon-button ac-menu-toggle"
-              aria-label="Open navigation"
-              onClick={() => setMobile(true)}
-            >
-              <Menu size={21} />
-            </button>
-          </div>
-        </div>
-        {menu && (
-          <MegaMenu
-            group={NAV_GROUPS.find((g) => g.title === menu)!}
-            onClose={() => setMenu(null)}
-          />
-        )}
-      </header>
-      <MobileMenu open={mobile} onClose={() => setMobile(false)} />
-    </>
-  );
+ const pathname=usePathname(); const [mobile,setMobile]=useState(false); const [menu,setMenu]=useState<string|null>(null); const header=useRef<HTMLElement>(null);
+ useEffect(()=>{setMenu(null);setMobile(false)},[pathname]);
+ useEffect(()=>{if(!menu)return; const close=(e:PointerEvent)=>{if(!header.current?.contains(e.target as Node))setMenu(null)};const key=(e:KeyboardEvent)=>{if(e.key==='Escape'){header.current?.querySelector<HTMLButtonElement>(`[aria-controls="menu-${menu}"]`)?.focus();setMenu(null)}}; document.addEventListener('pointerdown',close);document.addEventListener('keydown',key);return()=>{document.removeEventListener('pointerdown',close);document.removeEventListener('keydown',key)}},[menu]);
+ return <><header ref={header} className="ax-header" onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget))setMenu(null)}}><div className="ax-wrap ax-nav"><Link href="/" className="ax-brand" aria-label="Auronix Commerce LLC"><AuronixMark/><span>Auronix<small>COMMERCE LLC</small></span></Link><nav aria-label="Main navigation" className="ax-desktop-nav"><Link href="/solutions" aria-current={pathname==='/solutions'?'page':undefined}>Solutions</Link><Link href="/portfolio" aria-current={pathname==='/portfolio'?'page':undefined}>Products</Link>{['Company','Resources'].map(title=><button type="button" key={title} aria-expanded={menu===title} aria-controls={`menu-${title}`} onClick={()=>setMenu(menu===title?null:title)}>{title}<ChevronDown size={13}/></button>)}</nav><div className="ax-nav-actions"><button type="button" className="ac-icon-button" aria-label="Search Auronix" onClick={()=>{setMenu(null);openSearch()}}><Search size={18}/></button><ThemeToggle/><Link href="/partner-portal" className="ax-sign-in">Sign in</Link><Link href="/supplier" className="ax-btn ax-header-apply">Become a supplier <ArrowUpRight size={15}/></Link><button type="button" className="ac-icon-button ax-mobile-toggle" aria-label="Open navigation" onClick={()=>setMobile(true)}><Menu size={23}/></button></div></div>{menu&&<MegaMenu group={NAV_GROUPS.find(g=>g.title===menu)!} onClose={()=>setMenu(null)}/>}</header><MobileMenu open={mobile} onClose={()=>setMobile(false)}/></>;
 }
 export default Header;

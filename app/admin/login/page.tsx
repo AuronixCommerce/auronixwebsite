@@ -152,9 +152,9 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="ac-login-screen ac-login-admin">
-      <div className="ac-login-layout">
-        <div className="ac-login-intro">
+    <div className="ax-auth-screen"><aside className="ax-auth-story"><Link href="/" className="ax-brand"><AuronixMark/><span>Auronix<small>COMMERCE LLC</small></span></Link><div><span className="ax-kicker">AURONIX COMMERCE OS</span><h2>Every connection.<br/>Every operation.<br/>One clear view.</h2><p>Your workspace for the relationships, products, and conversations that move commerce forward.</p></div><footer>Auronix Commerce LLC · Private administration</footer></aside><div className="ax-auth-form">
+      <div>
+        <div className="ax-auth-intro">
           <Link
             href="/"
             className="inline-flex items-center gap-2 mb-6"
@@ -255,6 +255,6 @@ export default function AdminLoginPage() {
           </Link>
         </div>
       </div>
-    </div>
+    </div></div>
   );
 }

@@ -135,9 +135,9 @@ export default function SellerLoginPage() {
   }
 
   return (
-    <div className="ac-login-screen ac-login-seller">
-      <div className="ac-login-layout">
-        <div className="ac-login-intro">
+    <div className="ax-auth-screen"><aside className="ax-auth-story"><Link href="/" className="ax-brand"><AuronixMark/><span>Auronix<small>COMMERCE LLC</small></span></Link><div><span className="ax-kicker">YOUR PARTNER WORKSPACE</span><h2>A stronger connection.<br/>A clearer path forward.</h2><p>Manage your profile, product catalogs, and partnership conversations in one dedicated workspace.</p></div><footer>Auronix Commerce LLC · Partner access</footer></aside><div className="ax-auth-form"><div>
+
+        <div className="ax-auth-intro">
           <Link
             href="/"
             className="inline-flex items-center gap-2 mb-6"
@@ -279,6 +279,6 @@ export default function SellerLoginPage() {
           </div>
         </div>
       </div>
-    </div>
+    </div></div>
   );
 }

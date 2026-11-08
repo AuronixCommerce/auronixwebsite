@@ -1,22 +1,26 @@
-# Auronix interface modernization
+# Auronix interface rebuild
 
-The production interface is organized as four related experiences: public commerce, seller onboarding, seller operations, and administration. They share typography, color, spacing, controls, accessibility behavior, and recovery states while keeping different information density and navigation patterns.
+The public site, administrator workspace, and seller workspace use the palette, surfaces, control geometry, and responsive rules in `app/auronix-system.css`. The older modernization, rebuild, wholesale, and next-generation stylesheets are no longer loaded. `interface.css` retains specialized page layouts; obsolete atmosphere and optical-glass override blocks were removed.
 
-## Architecture
+## Public experience
 
-- `app/globals.css` contains the Tailwind-compatible semantic color baseline.
-- `app/interface.css` retains route-specific layouts and legacy compatibility rules.
-- `app/modernization.css` is the final visual authority for tokens, hierarchy, material, density, responsive behavior, workspaces, and reduced motion.
-- `components/site/public-site-chrome.tsx` owns public navigation, global search, main content, and footer.
-- `components/design/workspace-frame.tsx` owns seller/admin navigation and the independent admin scroll root.
-- Auronix Intelligence One is dynamically loaded only when opened.
+- New homepage with a commerce ecosystem diagram, capabilities, partnership process, and contact actions.
+- One shared header, with keyboard-accessible menus, search, theme selection, and mobile navigation. `SiteLayout` no longer injects another header or a custom cursor.
+- Updated page headers, calls to action, brand mark, forms, dialogs, cookie panel, and footer styling.
+- Shared light and dark color tokens; reduced-motion support.
 
-Ordinary cards, forms, tables, and reading surfaces are solid. Backdrop diffusion is reserved for navigation, command/search overlays, mobile sheets, the contextual selection toolbar, and the AIO window. Animated atmosphere, cursor effects, global motion configuration, unused WebGL, old home experiments, and tracked source backups were removed.
+## Administration and partner accounts
 
-## Functional preservation
+- A common workspace frame with grouped navigation, an independently scrolling sidebar, optional compact navigation, search, account controls, and a mobile navigation dialog.
+- Added sidebar access to existing Pages Manager, Newsletter, Announcements, and Changelog routes.
+- Rebuilt admin overview shows existing application, supplier, ticket, contact, content, and community counts. It does not invent sales, trends, or performance data.
+- Count subscriptions and availability reads wait for authentication. The support status remains unknown until a successful service response.
+- Rebuilt seller dashboard includes real product/catalog/ticket counts, account readiness, business details, refresh status, and conditional Deal Room access.
+- Redesigned administrator and seller sign-in pages preserve the existing authentication and MFA flows.
+- Shared table, input, tab, badge, panel, and button styles apply across existing workflow pages.
 
-Routes, structured metadata, seller applications, email verification, tracking IDs, correction requests, account access, data reads/writes, admin tools, Deal Room, notification preferences, support, newsletter, and AIO endpoints remain on their existing contracts. WhatsApp remains optional for one-way status notifications only; it is not an authentication or application gate.
+## Visual review
 
-## Validation
+`/ui-preview` is development-only and returns not found in production. It renders the shared workspace and overview with explicitly labeled sample records, plus a table/form specimen. It does not grant access to private routes, connect sample records to production data, or bypass account permissions.
 
-Before release, run type checking, lint, unit tests, production build, and browser verification at desktop, tablet, and mobile widths. Test public navigation/search, seller application/tracking, seller authentication/password reset, admin route position and command search, AIO launch/close, theme switching, offline messaging, and keyboard focus.
+Production admin and seller actions require configured Firebase services and an authorized account. Visual review of the workspace uses the development specimen; live account actions are not exercised by that review.

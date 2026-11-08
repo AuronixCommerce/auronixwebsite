@@ -1,70 +1,26 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useLayoutEffect, useRef, useState, type ReactNode, type ElementType } from 'react';
-import { LogOut, Menu, ArrowUpRight, X } from 'lucide-react';
+import { useEffect, useRef, useState, type ReactNode, type ElementType } from 'react';
+import { ArrowUpRight, ChevronDown, ChevronRight, LogOut, Menu, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
 import { Dialog, DialogClose, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AuronixMark } from '@/components/site/auronix-mark';
 import { ThemeToggle } from '@/components/site/theme-toggle';
 import { WorkspaceNav } from './workspace-nav';
 import { AdminCommandPalette } from '@/components/admin/admin-command-palette';
-type Item = { label: string; href: string; icon: ElementType; badge?: ReactNode };
-export function WorkspaceFrame({ title, email, items, onSignOut, children }: { title: 'Admin' | 'Seller'; email?: string; items: Item[]; onSignOut: () => Promise<void>; children: ReactNode }) {
-  const pathname = usePathname(); const [open, setOpen] = useState(false); const [searchOpen, setSearchOpen] = useState(false);
-  const mainRef = useRef<HTMLElement>(null);
-
-  useLayoutEffect(() => {
-    if (title !== 'Admin') return;
-
-    const previousRestoration = window.history.scrollRestoration;
-    window.history.scrollRestoration = 'manual';
-
-    return () => {
-      window.history.scrollRestoration = previousRestoration;
-      document.documentElement.classList.remove('ac-route-resetting');
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-    };
-  }, [title]);
-
-  useLayoutEffect(() => {
-    if (title !== 'Admin') return;
-
-    const root = document.documentElement;
-    let secondFrame = 0;
-    const resetScroll = () => {
-      mainRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-      if (document.scrollingElement) {
-        document.scrollingElement.scrollTop = 0;
-        document.scrollingElement.scrollLeft = 0;
-      }
-    };
-
-    root.classList.add('ac-route-resetting');
-    resetScroll();
-
-    const firstFrame = window.requestAnimationFrame(() => {
-      resetScroll();
-      secondFrame = window.requestAnimationFrame(() => {
-        resetScroll();
-        root.classList.remove('ac-route-resetting');
-      });
-    });
-    const settledReset = window.setTimeout(resetScroll, 160);
-
-    return () => {
-      window.cancelAnimationFrame(firstFrame);
-      window.cancelAnimationFrame(secondFrame);
-      window.clearTimeout(settledReset);
-      root.classList.remove('ac-route-resetting');
-    };
-  }, [pathname, title]);
-  const active = [...items].sort((a,b)=>b.href.length-a.href.length).find(i=>pathname===i.href || (i.href!=='/admin' && i.href!=='/seller/dashboard' && pathname?.startsWith(`${i.href}/`)));
-  const links = <nav className="ac-workspace-links" aria-label={`${title} navigation`}>{items.map(({icon:Icon,...item})=><Link key={item.href} href={item.href} aria-label={item.label} title={item.label} aria-current={active?.href===item.href?'page':undefined} onClick={()=>setOpen(false)}><Icon size={19}/><span>{item.label}</span>{item.badge}</Link>)}</nav>;
-  return <div className={`ac-workspace ${title==='Admin'?'ac-admin-shell':'ac-seller-shell'}`} data-search-open={searchOpen}>
-    <aside className="ac-workspace-sidebar"><Link className="ac-workspace-brand" href="/"><AuronixMark/><span>AURONIX<small>{title==='Admin'?'Operations':'Seller workspace'}</small></span></Link><div className="nx-workspace-mode"><i/>{title==='Admin'?'OPERATIONS CONTROL':'PARTNER WORKSPACE'}<span>AX / 01</span></div>{links}<div className="ac-workspace-account"><span title={email}>{email}</span><button onClick={onSignOut}><LogOut size={18}/>Sign out</button><Link href="/">Visit website <ArrowUpRight size={16}/></Link></div></aside>
-    <main ref={mainRef} className="ac-workspace-main"><header className="ac-workspace-toolbar"><div className="nx-workspace-route"><span className="nx-workspace-prefix">AURONIX / {title.toUpperCase()}</span><div className="ac-workspace-location"><button className="ac-icon-button ac-workspace-menu" aria-label={`Open ${title} navigation`} onClick={()=>setOpen(true)}><Menu size={21}/></button><span>{active?.label || 'Workspace'}</span></div></div><span className="nx-workspace-live"><i/> WORKSPACE ACTIVE</span><div className="ac-workspace-tools">{title==='Admin'?<AdminCommandPalette items={items} onOpenChange={setSearchOpen}/>:<WorkspaceNav items={items} title={title}/>}<ThemeToggle/></div></header><div className="ac-workspace-content">{children}</div></main>
-    <nav className="ac-workspace-dock" aria-label="Quick navigation">{items.filter((_,i)=>title==='Seller'?[0,1,3,4].includes(i):[0,1,2].includes(i)).map(({icon:Icon,...item})=><Link key={item.href} href={item.href} aria-current={active?.href===item.href?'page':undefined}><Icon size={21}/><span>{item.label}</span></Link>)}<button onClick={()=>setOpen(true)}><Menu size={21}/><span>More</span></button></nav>
-    <Dialog open={open} onOpenChange={setOpen}><DialogContent className="ac-workspace-sheet"><div className="ac-workspace-sheet-head"><div><DialogTitle>{title} workspace</DialogTitle><DialogDescription>Choose where you want to work.</DialogDescription></div><DialogClose asChild><button type="button" className="ac-workspace-sheet-close" aria-label={`Close ${title} navigation`}><X size={18}/><span>Close</span></button></DialogClose></div>{links}<button className="ac-button ac-button-secondary" onClick={onSignOut}><LogOut size={17}/>Sign out</button></DialogContent></Dialog>
-  </div>;
+type Item={label:string;href:string;icon:ElementType;badge?:ReactNode};
+function groupFor(item:Item,title:string) { if(title==='Seller')return item.href.includes('/settings')||item.href.includes('/profile')?'Account':'Workspace';if(['/admin','/admin/deal-room','/admin/sellers','/admin/suppliers','/admin/partners','/admin/reports'].includes(item.href))return 'Operations';if(['/admin/contact','/admin/tickets','/admin/email-delivery'].includes(item.href))return 'Inbox';if(['/admin/blog','/admin/faqs','/admin/careers','/admin/legal','/admin/newsletter','/admin/changelog','/admin/popup','/admin/pagesmanager'].some(p=>item.href===p||item.href.startsWith(p+'/')))return 'Content & website';return 'Administration'; }
+export function WorkspaceFrame({title,email,items,onSignOut,children}:{title:'Admin'|'Seller';email?:string;items:Item[];onSignOut:()=>Promise<void>;children:ReactNode}) {
+ const pathname=usePathname();const [open,setOpen]=useState(false);const [compact,setCompact]=useState(false);const [searchOpen,setSearchOpen]=useState(false);const [signingOut,setSigningOut]=useState(false);const mainRef=useRef<HTMLElement>(null);
+ useEffect(()=>{mainRef.current?.scrollTo({top:0,left:0,behavior:'auto'});setOpen(false)},[pathname]);
+ const active=[...items].sort((a,b)=>b.href.length-a.href.length).find(i=>pathname===i.href||(i.href!=='/admin'&&i.href!=='/seller/dashboard'&&pathname?.startsWith(`${i.href}/`)));
+ const groups=Array.from(new Set(items.map(i=>groupFor(i,title))));
+ const links=<nav className="ax-workspace-links" aria-label={`${title} navigation`}>{groups.map(group=><div className="ax-nav-group" key={group}><span className="ax-nav-group-title">{group}</span>{items.filter(i=>groupFor(i,title)===group).map(({icon:Icon,...item})=><Link key={item.href} href={item.href} title={item.label} aria-label={item.label} aria-current={active?.href===item.href?'page':undefined} onClick={()=>setOpen(false)}><Icon size={17} strokeWidth={1.7}/><span>{item.label}</span>{item.badge}{active?.href===item.href&&<span className="ax-active-dot"/>}</Link>)}</div>)}</nav>;
+ const signOut=async()=>{setSigningOut(true);try{await onSignOut()}finally{setSigningOut(false)}};
+ return <div className={`ac-workspace ${title==='Admin'?'ac-admin-shell':'ac-seller-shell'} ax-workspace`} data-compact={compact} data-search-open={searchOpen}>
+  <a className="ac-skip" href="#workspace-content">Skip to workspace</a>
+  <aside className="ax-sidebar"><Link href="/" className="ax-workspace-brand"><AuronixMark/><span>Auronix<small>COMMERCE OS</small></span></Link><div className="ax-workspace-switch"><span className="ax-workspace-avatar">{title==='Admin'?'A':'P'}</span><div><strong>{title==='Admin'?'Auronix operations':'Partner workspace'}</strong><small>{title==='Admin'?'Administration':'Seller account'}</small></div><ChevronDown size={14}/></div>{links}<div className="ax-sidebar-bottom"><Link href="/">Visit website <ArrowUpRight size={15}/></Link><div className="ax-account"><span>{(email||'A')[0].toUpperCase()}</span><div><strong>{title==='Admin'?'Administrator':'Partner account'}</strong><small title={email}>{email||'Account'}</small></div><button type="button" onClick={signOut} disabled={signingOut} aria-label="Sign out" title="Sign out"><LogOut size={17}/></button></div></div></aside>
+  <main className="ac-workspace-main ax-workspace-main" ref={mainRef}><header className="ax-toolbar"><div><button type="button" className="ac-icon-button ax-sidebar-toggle" aria-label={compact?'Expand sidebar':'Collapse sidebar'} onClick={()=>setCompact(!compact)}>{compact?<PanelLeftOpen size={18}/>:<PanelLeftClose size={18}/>}</button><button type="button" className="ac-icon-button ax-workspace-mobile" aria-label={`Open ${title} navigation`} onClick={()=>setOpen(true)}><Menu size={20}/></button><span className="ax-breadcrumb">{title==='Admin'?'Workspace':'Seller'} <ChevronRight size={13}/><strong>{active?.label||'Overview'}</strong></span></div><div className="ax-toolbar-tools">{title==='Admin'?<AdminCommandPalette items={items} onOpenChange={setSearchOpen}/>:<WorkspaceNav items={items} title={title}/>}<ThemeToggle/><span className="ax-toolbar-avatar" title={email}>{(email||'A')[0].toUpperCase()}</span></div></header><div className="ac-workspace-content" id="workspace-content" tabIndex={-1}>{children}</div><footer className="ax-workspace-footer"><span>Auronix Commerce LLC</span><span>{title==='Admin'?'Operations workspace':'Partner workspace'}</span></footer></main>
+  <Dialog open={open} onOpenChange={setOpen}><DialogContent className="ax-workspace-sheet"><div className="ax-sheet-header"><div><DialogTitle>{title} workspace</DialogTitle><DialogDescription>Choose where you want to work.</DialogDescription></div><DialogClose asChild><button className="ac-icon-button" aria-label={`Close ${title} navigation`}><X size={19}/></button></DialogClose></div>{links}<button className="ax-btn" disabled={signingOut} onClick={signOut}><LogOut size={17}/>Sign out</button></DialogContent></Dialog>
+ </div>;
 }

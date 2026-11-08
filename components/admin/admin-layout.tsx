@@ -16,14 +16,14 @@ import {
   LayoutDashboard, UserCheck, Package, Mail, Ticket, FileText,
   HelpCircle, Briefcase, Users, Scale, Sparkles, Building2,
   UsersRound, Settings, LogOut, Loader2, Search, Bell, ScrollText, ShieldCheck,
-  BriefcaseBusiness, FileSpreadsheet, Send,
+  BriefcaseBusiness, FileSpreadsheet, Send, Globe, Megaphone,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, any> = {
   LayoutDashboard, UserCheck, Package, Mail, Ticket, FileText,
   HelpCircle, Briefcase, Users, Scale, Sparkles, Building2,
   UsersRound, Settings, ScrollText, ShieldCheck,
-  BriefcaseBusiness, FileSpreadsheet, Send,
+  BriefcaseBusiness, FileSpreadsheet, Send, Globe, Megaphone,
 };
 
 export function AdminLayout({ children }: { children: ReactNode }) {

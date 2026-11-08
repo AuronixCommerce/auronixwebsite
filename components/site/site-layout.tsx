@@ -1,15 +1,6 @@
-﻿import { ReactNode } from 'react';
-import { FloatingHeader } from './floating-header';
-import { FisheyeCursor } from './fisheye-cursor';
-
+import { type ReactNode } from 'react';
+// PublicSiteChrome owns navigation and the footer for every public route.
 export function SiteLayout({ children }: { children: ReactNode }) {
-  return (
-    <div className="ac-page">
-      <FloatingHeader />
-      <FisheyeCursor />
-      {children}
-    </div>
-  );
+  return <div className="ac-page">{children}</div>;
 }
-
 export const AppShell = SiteLayout;

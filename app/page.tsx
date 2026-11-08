@@ -1,52 +1,21 @@
 import Link from 'next/link';
-import { ArrowRight, Boxes, Building2, ClipboardList, Factory, Handshake, Layers, Package, PackageSearch, ShieldCheck, ShoppingCart, Store, Tag, Target, Truck, Users } from 'lucide-react';
-import './home-reference.css';
-
-const shortcuts = [
-  { title: 'Sourcing', href: '/solutions', icon: PackageSearch },
-  { title: 'Our Products', href: '/portfolio', icon: Tag },
-  { title: 'Marketplaces', href: '/marketplace-expertise', icon: Store },
-  { title: 'Suppliers', href: '/supplier', icon: Users },
-  { title: 'Deal Room', href: '/partner-portal', icon: Handshake },
-  { title: 'Track Application', href: '/seller/application/track', icon: ClipboardList },
-];
+import { ArrowRight, ArrowUpRight, Boxes, Check, CheckCheck, Factory, Globe2, Handshake, Layers3, PackageSearch, ShieldCheck, Store, Truck } from 'lucide-react';
 const capabilities = [
-  { title: 'Procurement', text: 'Strategic buying, vendor management, and cost-efficient supply.', icon: ShoppingCart },
-  { title: 'Marketplace Operations', text: 'Product listing, catalog management, performance, and growth across key marketplaces.', icon: Layers },
-  { title: 'Supplier Partnerships', text: 'Long-term, mutually beneficial relationships with manufacturers, brands, and distributors.', icon: Users },
-  { title: 'Distribution', text: 'Reliable fulfillment and distribution to get products to the right markets, on time.', icon: Truck },
+  { number:'01', title:'Sourcing & procurement', text:'The right products start with the right relationships. We evaluate categories, suppliers, and commercial fit.', icon:PackageSearch, href:'/solutions' },
+  { number:'02', title:'Marketplace operations', text:'From catalog preparation to listing quality, we bring structure to the details that move commerce forward.', icon:Layers3, href:'/marketplace-expertise' },
+  { number:'03', title:'Supplier partnerships', text:'Clear communication, thoughtful evaluation, and a practical path to building a lasting business relationship.', icon:Handshake, href:'/supplier' },
+  { number:'04', title:'Distribution', text:'Coordinating products, inventory, and channels to get quality goods to the customers who need them.', icon:Truck, href:'/solutions' },
 ];
-const steps = [
-  ['Discover', 'Identify market opportunities, category potential, and demand.'],
-  ['Evaluate', 'Assess products, suppliers, and commercial fit with clear criteria.'],
-  ['Source', 'Secure supply, finalize terms, and prepare for marketplace launch.'],
-  ['Launch', 'List, operate, and drive initial sales across marketplaces.'],
-  ['Optimize', 'Analyze performance, improve operations, and scale what works.'],
-];
-const strengths = [
-  { title: 'Focused Procurement', text: 'Disciplined sourcing and category focus to bring competitive, high-demand products to market.', icon: Target },
-  { title: 'Marketplace Expertise', text: 'Hands-on operational experience across leading marketplaces, from listing and optimization to growth and profitability.', icon: Layers },
-  { title: 'Operational Discipline', text: 'A process-driven, execution-focused approach that delivers reliability, transparency, and scalable results.', icon: ShieldCheck },
-];
-
 export default function HomePage() {
-  return <div className="aur-home">
-    <section className="aur-hero"><div className="aur-container aur-hero-grid">
-      <div><p className="aur-eyebrow">B2B COMMERCE <span>·</span> SOURCING <span>·</span> MARKETPLACES <span>·</span> DISTRIBUTION</p>
-        <h1>Connect the right products to the right opportunities.</h1>
-        <p className="aur-lead">A B2B commerce company built on strong supplier relationships, marketplace operations, and structured commerce growth.</p>
-        <div className="aur-actions"><Link className="aur-button" href="/supplier">Become a Supplier <ArrowRight size={17} /></Link><Link className="aur-button aur-button-outline" href="/solutions">Explore our work</Link></div>
-      </div>
-      <div className="aur-flow" aria-label="From suppliers to products to marketplaces">
-        {[{title:'Suppliers', text:'Manufacturers, brands, and wholesalers', icon:Factory}, {title:'Products', text:'Source, select, and prepare for market', icon:Boxes}, {title:'Marketplaces', text:'List, operate, and distribute across key channels', icon:Store}].map(({title,text,icon:Icon}, i) => <div className="aur-flow-item" key={title}><div className={`aur-flow-card ${i === 1 ? 'featured' : ''}`}><Icon size={40} strokeWidth={1.5} /><h2>{title}</h2><p>{text}</p></div>{i < 2 && <ArrowRight className="aur-flow-arrow" size={25} strokeWidth={1.3} aria-hidden="true" />}</div>)}
-      </div>
+  return <div className="ax-home">
+    <section className="ax-hero"><div className="ax-wrap ax-hero-grid">
+      <div className="ax-hero-copy"><span className="ax-kicker"><i/> A BETTER WAY TO MOVE COMMERCE</span><h1>Good products.<br/>Right connections.<br/><em>New possibilities.</em></h1><p>We connect quality suppliers, products, and marketplaces through thoughtful sourcing and disciplined operations.</p><div className="ax-actions"><Link href="/supplier" className="ax-btn ax-btn-mint">Become a supplier <ArrowUpRight size={18}/></Link><Link href="/solutions" className="ax-text-link">Explore our capabilities <ArrowRight size={17}/></Link></div><div className="ax-hero-foot"><Globe2 size={17}/><span>Florida, United States</span><span className="ax-dot-separator"/><span>Built for lasting partnerships</span></div></div>
+      <div className="ax-commerce-board"><div className="ax-board-title"><span><span className="ax-board-dot"/> THE AURONIX ECOSYSTEM</span><Boxes size={18}/></div><div className="ax-board-heading"><h2>Commerce, connected.</h2><p>Every connection moves opportunity forward.</p></div><div className="ax-network-top"><div className="ax-node"><Factory size={24}/><div><strong>Quality suppliers</strong><span>Brands · Manufacturers · Wholesalers</span></div><Check size={16}/></div></div><div className="ax-connector"><span>Source & evaluate</span><i/></div><div className="ax-network-center"><span className="ax-symbol">A</span><div><strong>Auronix Commerce</strong><span>Relationships. Operations. Distribution.</span></div><ShieldCheck size={22}/></div><div className="ax-connector"><span>Prepare & connect</span><i/></div><div className="ax-network-bottom"><div><Boxes size={24}/><strong>Ready for market</strong><span>Products & catalogs</span></div><ArrowRight size={20}/><div><Store size={24}/><strong>More opportunity</strong><span>Marketplace channels</span></div></div><div className="ax-board-footer"><CheckCheck size={15}/><span>One connected approach. From source to sale.</span></div></div>
     </div></section>
-    <div className="aur-container aur-content">
-      <section className="aur-row aur-ecosystem" id="explore"><div className="aur-intro"><p className="aur-eyebrow">EXPLORE THE ECOSYSTEM</p><h2>Our Commerce Ecosystem</h2><p>From sourcing to distribution, explore how we create opportunities across the value chain.</p></div><div className="aur-shortcuts">{shortcuts.map(({title,href,icon:Icon}) => <Link className="aur-shortcut" href={href} key={title}><Icon size={23} strokeWidth={1.5}/><span>{title}</span><ArrowRight size={15}/></Link>)}</div></section>
-      <section className="aur-row aur-capabilities"><div className="aur-intro"><p className="aur-eyebrow">OUR CAPABILITIES</p><h2>End-to-end commerce operations.</h2><p>We bring together procurement, supplier partnerships, marketplace operations, and distribution to scale products efficiently and sustainably.</p></div><div className="aur-cap-grid">{capabilities.map(({title,text,icon:Icon}) => <article className="aur-cap-card" key={title}><span className="aur-icon"><Icon size={23} strokeWidth={1.5}/></span><h3>{title}</h3><p>{text}</p></article>)}</div></section>
-      <section className="aur-row aur-process"><div className="aur-intro"><p className="aur-eyebrow">OUR PROCESS</p><h2>A structured path from opportunity to scale.</h2><p>A repeatable, data-informed process to bring the right products to market and drive sustainable growth.</p></div><ol className="aur-steps">{steps.map(([title,text],i) => <li key={title}><span className="aur-step-number">{i+1}</span><h3>{title}</h3><p>{text}</p></li>)}</ol></section>
-      <section className="aur-row aur-why"><div className="aur-intro"><p className="aur-eyebrow">WHY AURONIX</p><h2>Built for long-term commerce growth.</h2><p>A focused, operationally driven partner for suppliers and brands seeking sustainable marketplace success.</p></div><div className="aur-strengths">{strengths.map(({title,text,icon:Icon}) => <article key={title}><div><Icon size={29} strokeWidth={1.5}/><h3>{title}</h3></div><p>{text}</p></article>)}</div></section>
-    </div>
-    <section className="aur-final"><div><h2>Let’s build what’s next, together.</h2><p>We work with suppliers, distributors, manufacturers, wholesalers, and brands to bring great products to more customers through a trusted, scalable commerce platform.</p></div><Link href="/contact" className="aur-button">Connect with Auronix <ArrowRight size={17}/></Link><Building2 aria-hidden="true" className="aur-final-icon" size={120} strokeWidth={0.7}/></section>
+    <section className="ax-pathways"><div className="ax-wrap"><span>YOUR NEXT CONNECTION</span>{[{title:'Explore our products',href:'/portfolio'},{title:'Work with Auronix',href:'/partners'},{title:'Partner portal',href:'/partner-portal'},{title:'Track an application',href:'/seller/application/track'}].map(x=><Link href={x.href} key={x.href}>{x.title}<ArrowUpRight size={17}/></Link>)}</div></section>
+    <section className="ax-section ax-wrap" id="capabilities"><div className="ax-section-heading"><div><span className="ax-kicker">BUILT AROUND THE WHOLE JOURNEY</span><h2>From a promising product<br/>to its next opportunity.</h2></div><p>Commerce has a lot of moving parts.<br/>We make them work together.</p></div><div className="ax-capabilities">{capabilities.map(({number,title,text,icon:Icon,href})=><Link href={href} className="ax-capability" key={number}><div><Icon size={27} strokeWidth={1.5}/><span>{number}</span></div><h3>{title}</h3><p>{text}</p><span className="ax-capability-link">Explore capability <ArrowUpRight size={16}/></span></Link>)}</div></section>
+    <section className="ax-approach"><div className="ax-wrap ax-approach-grid"><div><span className="ax-kicker">A CLEAR PATH FORWARD</span><h2>Thoughtful at every step.<br/>Accountable all the way.</h2><p>Great partnerships need more than an introduction. Our process brings clarity to what happens next.</p><Link href="/our-process" className="ax-btn ax-btn-outline">Our approach <ArrowRight size={17}/></Link></div><ol>{[['Discover','Find the right fit.','Understand the category, opportunity, and demand.'],['Evaluate','Look beyond the surface.','Assess products, suppliers, and commercial terms.'],['Connect','Turn potential into a plan.','Prepare catalogs, align supply, and launch with purpose.'],['Optimize','Keep moving forward.','Review performance and improve what comes next.']].map(([title,heading,text],i)=><li key={title}><span>0{i+1}</span><div><small>{title}</small><h3>{heading}</h3><p>{text}</p></div><ArrowUpRight size={20}/></li>)}</ol></div></section>
+    <section className="ax-section ax-wrap ax-partnership"><div><span className="ax-kicker">THE WAY WE WORK</span><h2>Strong relationships.<br/>Shared ambition.</h2><p>We work with suppliers, distributors, manufacturers, wholesalers, and brands that value clear communication and sustainable growth.</p><Link href="/about" className="ax-text-link">Get to know Auronix <ArrowRight size={17}/></Link></div><div className="ax-principles">{[{icon:ShieldCheck,title:'Clarity from the start',text:'A structured process and straightforward communication.'},{icon:Handshake,title:'A long-term perspective',text:'Relationships built around mutual fit and shared goals.'},{icon:Layers3,title:'Discipline in the details',text:'Practical operations, from sourcing to marketplace readiness.'}].map(({icon:Icon,title,text})=><article key={title}><Icon size={23}/><div><h3>{title}</h3><p>{text}</p></div></article>)}</div></section>
+    <section className="ax-wrap ax-cta"><div><span className="ax-kicker">LET’S BUILD WHAT’S NEXT</span><h2>Your next opportunity<br/>starts with a conversation.</h2></div><div><p>Have a product, a catalog, or a partnership in mind?<br/>We’d like to hear from you.</p><Link href="/contact" className="ax-btn ax-btn-mint">Connect with Auronix <ArrowUpRight size={18}/></Link></div></section>
   </div>;
 }
