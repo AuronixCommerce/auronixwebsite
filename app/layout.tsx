@@ -5,6 +5,7 @@ import './interface.css';
 import './support-interface.css';
 import './auronix-system.css';
 import './auronix-motion.css';
+import './aio-chat.css';
 import { MotionRuntime } from '@/components/site/motion-runtime';
 
 

@@ -1,33 +1,28 @@
-export type AioRole = 'user' | 'assistant';
+export type AioRole = "user" | "assistant";
 
 export type AioIntent =
-  | 'auronix_information'
-  | 'supplier'
-  | 'application_tracking'
-  | 'support'
-  | 'navigation'
-  | 'marketplace'
-  | 'general_question'
-  | 'account'
-  | 'catalog'
-  | 'policy'
-  | 'company_verification'
-  | 'search'
-  | 'action'
-  | 'live_agent'
-  | 'unknown';
+  | "auronix_information"
+  | "supplier"
+  | "application_tracking"
+  | "support"
+  | "navigation"
+  | "marketplace"
+  | "general_question"
+  | "account"
+  | "catalog"
+  | "policy"
+  | "company_verification"
+  | "search"
+  | "action"
+  | "live_agent"
+  | "unknown";
 
 export type AioChatMessage = {
   role: AioRole;
   content: string;
 };
 
-export type AioSourceType =
-  | 'website'
-  | 'policy'
-  | 'faq'
-  | 'admin'
-  | 'database';
+export type AioSourceType = "website" | "policy" | "faq" | "admin" | "database";
 
 export type AioSource = {
   id: string;
@@ -43,7 +38,7 @@ export type AioAction = {
   id: string;
   label: string;
   href: string;
-  kind: 'navigate' | 'support' | 'tracking' | 'verification';
+  kind: "navigate" | "support" | "tracking" | "verification";
 };
 
 export type AioKnowledgeRecord = {
@@ -56,7 +51,7 @@ export type AioKnowledgeRecord = {
   route?: string;
   category?: string;
   lastUpdated?: string;
-  visibility: 'public' | 'authenticated' | 'admin';
+  visibility: "public" | "authenticated" | "admin";
   priority?: number;
   metadata?: Record<string, unknown>;
 };
@@ -73,7 +68,7 @@ export type AioRouteDecision = {
 };
 
 export type AioProviderMessage = {
-  role: 'system' | AioRole;
+  role: "system" | AioRole;
   content: string;
 };
 
@@ -83,6 +78,7 @@ export type AioProviderRequest = {
   temperature?: number;
   model?: string;
   fallbackModel?: string;
+  signal?: AbortSignal;
 };
 
 export type AioProviderInfo = {
@@ -93,18 +89,18 @@ export type AioProviderInfo = {
 };
 
 export type AioStreamEvent =
-  | { type: 'message_start'; requestId: string }
-  | { type: 'status'; label: string }
-  | { type: 'source'; source: AioSource }
-  | { type: 'action'; action: AioAction }
-  | { type: 'token'; token: string }
+  | { type: "message_start"; requestId: string }
+  | { type: "status"; label: string }
+  | { type: "source"; source: AioSource }
+  | { type: "action"; action: AioAction }
+  | { type: "token"; token: string }
   | {
-      type: 'message_complete';
+      type: "message_complete";
       requestId: string;
-      answerSource: 'premade' | 'auronix' | 'general';
+      answerSource: "premade" | "auronix" | "general";
       provider?: string;
       model?: string;
       usedFallback?: boolean;
       truncated?: boolean;
     }
-  | { type: 'error'; message: string; code?: string };
+  | { type: "error"; message: string; code?: string };

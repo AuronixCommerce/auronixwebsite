@@ -1,28 +1,33 @@
-import Groq from 'groq-sdk';
-import type {
-  AioProviderInfo,
-  AioProviderRequest,
-} from '@/lib/aio/types';
+import Groq from "groq-sdk";
+import type { AioProviderInfo, AioProviderRequest } from "@/lib/aio/types";
 
 export interface AIProvider {
   readonly name: string;
   readonly supportsTools: boolean;
   readonly supportsVision: boolean;
-  generate(request: AioProviderRequest): Promise<{ text: string; info: AioProviderInfo }>;
-  stream(request: AioProviderRequest): AsyncGenerator<{ token: string; info: AioProviderInfo }>;
+  generate(
+    request: AioProviderRequest,
+  ): Promise<{ text: string; info: AioProviderInfo }>;
+  stream(
+    request: AioProviderRequest,
+  ): AsyncGenerator<{
+    token: string;
+    info: AioProviderInfo;
+    finishReason?: string | null;
+  }>;
 }
 
 export class AioProviderError extends Error {
   constructor(
     message: string,
     public code:
-      | 'not_configured'
-      | 'rate_limited'
-      | 'unavailable'
-      | 'auth'
-      | 'timeout'
-      | 'context_too_long'
-      | 'unknown' = 'unknown'
+      | "not_configured"
+      | "rate_limited"
+      | "unavailable"
+      | "auth"
+      | "timeout"
+      | "context_too_long"
+      | "unknown" = "unknown",
   ) {
     super(message);
   }
@@ -37,7 +42,11 @@ type ProviderConfig = {
 
 function safeModel(value: string | undefined, fallback: string) {
   const normalized = value?.trim();
-  if (!normalized || normalized.length > 160 || !/^[a-zA-Z0-9._:/-]+$/.test(normalized)) {
+  if (
+    !normalized ||
+    normalized.length > 160 ||
+    !/^[a-zA-Z0-9._:/-]+$/.test(normalized)
+  ) {
     return fallback;
   }
   return normalized;
@@ -47,52 +56,85 @@ export function getAioProviderConfig(overrides?: {
   model?: string;
   fallbackModel?: string;
 }): ProviderConfig {
-  const provider = (process.env.AIO_PROVIDER || 'groq').trim().toLowerCase();
-  const apiKey = (process.env.AIO_API_KEY || process.env.GROQ_API_KEY || '').trim();
+  const provider = (process.env.AIO_PROVIDER || "groq").trim().toLowerCase();
+  const apiKey = (
+    process.env.AIO_API_KEY ||
+    process.env.GROQ_API_KEY ||
+    ""
+  ).trim();
   const defaultModel = safeModel(
     process.env.AIO_MODEL || process.env.GROQ_MODEL,
-    'openai/gpt-oss-120b'
+    "openai/gpt-oss-120b",
   );
 
   const model = safeModel(overrides?.model, defaultModel);
-  const fallbackCandidate = overrides?.fallbackModel || process.env.AIO_FALLBACK_MODEL || '';
+  const fallbackCandidate =
+    overrides?.fallbackModel || process.env.AIO_FALLBACK_MODEL || "";
   const fallbackModel = fallbackCandidate
-    ? safeModel(fallbackCandidate, '')
+    ? safeModel(fallbackCandidate, "")
     : undefined;
 
   return {
     provider,
     apiKey,
     model,
-    fallbackModel: fallbackModel && fallbackModel !== model ? fallbackModel : undefined,
+    fallbackModel:
+      fallbackModel && fallbackModel !== model ? fallbackModel : undefined,
   };
 }
 
 function normalizeProviderError(error: unknown): AioProviderError {
-  const message = error instanceof Error ? error.message : String(error || '');
+  const message = error instanceof Error ? error.message : String(error || "");
   const lower = message.toLowerCase();
 
-  if (lower.includes('429') || lower.includes('rate limit')) {
-    return new AioProviderError('AIO is temporarily busy. Please try again.', 'rate_limited');
+  if (lower.includes("429") || lower.includes("rate limit")) {
+    return new AioProviderError(
+      "AIO is temporarily busy. Please try again.",
+      "rate_limited",
+    );
   }
-  if (lower.includes('401') || lower.includes('403') || lower.includes('api key') || lower.includes('authentication')) {
-    return new AioProviderError('AIO is temporarily unavailable.', 'auth');
+  if (
+    lower.includes("401") ||
+    lower.includes("403") ||
+    lower.includes("api key") ||
+    lower.includes("authentication")
+  ) {
+    return new AioProviderError("AIO is temporarily unavailable.", "auth");
   }
-  if (lower.includes('timeout') || lower.includes('timed out')) {
-    return new AioProviderError('AIO took too long to respond. Please retry.', 'timeout');
+  if (lower.includes("timeout") || lower.includes("timed out")) {
+    return new AioProviderError(
+      "AIO took too long to respond. Please retry.",
+      "timeout",
+    );
   }
-  if (lower.includes('context') && (lower.includes('long') || lower.includes('length'))) {
-    return new AioProviderError('This conversation is too long to process in one request.', 'context_too_long');
+  if (
+    lower.includes("context") &&
+    (lower.includes("long") || lower.includes("length"))
+  ) {
+    return new AioProviderError(
+      "This conversation is too long to process in one request.",
+      "context_too_long",
+    );
   }
-  if (lower.includes('503') || lower.includes('502') || lower.includes('unavailable')) {
-    return new AioProviderError('AIO is temporarily unavailable. Please try again.', 'unavailable');
+  if (
+    lower.includes("503") ||
+    lower.includes("502") ||
+    lower.includes("unavailable")
+  ) {
+    return new AioProviderError(
+      "AIO is temporarily unavailable. Please try again.",
+      "unavailable",
+    );
   }
 
-  return new AioProviderError('AIO is temporarily unable to respond. Please try again.', 'unknown');
+  return new AioProviderError(
+    "AIO is temporarily unable to respond. Please try again.",
+    "unknown",
+  );
 }
 
 class GroqAioProvider implements AIProvider {
-  readonly name = 'groq';
+  readonly name = "groq";
   readonly supportsTools = false;
   readonly supportsVision = false;
 
@@ -102,7 +144,7 @@ class GroqAioProvider implements AIProvider {
 
   constructor(config: ProviderConfig) {
     if (!config.apiKey) {
-      throw new AioProviderError('AIO is not configured.', 'not_configured');
+      throw new AioProviderError("AIO is not configured.", "not_configured");
     }
 
     this.client = new Groq({ apiKey: config.apiKey });
@@ -116,26 +158,35 @@ class GroqAioProvider implements AIProvider {
       messages: request.messages,
       temperature: Math.min(Math.max(request.temperature ?? 0.2, 0), 1),
       max_completion_tokens: Math.min(Math.max(request.maxTokens, 120), 4000),
-      reasoning_effort: 'medium' as const,
-      include_reasoning: false,
+      ...(model.startsWith("openai/gpt-oss-")
+        ? { reasoning_effort: "medium" as const, include_reasoning: false }
+        : {}),
     };
   }
 
   async generate(request: AioProviderRequest) {
-    const models = [request.model || this.model, request.fallbackModel || this.fallbackModel]
-      .filter((value, index, list): value is string => Boolean(value) && list.indexOf(value) === index);
+    const models = [
+      request.model || this.model,
+      request.fallbackModel || this.fallbackModel,
+    ].filter(
+      (value, index, list): value is string =>
+        Boolean(value) && list.indexOf(value) === index,
+    );
 
     let lastError: unknown = null;
 
     for (let index = 0; index < models.length; index += 1) {
       const model = models[index];
       try {
-        const completion = await this.client.chat.completions.create({
-          ...this.commonArgs(request, model),
-          stream: false,
-        });
-        if ('choices' in completion) {
-          const text = completion.choices?.[0]?.message?.content?.trim() || '';
+        const completion = await this.client.chat.completions.create(
+          {
+            ...this.commonArgs(request, model),
+            stream: false,
+          },
+          { signal: request.signal, timeout: 45000 },
+        );
+        if ("choices" in completion) {
+          const text = completion.choices?.[0]?.message?.content?.trim() || "";
           if (text) {
             return {
               text,
@@ -148,8 +199,9 @@ class GroqAioProvider implements AIProvider {
             };
           }
         }
-        lastError = new Error('Provider returned an empty response.');
+        lastError = new Error("Provider returned an empty response.");
       } catch (error) {
+        if (request.signal?.aborted) throw error;
         lastError = error;
       }
     }
@@ -158,8 +210,13 @@ class GroqAioProvider implements AIProvider {
   }
 
   async *stream(request: AioProviderRequest) {
-    const models = [request.model || this.model, request.fallbackModel || this.fallbackModel]
-      .filter((value, index, list): value is string => Boolean(value) && list.indexOf(value) === index);
+    const models = [
+      request.model || this.model,
+      request.fallbackModel || this.fallbackModel,
+    ].filter(
+      (value, index, list): value is string =>
+        Boolean(value) && list.indexOf(value) === index,
+    );
 
     let lastError: unknown = null;
 
@@ -168,17 +225,22 @@ class GroqAioProvider implements AIProvider {
       let emitted = false;
 
       try {
-        const stream = await this.client.chat.completions.create({
-          ...this.commonArgs(request, model),
-          stream: true,
-        });
+        const stream = await this.client.chat.completions.create(
+          {
+            ...this.commonArgs(request, model),
+            stream: true,
+          },
+          { signal: request.signal, timeout: 45000 },
+        );
 
         for await (const chunk of stream) {
-          const token = chunk.choices?.[0]?.delta?.content || '';
-          if (!token) continue;
-          emitted = true;
+          const token = chunk.choices?.[0]?.delta?.content || "";
+          const finishReason = chunk.choices?.[0]?.finish_reason;
+          if (!token && !finishReason) continue;
+          if (token) emitted = true;
           yield {
             token,
+            finishReason,
             info: {
               provider: this.name,
               model,
@@ -189,8 +251,9 @@ class GroqAioProvider implements AIProvider {
         }
 
         if (emitted) return;
-        lastError = new Error('Provider returned an empty stream.');
+        lastError = new Error("Provider returned an empty stream.");
       } catch (error) {
+        if (request.signal?.aborted) throw error;
         lastError = error;
         if (emitted) {
           throw normalizeProviderError(error);
@@ -208,10 +271,10 @@ export function createAioProvider(overrides?: {
 }): AIProvider {
   const config = getAioProviderConfig(overrides);
 
-  if (config.provider !== 'groq') {
+  if (config.provider !== "groq") {
     throw new AioProviderError(
       `Unsupported AIO provider: ${config.provider}`,
-      'not_configured'
+      "not_configured",
     );
   }
 
@@ -220,5 +283,5 @@ export function createAioProvider(overrides?: {
 
 export function isAioConfigured() {
   const config = getAioProviderConfig();
-  return config.provider === 'groq' && Boolean(config.apiKey);
+  return config.provider === "groq" && Boolean(config.apiKey);
 }

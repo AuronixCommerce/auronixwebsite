@@ -1,0 +1,359 @@
+const { test } = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const ts = require("typescript");
+const { harness } = require("../helpers/route-harness.cjs");
+const root = path.resolve(__dirname, "../..");
+function load(file, mocks = {}) {
+  const code = ts.transpileModule(
+    fs.readFileSync(path.join(root, file), "utf8"),
+    {
+      compilerOptions: {
+        module: ts.ModuleKind.CommonJS,
+        target: ts.ScriptTarget.ES2020,
+      },
+    },
+  ).outputText;
+  const mod = { exports: {} };
+  new Function("require", "module", "exports", code)(
+    (id) => {
+      if (mocks[id]) return mocks[id];
+      if (id.startsWith("@/")) return load(id.slice(2) + ".ts", mocks);
+      if (id.startsWith("."))
+        return load(path.join(path.dirname(file), id) + ".ts", mocks);
+      return require(id);
+    },
+    mod,
+    mod.exports,
+  );
+  return mod.exports;
+}
+const { currentChatContext, normalizeChatPreferences } = load(
+  "lib/aio/preferences.ts",
+);
+const { readAioStream } = load("lib/aio/stream.ts");
+const user = (content) => ({ role: "user", content });
+const assistant = (content) => ({ role: "assistant", content });
+test("new conversations exclude earlier topics and context-off sends only the latest question", () => {
+  const messages = [
+    user("Private earlier topic"),
+    assistant("Earlier reply"),
+    { role: "assistant", content: "", sessionBoundary: true },
+    user("Current question"),
+    assistant("Current reply"),
+    user("What next?"),
+  ];
+  assert.deepEqual(currentChatContext(messages), messages.slice(3));
+  assert.deepEqual(currentChatContext(messages, false), [user("What next?")]);
+});
+test("long histories stay within the API limit and start with a user turn", () => {
+  const messages = Array.from({ length: 70 }, (_, i) =>
+    i % 2 ? assistant(String(i)) : user(String(i)),
+  );
+  const result = currentChatContext(messages);
+  assert.ok(result.length <= 18);
+  assert.equal(result[0].role, "user");
+  assert.equal(result.at(-1).content, "69");
+  assert.equal(
+    currentChatContext([user("x".repeat(9000))])[0].content.length,
+    6000,
+  );
+});
+test("invalid stored preferences cannot replace valid enum and boolean defaults", () => {
+  const p = normalizeChatPreferences({
+    replyLength: "anything",
+    tone: "untrusted",
+    rememberHistory: "false",
+    showSources: false,
+  });
+  assert.equal(p.replyLength, "adaptive");
+  assert.equal(p.tone, "professional");
+  assert.equal(p.rememberHistory, true);
+  assert.equal(p.showSources, false);
+});
+function byteStream(text, size = 1) {
+  const bytes = new TextEncoder().encode(text);
+  return new ReadableStream({
+    start(controller) {
+      for (let i = 0; i < bytes.length; i += size)
+        controller.enqueue(bytes.slice(i, i + size));
+      controller.close();
+    },
+  });
+}
+test("stream parser preserves UTF-8 and handles split CRLF plus a final frame without a blank line", async () => {
+  const raw =
+    ': keepalive\r\n\r\ndata: {"type":"token","token":"Hello 🌍"}\r\n\r\ndata: {"type":"message_complete","requestId":"test","answerSource":"general"}';
+  const events = [];
+  for await (const e of readAioStream(byteStream(raw))) events.push(e);
+  assert.equal(events[0].token, "Hello 🌍");
+  assert.equal(events[1].type, "message_complete");
+});
+test("malformed streams fail visibly and early consumer exit cancels the reader", async () => {
+  await assert.rejects(async () => {
+    for await (const e of readAioStream(byteStream("data: not-json\n\n")))
+      void e;
+  }, /interrupted/);
+  let cancelled = false;
+  const stream = new ReadableStream({
+    start(c) {
+      c.enqueue(
+        new TextEncoder().encode(
+          'data: {"type":"token","token":"partial"}\n\n',
+        ),
+      );
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  for await (const e of readAioStream(stream)) {
+    assert.equal(e.token, "partial");
+    break;
+  }
+  assert.equal(cancelled, true);
+});
+test("AI setting patches preserve model configuration and unrelated settings", async () => {
+  const h = harness({
+    settings: {
+      ai: {
+        aioModel: "existing-model",
+        aioRetrievalLimit: 5,
+        enabled: false,
+        customInstructions: "Existing instructions",
+      },
+    },
+  });
+  const res = await h.call("app/api/admin/ai-settings/route.ts", {
+    aioTone: "friendly",
+    aioMaxResponseTokens: 2000,
+  });
+  assert.equal(res.status, 200);
+  assert.equal(h.data.settings.ai.aioModel, "existing-model");
+  assert.equal(h.data.settings.ai.enabled, false);
+  assert.equal(h.data.settings.ai.customInstructions, "Existing instructions");
+  assert.equal(h.data.settings.ai.aioTone, "friendly");
+});
+test("AI settings reject invalid budgets, model IDs, and unauthorized changes", async () => {
+  const h = harness();
+  for (const body of [
+    { aioMaxResponseTokens: 9000 },
+    { aioRetrievalLimit: 0 },
+    { aioTone: "magic" },
+    { aioModel: "bad model!" },
+  ])
+    assert.equal(
+      (await h.call("app/api/admin/ai-settings/route.ts", body)).status,
+      400,
+    );
+  h.setAdmin(false);
+  assert.notEqual(
+    (await h.call("app/api/admin/ai-settings/route.ts", { enabled: true }))
+      .status,
+    200,
+  );
+});
+test("reply prompt applies preferences while retaining evidence and action boundaries", () => {
+  const { buildAioSystemPrompt } = load("lib/aio/system-prompt.ts");
+  const prompt = buildAioSystemPrompt({
+    pathname: "/",
+    decision: { intent: "support", continuation: true },
+    evidence: [],
+    currentDate: "2026-11-08",
+    replyLength: "detailed",
+    tone: "friendly",
+    customInstructions: "Keep examples practical.",
+    selectedText: "Untrusted selected text",
+  });
+  assert.match(prompt, /thorough, organized/);
+  assert.match(prompt, /warm, approachable/);
+  assert.match(prompt, /Keep examples practical/);
+  assert.match(prompt, /Never pretend an action succeeded/);
+  assert.match(prompt, /untrusted reference data/);
+});
+test("provider uses model-compatible options and exposes completion limits without duplicating partial replies", async () => {
+  const calls = [];
+  class Groq {
+    constructor() {
+      this.chat = {
+        completions: {
+          create: async (args, options) => {
+            calls.push({ args, options });
+            if (args.model === "test-primary")
+              throw new Error("503 unavailable");
+            return (async function* () {
+              yield { choices: [{ delta: { content: "Answer" } }] };
+              yield { choices: [{ delta: {}, finish_reason: "length" }] };
+            })();
+          },
+        },
+      };
+    }
+  }
+  const original = process.env.AIO_API_KEY;
+  process.env.AIO_API_KEY = "test-key";
+  try {
+    const { createAioProvider } = load("lib/aio/provider.ts", {
+      "groq-sdk": { default: Groq },
+    });
+    const provider = createAioProvider({
+      model: "test-primary",
+      fallbackModel: "openai/gpt-oss-120b",
+    });
+    const signal = new AbortController().signal;
+    const chunks = [];
+    for await (const x of provider.stream({
+      messages: [user("Test")],
+      maxTokens: 500,
+      signal,
+    }))
+      chunks.push(x);
+    assert.equal(calls.length, 2);
+    assert.equal("reasoning_effort" in calls[0].args, false);
+    assert.equal(calls[1].args.reasoning_effort, "medium");
+    assert.equal(calls[1].options.signal, signal);
+    assert.equal(chunks.map((x) => x.token).join(""), "Answer");
+    assert.equal(chunks.at(-1).finishReason, "length");
+    assert.equal(chunks[0].info.usedFallback, true);
+  } finally {
+    if (original === undefined) delete process.env.AIO_API_KEY;
+    else process.env.AIO_API_KEY = original;
+  }
+});
+
+test("chat endpoint applies settings, streams truncation metadata, and honors history opt-out", async () => {
+  const h = harness({
+    settings: {
+      ai: {
+        aioMaxResponseTokens: 2100,
+        aioTemperature: 0.35,
+        customInstructions: "Give practical examples.",
+        aioTone: "direct",
+      },
+    },
+  });
+  let providerRequest,
+    saves = 0;
+  const route = load("app/api/aio/chat/route.ts", {
+    "@/lib/firebase-admin": {
+      adminDb: { ref: h.ref },
+      adminAuth: { verifyIdToken: async () => ({ uid: "test-user" }) },
+    },
+    "@/lib/server-protection": {
+      protectPublicRequest: async () => {},
+      publicRequestErrorResponse: () => null,
+    },
+    "@/lib/server-maintenance-context": {
+      getMaintenanceContext: async () => null,
+    },
+    "@/lib/ai-premade-memory": { findPremadeAnswer: () => null },
+    "@/lib/aio/history": {
+      saveAuthenticatedAioTurn: async () => {
+        saves++;
+      },
+    },
+    "@/lib/aio/observability": { writeAioLog: async () => {} },
+    "@/lib/aio/provider": {
+      isAioConfigured: () => true,
+      AioProviderError: class extends Error {},
+      createAioProvider: () => ({
+        name: "test",
+        async *stream(request) {
+          providerRequest = request;
+          yield {
+            token: "Example answer",
+            info: { provider: "test", model: "test", usedFallback: false },
+          };
+          yield {
+            token: "",
+            finishReason: "length",
+            info: { provider: "test", model: "test", usedFallback: false },
+          };
+        },
+      }),
+    },
+  });
+  const response = await route.POST(
+    new Request("http://localhost/api/aio/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer test",
+      },
+      body: JSON.stringify({
+        conversationId: "test-conversation",
+        messages: [user("Explain a general concept")],
+        preferences: {
+          replyLength: "detailed",
+          tone: "friendly",
+          saveHistory: false,
+        },
+      }),
+    }),
+  );
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type"), /text\/event-stream/);
+  const text = await response.text();
+  assert.match(text, /"truncated":true/);
+  assert.equal(providerRequest.maxTokens, 2100);
+  assert.equal(providerRequest.temperature, 0.35);
+  assert.match(providerRequest.messages[0].content, /thorough, organized/);
+  assert.match(providerRequest.messages[0].content, /warm, approachable/);
+  assert.match(providerRequest.messages[0].content, /Give practical examples/);
+  assert.equal(saves, 0);
+});
+test("provider never falls back after partial output or request cancellation", async () => {
+  const original = process.env.AIO_API_KEY;
+  process.env.AIO_API_KEY = "test-key";
+  let calls = 0,
+    abort = false;
+  class Groq {
+    constructor() {
+      this.chat = {
+        completions: {
+          create: async () => {
+            calls++;
+            if (abort) throw new Error("cancelled");
+            return (async function* () {
+              yield { choices: [{ delta: { content: "Partial reply" } }] };
+              throw new Error("503 unavailable");
+            })();
+          },
+        },
+      };
+    }
+  }
+  try {
+    const { createAioProvider } = load("lib/aio/provider.ts", {
+      "groq-sdk": { default: Groq },
+    });
+    const p = createAioProvider({ model: "first", fallbackModel: "second" });
+    const chunks = [];
+    await assert.rejects(async () => {
+      for await (const chunk of p.stream({
+        messages: [user("Test")],
+        maxTokens: 500,
+      }))
+        chunks.push(chunk);
+    });
+    assert.equal(calls, 1);
+    assert.equal(chunks[0].token, "Partial reply");
+    abort = true;
+    calls = 0;
+    const controller = new AbortController();
+    controller.abort();
+    await assert.rejects(async () => {
+      for await (const x of p.stream({
+        messages: [user("Test")],
+        maxTokens: 500,
+        signal: controller.signal,
+      }))
+        void x;
+    }, /cancelled/);
+    assert.equal(calls, 1);
+  } finally {
+    if (original === undefined) delete process.env.AIO_API_KEY;
+    else process.env.AIO_API_KEY = original;
+  }
+});
