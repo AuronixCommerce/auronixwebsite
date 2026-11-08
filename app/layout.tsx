@@ -4,6 +4,8 @@ import './mobile-responsive.css';
 import './interface.css';
 import './support-interface.css';
 import './auronix-system.css';
+import './auronix-motion.css';
+import { MotionRuntime } from '@/components/site/motion-runtime';
 
 
 
@@ -322,6 +324,7 @@ export default async function RootLayout({
         }}
       >
         <ThemeProvider>
+          <MotionRuntime />
           <PwaRuntime />
           <MaintenanceRefresh serverPath={pathname} blocked={false} />
           <PublicRuntime>{children}</PublicRuntime>

@@ -24,3 +24,7 @@ The public site, administrator workspace, and seller workspace use the palette, 
 `/ui-preview` is development-only and returns not found in production. It renders the shared workspace and overview with explicitly labeled sample records, plus a table/form specimen. It does not grant access to private routes, connect sample records to production data, or bypass account permissions.
 
 Production admin and seller actions require configured Firebase services and an authorized account. Visual review of the workspace uses the development specimen; live account actions are not exercised by that review.
+
+## Brand and motion refinement
+
+The original black-and-white ring artwork is bundled locally and used by the shared brand component. Self-hosted Manrope replaces the system-font fallback. `auronix-motion.css` adds the floating, scroll-compressing public header; selective glass surfaces; and button, menu, and card motion. `MotionRuntime` progressively adds staggered blur/fade reveals using IntersectionObserver and the Web Animations API. Content remains visible without JavaScript. Reduced-motion preferences disable the decorative transitions, and observers/animations are cleaned up on navigation.
