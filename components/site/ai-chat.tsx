@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AuronixMark } from "@/components/site/auronix-mark";
 import type { AioSelectionRequest } from "@/lib/aio-selection";
@@ -125,9 +126,11 @@ function makeId() {
 
 export function AIChat({
   initiallyOpen = false,
+  presentation = "popup",
   selectionRequest = null,
 }: {
   initiallyOpen?: boolean;
+  presentation?: "popup" | "page";
   selectionRequest?: AioSelectionRequest | null;
 } = {}) {
   const router = useRouter();
@@ -153,7 +156,7 @@ export function AIChat({
   const feedbackPending = useRef(new Set<string>());
   const requestVersion = useRef(0);
   const copyTimer = useRef<ReturnType<typeof setTimeout>>();
-  const [open, setOpen] = useState(initiallyOpen);
+  const [open, setOpen] = useState(presentation === "page" || initiallyOpen);
   useEffect(() => {
     if (!open) return;
     const viewport = window.visualViewport;
@@ -171,7 +174,7 @@ export function AIChat({
     const escape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         if (settingsOpen) setSettingsOpen(false);
-        else setOpen(false);
+        else if (presentation !== "page") setOpen(false);
       }
     };
     resize();
@@ -189,7 +192,7 @@ export function AIChat({
       root.style.removeProperty("--ac-chat-viewport-height");
       root.style.removeProperty("--ac-chat-viewport-top");
     };
-  }, [open, settingsOpen]);
+  }, [open, settingsOpen, presentation]);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
@@ -986,7 +989,7 @@ export function AIChat({
   return (
     <>
       <AnimatePresence>
-        {!open && (
+        {!open && presentation !== "page" && (
           <motion.button
             type="button"
             initial={{ opacity: 0, scale: 0.85 }}
@@ -1003,7 +1006,7 @@ export function AIChat({
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: 16, scale: 0.98 }}
+            initial={presentation === "page" ? false : { opacity: 0, y: 16, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.98 }}
             transition={
@@ -1011,9 +1014,9 @@ export function AIChat({
                 ? { duration: 0 }
                 : { type: "spring", stiffness: 320, damping: 32 }
             }
-            role="dialog"
+            role={presentation === "page" ? "region" : "dialog"}
             aria-label="Auronix AI chat"
-            className={`auronix-ai-window aio-window ${expanded ? "aio-expanded" : ""}`}
+            className={`auronix-ai-window aio-window ${presentation === "page" ? "aio-page-window" : expanded ? "aio-expanded" : ""}`}
           >
             <header className="aio-header">
               <div className="aio-identity">
@@ -1040,6 +1043,7 @@ export function AIChat({
                 </div>
               </div>
               <div className="aio-header-tools">
+                {presentation !== "page" && !loading && <Link className="aio-page-link" href="/aio/chat" title="Open full-page chat" aria-label="Open full-page AIO chat"><ExternalLink size={16}/></Link>}
                 <button
                   type="button"
                   aria-label="Chat settings"
@@ -1050,7 +1054,7 @@ export function AIChat({
                 >
                   <Settings2 size={17} />
                 </button>
-                <button
+                {presentation !== "page" && <><button
                   type="button"
                   className="aio-expand-toggle"
                   aria-label={expanded ? "Minimize chat" : "Expand chat"}
@@ -1066,7 +1070,7 @@ export function AIChat({
                   onClick={() => setOpen(false)}
                 >
                   <X size={19} />
-                </button>
+                </button></>}
               </div>
             </header>
             <div className="aio-toolbar">

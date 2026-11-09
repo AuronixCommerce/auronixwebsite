@@ -23,6 +23,7 @@ const PUBLIC_ROUTES: Array<{
   changeFrequency: Frequency;
   priority: number;
 }> = [
+  {path:'/aio/chat',changeFrequency:'monthly',priority:0.8},
   {path:'/aio',changeFrequency:'monthly',priority:0.8},
   {
     path: '/',

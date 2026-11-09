@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AuronixMark } from "@/components/site/auronix-mark";
 import { AioTryButton } from "@/components/site/aio-try-button";
 import { AIO_MODELS } from "@/lib/aio/models";
@@ -30,7 +31,8 @@ export default function AioPage() {
           conversation context, and replies shaped around you.
         </p>
         <div>
-          <AioTryButton />
+          <Link href="/aio/chat" className="ax-btn">Open full-page chat <ArrowRight size={16}/></Link>
+          <AioTryButton>Open popup</AioTryButton>
           <a href="#aio-modes" className="ax-text-link">
             Explore the modes <ArrowRight size={16} />
           </a>

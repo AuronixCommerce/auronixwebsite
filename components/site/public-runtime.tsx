@@ -49,7 +49,7 @@ export function PublicRuntime({
    * Its own page renders AIChat.
    */
   if (
-    pathname ===
+    pathname === '/aio/chat' || pathname ===
     '/maintenance'
   ) {
     return (
