@@ -52,7 +52,7 @@ export default function AioPage() {
           {AIO_MODELS.map((model, i) => (
             <article className="ax-panel" key={model.id}>
               <span className="ax-kicker">{model.label}</span>
-              {i === 0 ? <MessageSquare size={29} /> : <Zap size={29} />}
+              <AuronixMark />
               <h3>{model.name}</h3>
               <p>{model.description}</p>
               <AioTryButton model={model.id}>Try {model.name}</AioTryButton>

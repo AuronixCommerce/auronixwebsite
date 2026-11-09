@@ -1,9 +1,9 @@
 'use client';
+import { AuronixMark } from '@/components/site/auronix-mark';
 
 import {
   Check,
   Copy,
-  Sparkles,
   TextSelect,
 } from 'lucide-react';
 import {
@@ -243,7 +243,7 @@ export function SelectionActions() {
 
   const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
   const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
-  const toolbarWidth = Math.min(286, viewportWidth - 24);
+  const toolbarWidth = Math.min(320, viewportWidth - 24);
   const halfWidth = toolbarWidth / 2;
   const selectionCenter = selectionState.rect.left + selectionState.rect.width / 2;
   const left = Math.max(
@@ -277,7 +277,7 @@ export function SelectionActions() {
       </button>
 
       <button type="button" onClick={askAio} aria-label="Ask Auronix Intelligence One about selected text" className="ac-selection-ask">
-        <Sparkles aria-hidden="true" />
+        <AuronixMark className="aio-inline-mark" />
         <span>Ask AIO</span>
       </button>
 

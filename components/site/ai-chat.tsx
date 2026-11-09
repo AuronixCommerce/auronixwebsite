@@ -25,12 +25,12 @@ import {
   Check,
   ArrowDown,
   Download,
+  Mail,
   ShieldCheck,
   Plus,
   RefreshCw,
   Ticket,
   Send,
-  Sparkles,
   Square,
   ThumbsDown,
   ThumbsUp,
@@ -132,6 +132,12 @@ export function AIChat({
   const router = useRouter();
   const reducedMotion = useReducedMotion();
   const [selectedContext, setSelectedContext] = useState("");
+  const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const [transcriptEmail, setTranscriptEmail] = useState("");
+  const [transcriptCode, setTranscriptCode] = useState("");
+  const [transcriptChallenge, setTranscriptChallenge] = useState("");
+  const [transcriptBusy, setTranscriptBusy] = useState(false);
+  const [transcriptNotice, setTranscriptNotice] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [preferences, setPreferences] = useState<ChatPreferences>(
@@ -926,6 +932,24 @@ export function AIChat({
       setError("Copy is unavailable. Select the reply text to copy it.");
     }
   };
+  const emailTranscript = async (event: FormEvent) => {
+    event.preventDefault();
+    if (transcriptBusy) return;
+    setTranscriptBusy(true); setTranscriptNotice("");
+    try {
+      const response = await fetch("/api/aio/transcript", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: transcriptEmail, challengeId: transcriptChallenge || undefined,
+          code: transcriptChallenge ? transcriptCode : undefined,
+          messages: messages.filter(m => !m.sessionBoundary && m.content.trim()).slice(-100).map(m => ({role:m.role,content:m.content})) }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || "Unable to email the transcript.");
+      if (result.challengeId) { setTranscriptChallenge(result.challengeId); setTranscriptNotice("Check your inbox for a verification code. Enter it below to send this conversation."); }
+      else { setTranscriptNotice("Transcript accepted by our mail service. Check your inbox and spam folder."); setTranscriptChallenge(""); setTranscriptCode(""); }
+    } catch (error) { setTranscriptNotice(userFacingError(error, "Unable to email the transcript. Please retry.")); }
+    finally { setTranscriptBusy(false); }
+  };
   const exportChat = () => {
     const text = messages
       .filter((m) => !m.sessionBoundary)
@@ -1073,6 +1097,7 @@ export function AIChat({
                 Support
               </button>
               <div />
+              <button type="button" aria-label="Email conversation" title="Email conversation" disabled={loading || !messages.some(m => !m.sessionBoundary && m.content.trim())} onClick={() => setTranscriptOpen(!transcriptOpen)}><Mail size={14}/></button>
               <button
                 type="button"
                 onClick={exportChat}
@@ -1092,6 +1117,13 @@ export function AIChat({
                 <Trash2 size={14} />
               </button>
             </div>
+            {transcriptOpen && <form className="aio-transcript-form" onSubmit={emailTranscript}>
+              <label>Email your conversation<input type="email" autoComplete="email" required maxLength={254} value={transcriptEmail} disabled={transcriptBusy || !!transcriptChallenge} onChange={e=>setTranscriptEmail(e.target.value)} placeholder="you@example.com"/></label>
+              {transcriptChallenge && <label>Verification code<input required inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={transcriptCode} onChange={e=>setTranscriptCode(e.target.value)}/></label>}
+              <p>Includes the messages visible in this chat. Verify your email to receive a copy. This does not subscribe you to marketing.</p>
+              <div className="aio-transcript-actions"><button className="ax-btn" type="submit" disabled={transcriptBusy}>{transcriptBusy ? "Please wait…" : transcriptChallenge ? "Send transcript" : "Verify email"}</button><button type="button" disabled={transcriptBusy} onClick={()=>{setTranscriptOpen(false);setTranscriptChallenge("");setTranscriptCode("");setTranscriptNotice("");}}>Cancel</button></div>
+              <p role="status" aria-live="polite">{transcriptNotice}</p>
+            </form>}
             {settingsOpen ? (
               <section className="aio-settings" aria-label="Chat preferences">
                 <div className="aio-settings-heading">
@@ -1539,7 +1571,7 @@ export function AIChat({
                         className="aio-quick"
                         onClick={() => askQuick(quickQuestion)}
                       >
-                        <Sparkles size={13} />
+                        <AuronixMark className="aio-inline-mark" />
                         <span>{quickQuestion}</span>
                         <ArrowRight size={13} />
                       </button>

@@ -91,3 +91,7 @@ operational health and security-maintenance jobs.
 ### AIO 2 modes
 
 The `/aio` page introduces the AIO 2 assistant experience. The chat selector offers AIO 2 (the configured primary model) and AIO 2 Fast (`aioFastModel`, default `openai/gpt-oss-20b`). These are branded modes over the configured provider, not newly trained foundation models. Provider credentials and model availability are required for live replies. Admin AI settings expose both model mappings. The selected mode is remembered with other chat preferences.
+
+### Transcript delivery and mail checks
+
+Chat's Email conversation action verifies the recipient with a six-digit, ten-minute, single-use code before sending the visible transcript. Requests and code attempts are limited; no marketing subscription is created. Set SMTP_HOST, SMTP_PORT (465 or 587), SMTP_USER and SMTP_PASSWORD (or SMTP_PASS) in the deployment environment. MAIL_FROM and MAIL_NOTIFICATION_EMAIL can configure authorized sender addresses. Use Admin → Email delivery → Test connection to verify server connectivity. SMTP acceptance is not proof of inbox delivery. Live delivery cannot be checked without deployment credentials.

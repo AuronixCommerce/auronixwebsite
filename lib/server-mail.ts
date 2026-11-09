@@ -3,7 +3,7 @@ import nodemailer from 'nodemailer';
 export type EmailType = string;
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || process.env.APP_URL || 'https://auronixcommerce.com').replace(/\/+$/, '');
 export const BUSINESS_EMAIL = process.env.MAIL_FROM || process.env.SMTP_USER || 'business@auronixcommerce.com';
-export const NOTIFICATION_EMAIL = process.env.MAIL_FROM || BUSINESS_EMAIL;
+export const NOTIFICATION_EMAIL = process.env.MAIL_NOTIFICATION_EMAIL || process.env.MAIL_FROM || BUSINESS_EMAIL;
 export const SUPPORT_EMAIL = process.env.MAIL_SUPPORT_EMAIL || process.env.NEXT_PUBLIC_SUPPORT_EMAIL || BUSINESS_EMAIL;
 const MAIL_FROM_NAME = process.env.MAIL_FROM_NAME || 'Auronix Commerce LLC';
 const SMTP_USER = process.env.SMTP_USER || NOTIFICATION_EMAIL;
@@ -12,7 +12,7 @@ const SMTP_HOST = process.env.SMTP_HOST || (/@gmail\.com$/i.test(SMTP_USER) ? 's
 const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
 const SMTP_SECURE = process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : SMTP_PORT === 465;
 
-type MailOptions = { to: string | string[]; subject: string; html: string; text?: string; replyTo?: string; fromName?: string };
+type MailOptions = { to: string | string[]; subject: string; html: string; text?: string; replyTo?: string; fromName?: string; inReplyTo?: string; references?: string[] };
 const escapeHtml = (value: unknown) => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 
 function safeAbsoluteUrl(value: unknown, fallback: string) {
@@ -35,6 +35,7 @@ function createMailTransport(port = SMTP_PORT, secure = SMTP_SECURE) {
     host: SMTP_HOST,
     port,
     secure,
+    requireTLS: !secure,
     auth: { user: SMTP_USER, pass: SMTP_PASSWORD },
   });
 }
@@ -58,12 +59,15 @@ async function sendWithSender(sender: string, options: MailOptions) {
   for (const senderAddress of senders) {
     for (const candidate of mailTransportCandidates()) {
       try {
-        const result = await createMailTransport(candidate.port, candidate.secure).sendMail({ from: { name: options.fromName || MAIL_FROM_NAME, address: senderAddress }, to: options.to, subject: options.subject, html: options.html, text: options.text, replyTo: options.replyTo || SUPPORT_EMAIL });
-        if (!Array.isArray(result.accepted) || result.accepted.length === 0) {
-          throw new Error('The email service did not accept the recipient.');
+        const result = await createMailTransport(candidate.port, candidate.secure).sendMail({ from: { name: options.fromName || MAIL_FROM_NAME, address: senderAddress }, to: options.to, subject: options.subject, html: options.html, text: options.text, replyTo: options.replyTo || SUPPORT_EMAIL, inReplyTo: options.inReplyTo, references: options.references });
+        if (!Array.isArray(result.accepted) || result.accepted.length === 0 || (result.rejected?.length || 0) > 0) {
+          const error = new Error('The email service did not accept every recipient.');
+          (error as any).partialAcceptance = result.accepted?.length > 0;
+          throw error;
         }
-        return result;
+        return { ...result, success: true };
       } catch (error) {
+        if ((error as any)?.partialAcceptance) throw error;
         lastError = error;
       }
     }
@@ -78,7 +82,7 @@ export function sendProfessionalEmail(value: any, type = '') {
   const body = String(value?.body || value?.text || '');
   const html = value?.html || emailShell({ preheader: value?.subject || 'Auronix Commerce update', title: value?.subject || 'Auronix Commerce', body: `<p style="margin:0 0 18px">Hello${value?.name ? ` ${escapeHtml(value.name)}` : ''},</p><div style="white-space:pre-wrap">${escapeHtml(body)}</div>` });
   const systemTypes = ['notification', 'notifications', 'admin', 'sellerInvitation', 'seller-invitation', 'passwordReset', 'password-reset'];
-  return sendWithSender(systemTypes.includes(type || value?.type) ? NOTIFICATION_EMAIL : BUSINESS_EMAIL, { to: value?.to || value?.recipient || value?.email, subject: value?.subject || 'Auronix Commerce LLC', html, text: value?.text || body, replyTo: value?.replyTo });
+  return sendWithSender(systemTypes.includes(type || value?.type) ? NOTIFICATION_EMAIL : BUSINESS_EMAIL, { to: value?.to || value?.recipient || value?.email, subject: value?.subject || 'Auronix Commerce LLC', html, text: value?.text || body, replyTo: value?.replyTo, inReplyTo: value?.inReplyTo, references: value?.references });
 }
 
 export async function sendSellerInvitationEmail(input: { email: string; name?: string; businessName?: string; invitationUrl: string; expiresAt?: number }) {

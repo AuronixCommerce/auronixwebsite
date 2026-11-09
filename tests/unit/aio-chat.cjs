@@ -358,3 +358,48 @@ test("provider never falls back after partial output or request cancellation", a
   }
 });
 test('public AIO selection maps to configured models and rejects arbitrary model IDs',()=>{const {resolveAioModel,normalizeAioModelId}=load('lib/aio/models.ts');assert.equal(resolveAioModel('aio-2',{aioModel:'configured-primary'}),'configured-primary');assert.equal(resolveAioModel('aio-2-fast',{}),'openai/gpt-oss-20b');assert.equal(resolveAioModel('aio-2-fast',{aioFastModel:'configured-fast'}),'configured-fast');assert.equal(normalizeAioModelId('injected-model'),'aio-2');assert.equal(normalizeChatPreferences({model:'aio-2-fast'}).model,'aio-2-fast')});
+
+test('transcript emails require inbox verification, expire, and cannot be replayed', async()=>{
+  const h=harness();const route='app/api/aio/transcript/route.ts';
+  const payload={email:'reader@example.com',messages:[user('<script>private</script>'),assistant('Answer')]};
+  assert.equal((await h.call(route,{...payload,email:'bad'})).status,400);
+  const first=await h.call(route,payload);assert.equal(first.status,200);assert.equal(h.mails.length,1);
+  assert.ok(!h.mails[0].body.includes('private'));
+  const code=h.mails[0].body.match(/\b\d{6}\b/)[0];
+  assert.equal((await h.call(route,{...payload,challengeId:first.body.challengeId,code:'000000'})).status,400);
+  assert.equal((await h.call(route,{...payload,email:'other@example.com',challengeId:first.body.challengeId,code})).status,400);
+  assert.equal((await h.call(route,{...payload,challengeId:first.body.challengeId,code})).status,200);
+  assert.ok(h.mails[1].body.includes('private'));
+  assert.equal((await h.call(route,{...payload,challengeId:first.body.challengeId,code})).status,400);
+  const expired=await h.call(route,payload);h.data.aioTranscriptChallenges[expired.body.challengeId].expiresAt=0;
+  assert.equal((await h.call(route,{...payload,challengeId:expired.body.challengeId,code})).status,400);
+});
+test('transcript mail failure reports an error and removes unsent challenges',async()=>{
+  const h=harness();h.failMail(true);const r=await h.call('app/api/aio/transcript/route.ts',{email:'reader@example.com',messages:[user('hello')]});
+  assert.equal(r.status,503);assert.equal(r.body.success,false);assert.equal(Object.keys(h.data.aioTranscriptChallenges).length,0);
+});
+test('shared mail reports accepted delivery, escapes transcript HTML, and avoids retrying partially accepted recipients',async()=>{
+  const previous=process.env.SMTP_PASSWORD;process.env.SMTP_PASSWORD='test-only';let captured;
+  try{
+    const mail=load('lib/server-mail.ts',{nodemailer:{default:{createTransport:()=>({sendMail:async options=>{captured=options;return {accepted:['reader@example.com'],rejected:[],messageId:'test-mail'};}})}}});
+    const r=await mail.sendProfessionalEmail({to:'reader@example.com',body:'<script>alert(1)</script>',subject:'Transcript',inReplyTo:'thread-id'});
+    assert.equal(r.success,true);assert.ok(captured.html.includes('&lt;script&gt;'));assert.equal(captured.inReplyTo,'thread-id');
+    await mail.sendTicketResponseEmail('reader@example.com','Support subject','Support body');assert.equal(captured.text,'Support body');
+    let calls=0;
+    const partial=load('lib/server-mail.ts',{nodemailer:{default:{createTransport:()=>({sendMail:async()=>{calls++;return {accepted:['one@example.com'],rejected:['two@example.com']};}})}}});
+    await assert.rejects(partial.sendBusinessMail({to:['one@example.com','two@example.com'],subject:'Test',html:'Test'}));assert.equal(calls,1);
+  }finally{if(previous===undefined)delete process.env.SMTP_PASSWORD;else process.env.SMTP_PASSWORD=previous;}
+});
+test('site search ranks exact and prefix titles, finds affiliate aliases and common typos',()=>{
+  const {fuzzyScore}=load('lib/design/search-score.ts');
+  assert.ok(fuzzyScore('Affiliate Shop','affliate')>0);assert.ok(fuzzyScore('Affiliate Shop','products')>0);
+  assert.ok(fuzzyScore('Supplier application','suplier')>0);
+  assert.ok(fuzzyScore('Support','Support')>fuzzyScore('Contact support team','Support'));
+  assert.equal(fuzzyScore('Support','unrelated'),0);
+});
+test('admin composer validates recipients and returns explicit success after SMTP acceptance',async()=>{
+  const route=load('app/api/admin/email/send/route.ts',{'@/lib/server-auth':{requireAdmin:async()=>({uid:'admin'})},'@/lib/server-mail':{sendProfessionalEmail:async()=>({success:true,messageId:'accepted-mail'})}});
+  const call=async body=>{const r=await route.POST(new Request('http://localhost/api/admin/email/send',{method:'POST',body:JSON.stringify(body)}));return {status:r.status,body:await r.json()};};
+  assert.equal((await call({to:'invalid',subject:'Hello',body:'Test'})).status,400);
+  const result=await call({to:'customer@example.com',subject:'Hello',body:'Test'});assert.equal(result.status,200);assert.equal(result.body.success,true);assert.equal(result.body.messageId,'accepted-mail');
+});

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, CornerDownLeft, Sparkles } from "lucide-react";
+import { ArrowUpRight, CornerDownLeft } from "lucide-react";
 import {
   Command,
   CommandInput,
@@ -23,6 +23,8 @@ import { getList } from "@/lib/firebase-db";
 import type { FAQ } from "@/lib/types";
 import { SegmentedControl } from "./primitives";
 import pageContent from "@/lib/design/public-search.json";
+import { AuronixMark } from "@/components/site/auronix-mark";
+import { fuzzyScore } from "@/lib/design/search-score";
 import { openAio } from "@/lib/aio-selection";
 type Result = {
   id: string;
@@ -32,6 +34,7 @@ type Result = {
   category: string;
 };
 const initial: Result[] = [
+  {id:"affiliate-shop",title:"Affiliate Shop",description:"Browse products, brands and recommendations on the Auronix Amazon affiliate website. Auronix may earn a commission from qualifying purchases.",href:"https://shop.auronixcommerce.com/",category:"Pages"},
   ...TROUBLESHOOTING_ARTICLES.map((a) => ({
     id: `help-${a.slug}`,
     title: a.title,
@@ -64,20 +67,6 @@ const initial: Result[] = [
     category: "Answers",
   })),
 ];
-export function fuzzyScore(text: string, query: string) {
-  const t = text.toLowerCase(),
-    q = query.toLowerCase().trim();
-  if (!q) return 1;
-  if (t.includes(q)) return 3;
-  const terms = q.split(/\s+/);
-  if (terms.every((v) => t.includes(v))) return 2;
-  let index = 0;
-  for (const c of t) {
-    if (c === q[index]) index++;
-    if (index === q.length) return q.length > 2 ? 0.5 : 0;
-  }
-  return 0;
-}
 export function CommandPalette({ initialQuery = "" }: { initialQuery?: string }) {
   const [open, setOpen] = useState(true);
   const [query, setQuery] = useState(initialQuery);
@@ -88,6 +77,7 @@ export function CommandPalette({ initialQuery = "" }: { initialQuery?: string })
   useEffect(() => {
     const show = (event: Event) => {
       setQuery((event as CustomEvent<{ query?: string }>).detail?.query || "");
+      setCategory("All");
       setOpen(true);
     };
     const key = (e: KeyboardEvent) => {
@@ -205,7 +195,7 @@ export function CommandPalette({ initialQuery = "" }: { initialQuery?: string })
                   onSelect={() => {
                     setOpen(false);
                     setQuery("");
-                    router.push(r.href);
+                    if(r.href.startsWith("https://")) window.location.assign(r.href); else router.push(r.href);
                   }}
                 >
                   <div>
@@ -233,7 +223,7 @@ export function CommandPalette({ initialQuery = "" }: { initialQuery?: string })
               );
             }}
           >
-            <Sparkles size={17} />
+            <AuronixMark className="aio-inline-mark" />
             <span>{query.trim() ? `Ask AIO about “${query.trim().slice(0, 54)}${query.trim().length > 54 ? '…' : ''}”` : 'Ask Auronix Intelligence One'}</span>
             <ArrowUpRight size={16} />
           </button>

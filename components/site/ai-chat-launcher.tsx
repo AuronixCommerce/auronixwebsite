@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
-import { Bot } from "lucide-react";
 import { AuronixMark } from "@/components/site/auronix-mark";
 import {
   AIO_SELECTION_EVENT,

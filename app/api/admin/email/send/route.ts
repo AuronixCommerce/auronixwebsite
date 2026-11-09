@@ -1,5 +1,6 @@
 import { userFacingError } from '@/lib/user-facing-error';
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
 import { requireAdmin } from '@/lib/server-auth';
 
@@ -90,6 +91,10 @@ export async function POST(
           )
         : undefined;
 
+    if (!z.string().email().max(254).safeParse(to).success || /[\r\n]/.test(subject) || subject.length > 200 || emailBody.length > 100000) {
+      return NextResponse.json({error:"Enter a valid recipient, subject (up to 200 characters), and message (up to 100,000 characters)."},{status:400});
+    }
+
     if (!to) {
       return NextResponse.json(
         {
@@ -166,15 +171,7 @@ export async function POST(
           true,
       });
 
-    /*
-     * IMPORTANT:
-     * Do not add `success: true` here.
-     * sendProfessionalEmail() already returns
-     * the success property.
-     */
-    return NextResponse.json(
-      result
-    );
+    return NextResponse.json({ success: true, messageId: result.messageId });
   } catch (error) {
     console.error(
       'Admin email send failed:',

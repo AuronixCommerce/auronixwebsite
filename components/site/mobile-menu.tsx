@@ -1,4 +1,5 @@
 "use client";
+import { AuronixMark } from "@/components/site/auronix-mark";
 import Link from "next/link";
 import {
   Dialog,
@@ -9,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { NAV_GROUPS, pageFor } from "@/lib/design/navigation";
 import { ThemeToggle } from "./theme-toggle";
-import { ArrowRight, Search, Sparkles, X } from "lucide-react";
+import { ArrowRight, Search, X } from "lucide-react";
 import { openSearch } from "@/components/design/search-trigger";
 import { openAio } from "@/lib/aio-selection";
 export function MobileMenu({
@@ -37,7 +38,7 @@ export function MobileMenu({
             <Link href="/" onClick={onClose}>Home <ArrowRight size={18} /></Link>
             <Link href="/aio" onClick={onClose}>AIO 2 <ArrowRight size={18}/></Link>
             <Link href="/solutions" onClick={onClose}>Solutions <ArrowRight size={18} /></Link>
-            <Link href="/portfolio" onClick={onClose}>Products <ArrowRight size={18} /></Link>
+            <a href="https://shop.auronixcommerce.com/" onClick={onClose}>Affiliate Shop <ArrowRight size={18} /></a>
             <Link href="/our-process" onClick={onClose}>Our process <ArrowRight size={18} /></Link>
             <Link href="/contact" onClick={onClose}>Contact <ArrowRight size={18} /></Link>
           </div>
@@ -69,7 +70,7 @@ export function MobileMenu({
               <Search size={17} /> Search
             </button>
             <button type="button" onClick={() => { onClose(); openAio('How can Auronix Commerce help me?'); }}>
-              <Sparkles size={17} /> Ask AIO
+              <AuronixMark className="aio-inline-mark" /> Ask AIO
             </button>
           </div>
           <ThemeToggle showLabel />
