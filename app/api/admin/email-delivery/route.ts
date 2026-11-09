@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { requireAdmin } from '@/lib/server-auth';
-import { verifyMailConnection } from '@/lib/server-mail';
+import { verifyMailConnection, mailConfigurationStatus, mailFailureMessage } from '@/lib/server-mail';
 import { writeAuditLog } from '@/lib/server-audit';
 import { userFacingError } from '@/lib/user-facing-error';
 
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   try {
     const admin = await requireAdmin(request); const body = await request.json();
     if (body.action !== 'test-connection') return NextResponse.json({ error: 'Unsupported email action.' }, { status: 400 });
-    await verifyMailConnection();
+    try {await verifyMailConnection();} catch(error) {return NextResponse.json({success:false,error:mailFailureMessage(error),configuration:mailConfigurationStatus()},{status:503});}
     await writeAuditLog({ actorUid: admin.uid, actorEmail: admin.email, action: 'EMAIL_CONNECTION_TEST', targetType: 'emailService', summary: 'Transactional email connection verified.', request });
     return NextResponse.json({ success: true, checkedAt: Date.now() });
   } catch (error) { return NextResponse.json({ error: userFacingError(error, 'Email service check failed.') }, { status: 503 }); }

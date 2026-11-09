@@ -76,3 +76,8 @@ test('password reset reports a general service error when account lookup is unav
     console.error = originalError;
   }
 });
+
+test('password reset still attempts recovery delivery when custom link generation fails',async()=>{
+ const h=harness();h.setAuthUser({email:'seller@example.com'});h.failResetGeneration(true);
+ const response=await h.call(route,{email:'seller@example.com'});assert.equal(response.status,200);assert.equal(response.body.success,true);assert.equal(h.mails[0].type,'password-reset-fallback');assert.equal(Object.values(h.data.emailDeliveryLogs)[0].status,'sent');
+});

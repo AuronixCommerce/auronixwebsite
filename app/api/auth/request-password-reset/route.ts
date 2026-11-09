@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { adminAuth, adminDb } from '@/lib/firebase-admin';
 import { sendPasswordResetEmail, sendPasswordResetFallback } from '@/lib/server-mail';
 import { protectPublicRequest, publicRequestErrorResponse } from '@/lib/server-protection';
@@ -89,8 +89,13 @@ export async function POST(request: Request) {
       }
     } catch (error) {
       console.error('Auronix password reset generation failed:', error);
-      await updateDelivery({ status: 'failed', error: 'A secure password reset link could not be generated.', updatedAt: Date.now() });
-      await reportOperationalError('password-reset-generation', new Error('A secure password reset link could not be generated.'), { requestId });
+      try {
+        const fallback:any=await sendPasswordResetFallback({email:user.email,continueUrl:`${(process.env.NEXT_PUBLIC_SITE_URL||'https://auronixcommerce.com').replace(/\/+$/,'')}/seller/login`});
+        await updateDelivery({status:'sent',deliveryChannel:'account-recovery',providerMessageId:String(fallback?.messageId||'').slice(0,500),updatedAt:Date.now()});
+      } catch(fallbackError) {
+        await updateDelivery({ status: 'failed', error: 'Password-reset link generation and account-recovery delivery failed.', updatedAt: Date.now() });
+        await reportOperationalError('password-reset-generation', new Error('Password-reset link generation and account-recovery delivery failed.'), { requestId });
+      }
     }
 
     return accepted();

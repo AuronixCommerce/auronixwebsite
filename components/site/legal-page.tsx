@@ -1,5 +1,6 @@
 'use client';
 
+import { DownloadPdfButton } from '@/components/documents/download-pdf-button';
 import { useEffect, useState } from 'react';
 import { SiteLayout } from '@/components/site/site-layout';
 import { PageHeader } from '@/components/site/page-header';
@@ -68,6 +69,7 @@ export function LegalPage({ slug, title, eyebrow, description }: LegalPageProps)
       <PageHeader eyebrow={eyebrow} title={title} description={description} />
 
       <Section className="border-t border-border">
+        {!loading && sections.length>0 && <div className="mb-7"><DownloadPdfButton title={title} source={`/${slug}`} markdown={`${description}\n\n${sections.map(s=>`## ${s.heading}\n\n${s.body}`).join('\n\n')}${lastUpdated?`\n\nLast updated: ${lastUpdated}`:''}`}/></div>}
         {loading ? (
           <LoadingState />
         ) : error ? (

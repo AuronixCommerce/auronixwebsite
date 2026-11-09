@@ -1,7 +1,10 @@
+import { encryptPdfDownload } from '@/lib/documents/private-download';
+import { serverPdf } from '@/lib/documents/server';
+import { buildTranscriptEmail, transcriptMarkdown, transcriptPlainText } from '@/lib/documents/transcript-mail';
 import { normalizeVerificationCode } from '@/lib/aio/verification-code';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createHash, randomInt, randomUUID } from 'crypto';
+import { createHash, randomInt, randomUUID, randomBytes } from 'crypto';
 import { adminDb } from '@/lib/firebase-admin';
 import { sendProfessionalEmail } from '@/lib/server-mail';
 import { protectPublicRequest, publicRequestErrorResponse } from '@/lib/server-protection';
@@ -42,10 +45,17 @@ export async function POST(request:Request) {
       return {...current,attempts:current.attempts+1,used:current.codeHash===digest(`${challengeId}:${code}`),claimId:current.codeHash===digest(`${challengeId}:${code}`)?claimId:null};
     });
     if (!result.committed || !result.snapshot.val()?.used || result.snapshot.val()?.claimId !== claimId) return NextResponse.json({success:false,error:'The code is invalid or expired. Cancel and request a new code if needed.'},{status:400});
-    const transcript=messages.map(m=>`${m.role==='user'?'You':'AIO'}\n${m.content}`).join('\n\n');
+    const transcript=transcriptPlainText(messages);
+    let downloadRef:ReturnType<typeof adminDb.ref>|undefined;
     try {
-    await sendProfessionalEmail({to:email,subject:'Your Auronix AI conversation',body:`Your requested AIO conversation copy\n\n${transcript}\n\nAI replies can contain errors. Verify important details. This transcript was supplied from your browser.`},'notification');
+      const pdf=await serverPdf({title:'Your AIO conversation',subtitle:'PRIVATE CONVERSATION | AURONIX',markdown:transcriptMarkdown(messages),source:'https://auronixcommerce.com/aio/chat'});
+      const token=randomBytes(32).toString('hex');downloadRef=adminDb.ref(`aioTranscriptDownloads/${digest(token)}`);
+      await downloadRef.set({...encryptPdfDownload(pdf,token),createdAt:Date.now(),expiresAt:Date.now()+7*24*60*60_000});
+      const site=(process.env.NEXT_PUBLIC_SITE_URL||'https://auronixcommerce.com').replace(/\/+$/,'');
+      const downloadUrl=`${site}/api/aio/transcript/pdf?token=${token}`;
+      await sendProfessionalEmail({to:email,subject:'Your Auronix AI conversation',body:`Your requested AIO conversation copy\n\n${transcript}\n\nDownload PDF (private link; expires in 7 days): ${downloadUrl}\n\nAI replies can contain errors. Verify important details.`,htmlBody:buildTranscriptEmail(messages,downloadUrl),attachments:[{filename:'auronix-conversation.pdf',content:Buffer.from(pdf),contentType:'application/pdf'}]},'notification');
     } catch(error) {
+      await downloadRef?.remove().catch(()=>undefined);
       await ref.transaction(current=>{
         if(current === null) return null;
         if(current?.claimId !== claimId) return;

@@ -1,4 +1,5 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
+import { DownloadPdfButton } from '@/components/documents/download-pdf-button';
 
 export const metadata = {
   title: 'Seller Policy | Auronix Commerce LLC',
@@ -32,8 +33,9 @@ export default function SellerPolicyPage() {
           </div>
         </div>
 
+        <div className="mt-7"><DownloadPdfButton title="Seller Policy" contentSelector="#seller-policy-document" source="/seller/policy"/></div>
         {/* POLICY */}
-        <div className="mt-12 space-y-6">
+        <div id="seller-policy-document" className="mt-12 space-y-6">
           <PolicySection
             number="01"
             title="Eligibility"

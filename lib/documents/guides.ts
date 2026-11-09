@@ -1,0 +1,3 @@
+import { TROUBLESHOOTING_ARTICLES, type TroubleshootingArticle } from '../help-content';
+export function guideMarkdown(article:TroubleshootingArticle){return `${article.summary}\n\n**Category:** ${article.category}\n\n**For:** ${article.audience}\n\nProtect your account: never share a password, OTP, invitation token, reset link, private key, or complete authentication URL.\n\n`+article.sections.map((s,i)=>`## ${i+1}. ${s.heading}\n\n${s.body}${s.steps?'\n\n'+s.steps.map((step,j)=>`${j+1}. ${step}`).join('\n'):''}`).join('\n\n');}
+export function helpHandbookMarkdown(){return TROUBLESHOOTING_ARTICLES.map(a=>`# ${a.title}\n\n${guideMarkdown(a)}`).join('\n\n---\n\n');}

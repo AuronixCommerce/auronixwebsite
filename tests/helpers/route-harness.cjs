@@ -4,6 +4,7 @@ const ts = require('typescript');
 const root = path.resolve(__dirname, '../..');
 function harness(initial = {}) {
   const data = structuredClone(initial), accesses = [], mails = [];
+  let generationFailure=false;
   let sequence = 0, code = '', admin = true, mailFailure = false, passwordResetFailure = false, passwordResetFallbackFailure = false, authUser = null, authFailure = null;
   const read = p => p.split('/').filter(Boolean).reduce((v, k) => v?.[k], data);
   const write = (p, v) => { const parts = p.split('/').filter(Boolean), key = parts.pop(); let obj = data; for (const part of parts) obj = obj[part] ??= {}; if (v === null) delete obj[key]; else obj[key] = structuredClone(v); };
@@ -19,13 +20,15 @@ function harness(initial = {}) {
     };
   }
   const mocks = {
+    '@/lib/documents/server':{serverPdf:async()=>Buffer.from('%PDF-test')},
+    '@/lib/documents/transcript-mail':{transcriptPlainText:m=>m.map(x=>x.content).join('\n'),transcriptMarkdown:m=>m.map(x=>x.content).join('\n'),buildTranscriptEmail:()=>'<p>Transcript</p>'},
     '@/lib/firebase-admin': { adminDb: { ref }, adminAuth: {
       getUserByEmail: async () => {
         if (authFailure) throw authFailure;
         if (authUser) return authUser;
         throw Object.assign(new Error('No account'), { code: 'auth/user-not-found' });
       },
-      generatePasswordResetLink: async email => `https://identity.example.test/action?mode=resetPassword&oobCode=reset-code-for-${encodeURIComponent(email)}`,
+      generatePasswordResetLink: async email => {if(generationFailure)throw Error('Test link generation unavailable');return `https://identity.example.test/action?mode=resetPassword&oobCode=reset-code-for-${encodeURIComponent(email)}`;},
     } },
     '@/lib/server-auth': { requireAdmin: async () => { if (!admin) throw Error('Admin access required'); return { uid: 'test-admin' }; } },
     '@/lib/server-seller-invitations': { normalizeEmail: v => String(v || '').trim().toLowerCase() },
@@ -58,6 +61,7 @@ function harness(initial = {}) {
     failMail: value => { mailFailure = value; },
     failPasswordResetMail: value => { passwordResetFailure = value; },
     failPasswordResetFallback: value => { passwordResetFallbackFailure = value; },
+    failResetGeneration: value => {generationFailure=value;},
     setAuthUser: value => { authUser = value; },
     failAuth: value => { authFailure = value; },
   };

@@ -1,0 +1,3 @@
+import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
+export function encryptPdfDownload(pdf:Uint8Array,token:string){const iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',Buffer.from(token,'hex'),iv);return {ciphertext:Buffer.concat([cipher.update(pdf),cipher.final()]).toString('base64'),iv:iv.toString('base64'),tag:cipher.getAuthTag().toString('base64')};}
+export function decryptPdfDownload(data:{ciphertext:string;iv:string;tag:string},token:string){const decipher=createDecipheriv('aes-256-gcm',Buffer.from(token,'hex'),Buffer.from(data.iv,'base64'));decipher.setAuthTag(Buffer.from(data.tag,'base64'));return Buffer.concat([decipher.update(Buffer.from(data.ciphertext,'base64')),decipher.final()]);}

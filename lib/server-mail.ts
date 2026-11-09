@@ -6,13 +6,13 @@ export const BUSINESS_EMAIL = process.env.MAIL_FROM || process.env.SMTP_USER || 
 export const NOTIFICATION_EMAIL = process.env.MAIL_NOTIFICATION_EMAIL || process.env.MAIL_FROM || BUSINESS_EMAIL;
 export const SUPPORT_EMAIL = process.env.MAIL_SUPPORT_EMAIL || process.env.NEXT_PUBLIC_SUPPORT_EMAIL || BUSINESS_EMAIL;
 const MAIL_FROM_NAME = process.env.MAIL_FROM_NAME || 'Auronix Commerce LLC';
-const SMTP_USER = process.env.SMTP_USER || NOTIFICATION_EMAIL;
+const SMTP_USER = (process.env.SMTP_USER || BUSINESS_EMAIL).trim();
 const SMTP_PASSWORD = process.env.SMTP_PASSWORD || process.env.SMTP_PASS || '';
 const SMTP_HOST = process.env.SMTP_HOST || (/@gmail\.com$/i.test(SMTP_USER) ? 'smtp.gmail.com' : 'smtp.hostinger.com');
 const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
 const SMTP_SECURE = process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : SMTP_PORT === 465;
 
-type MailOptions = { to: string | string[]; subject: string; html: string; text?: string; replyTo?: string; fromName?: string; inReplyTo?: string; references?: string[] };
+type MailOptions = { to: string | string[]; subject: string; html: string; text?: string; replyTo?: string; fromName?: string; inReplyTo?: string; references?: string[]; attachments?: Array<{filename:string;content:Buffer;contentType?:string}> };
 const escapeHtml = (value: unknown) => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 
 function safeAbsoluteUrl(value: unknown, fallback: string) {
@@ -20,7 +20,7 @@ function safeAbsoluteUrl(value: unknown, fallback: string) {
   catch { return fallback; }
 }
 
-function emailShell(input: { preheader: string; title: string; body: string; footerNote?: string }) {
+export function emailShell(input: { preheader: string; title: string; body: string; footerNote?: string }) {
   const support = escapeHtml(SUPPORT_EMAIL);
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>${escapeHtml(input.title)}</title></head><body style="margin:0;background:#f5f5f7;color:#1d1d1f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif"><div style="display:none;max-height:0;overflow:hidden;opacity:0">${escapeHtml(input.preheader)}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f5f7"><tr><td align="center" style="padding:32px 14px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#fff;border:1px solid #e5e5ea;border-radius:24px;overflow:hidden"><tr><td style="padding:24px 30px;border-bottom:1px solid #ececf0"><a href="${SITE_URL}" style="color:#111827;text-decoration:none;font-size:17px;font-weight:800;letter-spacing:.06em">AURONIX <span style="font-weight:500;color:#6b7280">COMMERCE LLC</span></a></td></tr><tr><td style="padding:34px 30px;font-size:15px;line-height:1.65">${input.body}</td></tr><tr><td style="padding:22px 30px;border-top:1px solid #ececf0;color:#6b7280;font-size:12px;line-height:1.6">${escapeHtml(input.footerNote || 'This is a transactional message from Auronix Commerce LLC.')}<br>Questions? <a href="mailto:${support}" style="color:#2563eb">${support}</a><br><span style="color:#9ca3af">Auronix Commerce LLC · auronixcommerce.com</span></td></tr></table></td></tr></table></body></html>`;
 }
@@ -59,7 +59,7 @@ async function sendWithSender(sender: string, options: MailOptions) {
   for (const senderAddress of senders) {
     for (const candidate of mailTransportCandidates()) {
       try {
-        const result = await createMailTransport(candidate.port, candidate.secure).sendMail({ from: { name: options.fromName || MAIL_FROM_NAME, address: senderAddress }, to: options.to, subject: options.subject, html: options.html, text: options.text, replyTo: options.replyTo || SUPPORT_EMAIL, inReplyTo: options.inReplyTo, references: options.references });
+        const result = await createMailTransport(candidate.port, candidate.secure).sendMail({ from: { name: options.fromName || MAIL_FROM_NAME, address: senderAddress }, to: options.to, subject: options.subject, html: options.html, text: options.text, replyTo: options.replyTo || SUPPORT_EMAIL, inReplyTo: options.inReplyTo, references: options.references, attachments: options.attachments });
         if (!Array.isArray(result.accepted) || result.accepted.length === 0 || (result.rejected?.length || 0) > 0) {
           const error = new Error('The email service did not accept every recipient.');
           (error as any).partialAcceptance = result.accepted?.length > 0;
@@ -67,7 +67,7 @@ async function sendWithSender(sender: string, options: MailOptions) {
         }
         return { ...result, success: true };
       } catch (error) {
-        if ((error as any)?.partialAcceptance) throw error;
+        if ((error as any)?.partialAcceptance || (error as any)?.code === 'EAUTH') throw error;
         lastError = error;
       }
     }
@@ -80,9 +80,9 @@ export const sendBusinessMail = (options: MailOptions) => sendWithSender(BUSINES
 
 export function sendProfessionalEmail(value: any, type = '') {
   const body = String(value?.body || value?.text || '');
-  const html = value?.html || emailShell({ preheader: value?.subject || 'Auronix Commerce update', title: value?.subject || 'Auronix Commerce', body: `<p style="margin:0 0 18px">Hello${value?.name ? ` ${escapeHtml(value.name)}` : ''},</p><div style="white-space:pre-wrap">${escapeHtml(body)}</div>` });
+  const html = value?.html || (value?.htmlBody ? emailShell({preheader:value?.subject || "Auronix Commerce",title:value?.subject || "Auronix Commerce",body:value.htmlBody}) : emailShell({ preheader: value?.subject || 'Auronix Commerce update', title: value?.subject || 'Auronix Commerce', body: `<p style="margin:0 0 18px">Hello${value?.name ? ` ${escapeHtml(value.name)}` : ''},</p><div style="white-space:pre-wrap">${escapeHtml(body)}</div>` }));
   const systemTypes = ['notification', 'notifications', 'admin', 'sellerInvitation', 'seller-invitation', 'passwordReset', 'password-reset'];
-  return sendWithSender(systemTypes.includes(type || value?.type) ? NOTIFICATION_EMAIL : BUSINESS_EMAIL, { to: value?.to || value?.recipient || value?.email, subject: value?.subject || 'Auronix Commerce LLC', html, text: value?.text || body, replyTo: value?.replyTo, inReplyTo: value?.inReplyTo, references: value?.references });
+  return sendWithSender(systemTypes.includes(type || value?.type) ? NOTIFICATION_EMAIL : BUSINESS_EMAIL, { to: value?.to || value?.recipient || value?.email, subject: value?.subject || 'Auronix Commerce LLC', html, text: value?.text || body, replyTo: value?.replyTo, inReplyTo: value?.inReplyTo, references: value?.references, attachments: value?.attachments });
 }
 
 export async function sendSellerInvitationEmail(input: { email: string; name?: string; businessName?: string; invitationUrl: string; expiresAt?: number }) {
@@ -102,26 +102,16 @@ export async function sendPasswordResetFallback(input: { email: string; continue
   const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.trim();
   if (!apiKey) throw new Error('Auronix Auth recovery delivery is not configured.');
 
-  const response = await fetch(
+  const deliver=(withContinue:boolean)=>fetch(
     `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${encodeURIComponent(apiKey)}`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Referer: input.continueUrl,
-      },
-      body: JSON.stringify({
-        requestType: 'PASSWORD_RESET',
-        email: input.email,
-        continueUrl: input.continueUrl,
-      }),
-      cache: 'no-store',
-    }
+    {method:'POST',headers:{'Content-Type':'application/json',Referer:input.continueUrl},body:JSON.stringify({requestType:'PASSWORD_RESET',email:input.email,...(withContinue?{continueUrl:input.continueUrl}:{})}),cache:'no-store',signal:AbortSignal.timeout(10000)}
   );
-
-  if (!response.ok) {
-    throw new Error('Auronix Auth recovery delivery was not accepted.');
+  let response=await deliver(true);
+  if(!response.ok){
+    const payload=await response.json().catch(()=>null);
+    if(/INVALID_CONTINUE_URI|UNAUTHORIZED_DOMAIN|MISSING_CONTINUE_URI/.test(String(payload?.error?.message||'')))response=await deliver(false);
   }
+  if(!response.ok)throw new Error('Auronix Auth recovery delivery was not accepted.');
 
   return { accepted: [input.email], messageId: `auronix-auth-${Date.now()}` };
 }
@@ -179,3 +169,6 @@ export async function verifyMailConnection() {
   }
   throw lastError || new Error('The email service is unavailable.');
 }
+
+export function mailConfigurationStatus(){return {host:SMTP_HOST,port:SMTP_PORT,secure:SMTP_SECURE,usernameConfigured:!!SMTP_USER,passwordConfigured:!!SMTP_PASSWORD,sender:NOTIFICATION_EMAIL};}
+export function mailFailureMessage(error:unknown){const e=error as {code?:string;responseCode?:number};if(!SMTP_PASSWORD)return 'The deployment is missing SMTP_PASSWORD (or SMTP_PASS). Configure the mailbox password in the hosting environment.';if(e?.code==='EAUTH'||e?.responseCode===535)return 'The mail server rejected SMTP authentication. Check SMTP_USER and its mailbox password in the deployment settings.';if(['ETIMEDOUT','ECONNECTION','ECONNREFUSED','EDNS'].includes(e?.code||''))return 'The website could not connect to the mail server. Check SMTP_HOST, SMTP_PORT and hosting network access.';return 'The mail provider did not accept this request. Check the sender authorization and provider delivery logs.';}

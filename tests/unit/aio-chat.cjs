@@ -6,6 +6,11 @@ const ts = require("typescript");
 const { harness } = require("../helpers/route-harness.cjs");
 const root = path.resolve(__dirname, "../..");
 function load(file, mocks = {}) {
+  mocks={
+    '@/lib/documents/server':{serverPdf:async()=>Buffer.from('%PDF-test')},
+    '@/lib/documents/transcript-mail':{transcriptPlainText:m=>m.map(x=>x.content).join('\n'),transcriptMarkdown:m=>m.map(x=>x.content).join('\n'),buildTranscriptEmail:()=>'<p>Transcript</p>'},
+    ...mocks,
+  };
   const code = ts.transpileModule(
     fs.readFileSync(path.join(root, file), "utf8"),
     {
@@ -463,4 +468,41 @@ test('support does not publish interrupted, failed, empty, or cancelled replies 
  await assert.rejects(collectSupportReply(byteStream('data: {"type":"error","message":"Unavailable"}\n\n'),signal),/Unavailable/);
  await assert.rejects(collectSupportReply(byteStream('data: {"type":"message_complete","requestId":"test","answerSource":"general"}\n\n'),signal),/empty/);
  const controller=new AbortController();controller.abort();await assert.rejects(collectSupportReply(byteStream('data: {"type":"token","token":"hidden"}\n\n'),controller.signal),{name:'AbortError'});
+});
+
+test('transcript download tokens protect encrypted PDFs and reject expiry and wrong tokens',async()=>{
+ const crypto=require('node:crypto');const {encryptPdfDownload}=load('lib/documents/private-download.ts');
+ const h=harness();const route=load('app/api/aio/transcript/pdf/route.ts',{'@/lib/firebase-admin':{adminDb:{ref:h.ref}}});
+ const token=crypto.randomBytes(32).toString('hex'),key=crypto.createHash('sha256').update(token).digest('hex');const pdf=Buffer.from('%PDF-private');
+ h.data.aioTranscriptDownloads={[key]:{...encryptPdfDownload(pdf,token),expiresAt:Date.now()+60000}};
+ assert.ok(!JSON.stringify(h.data).includes('%PDF-private'));
+ const call=token=>route.GET(new Request('http://localhost/api/aio/transcript/pdf?token='+token));
+ assert.equal((await call('bad')).status,404);assert.equal((await call('a'.repeat(64))).status,404);
+ const ok=await call(token);assert.equal(ok.headers.get('content-type'),'application/pdf');assert.deepEqual(Buffer.from(await ok.arrayBuffer()),pdf);assert.match(ok.headers.get('cache-control'),/no-store/);
+ h.data.aioTranscriptDownloads[key].expiresAt=0;assert.equal((await call(token)).status,410);
+});
+test('Markdown email renders actual emphasis and rejects executable links or raw HTML',async()=>{
+ const esm={'unified':await import('unified'),'remark-parse':await import('remark-parse'),'remark-gfm':await import('remark-gfm')};
+ const {markdownEmailHtml}=load('lib/documents/markdown.ts',esm);
+ const html=markdownEmailHtml('**Important** normal text.\n\n1. First\n2. [Support](/support)\n\n<script>alert(1)</script>\n\n[bad](javascript:alert(1))');
+ const {buildTranscriptEmail}=load('lib/documents/transcript-mail.ts',esm);const mail=load('lib/server-mail.ts');
+ const email=mail.emailShell({preheader:'Your AIO transcript',title:'Your AIO conversation',body:buildTranscriptEmail([{role:'user',content:'How do I get started?'},{role:'assistant',content:'**Start here:** Open [Support](/support).\n\n1. Choose your topic.\n2. Keep your reference.\n\n| Item | Status |\n| --- | --- |\n| Guide | Ready |'}],'https://auronixcommerce.com/api/aio/transcript/pdf?token=example')});
+ assert.match(email,/Download transcript PDF/);assert.match(email,/<strong[^>]*>Start here:<\/strong>/);if(process.env.AURONIX_EMAIL_QA)fs.writeFileSync(process.env.AURONIX_EMAIL_QA,email);
+ assert.match(html,/<strong[^>]*>Important<\/strong>/);assert.ok(!html.includes('**Important**'));assert.match(html,/<ol/);assert.match(html,/https:\/\/auronixcommerce.com\/support/);assert.ok(!html.includes('<script>'));assert.ok(!html.includes('href="javascript:'));
+});
+test('branded PDFs paginate long guides and render rich transcript content',async()=>{
+ const esm={'unified':await import('unified'),'remark-parse':await import('remark-parse'),'remark-gfm':await import('remark-gfm'),'@pdf-lib/fontkit':{default:require('@pdf-lib/fontkit')}};
+ const {createBrandedPdf}=load('lib/documents/pdf.ts',esm);const {helpHandbookMarkdown}=load('lib/documents/guides.ts');
+ const bytes=await createBrandedPdf({title:'Auronix Offline Help Handbook',subtitle:'OFFLINE GUIDE | AURONIX',markdown:helpHandbookMarkdown()+'\n\n# Sample transcript\n\n**Important:** Your formatted transcript.\n\n1. Visit [Support](/support).\n2. Read offline.',source:'https://auronixcommerce.com/help'},{regular:fs.readFileSync(path.join(root,'public/fonts/manrope-400.ttf')),bold:fs.readFileSync(path.join(root,'public/fonts/manrope-700.ttf')),logo:fs.readFileSync(path.join(root,'public/auronix-signature.jpeg'))});
+ const pdf=await require('pdf-lib').PDFDocument.load(bytes);assert.ok(pdf.getPageCount()>3);assert.equal(pdf.getAuthor(),'Auronix Commerce LLC');
+ if(process.env.AURONIX_PDF_QA)fs.writeFileSync(process.env.AURONIX_PDF_QA,bytes);
+});
+test('mail fallback retries an unauthorized continue URL with the standard recovery page',async()=>{
+ const previous=process.env.NEXT_PUBLIC_FIREBASE_API_KEY,oldFetch=global.fetch;process.env.NEXT_PUBLIC_FIREBASE_API_KEY='test-key';const calls=[];
+ try{global.fetch=async(_,options)=>{calls.push(JSON.parse(options.body));return calls.length===1?new Response(JSON.stringify({error:{message:'UNAUTHORIZED_DOMAIN'}}),{status:400}):new Response('{}',{status:200});};const mail=load('lib/server-mail.ts');await mail.sendPasswordResetFallback({email:'reader@example.com',continueUrl:'https://auronixcommerce.com/seller/login'});assert.equal(calls.length,2);assert.ok(calls[0].continueUrl);assert.equal(calls[1].continueUrl,undefined);assert.equal(calls[1].requestType,'PASSWORD_RESET');}
+ finally{global.fetch=oldFetch;if(previous===undefined)delete process.env.NEXT_PUBLIC_FIREBASE_API_KEY;else process.env.NEXT_PUBLIC_FIREBASE_API_KEY=previous;}
+});
+test('SMTP authentication failure exits promptly so password-recovery fallback can run',async()=>{
+ const previous=process.env.SMTP_PASSWORD;process.env.SMTP_PASSWORD='test-only';let attempts=0;
+ try{const mail=load('lib/server-mail.ts',{nodemailer:{default:{createTransport:()=>({sendMail:async()=>{attempts++;throw Object.assign(new Error('Authentication failed'),{code:'EAUTH'});}})}}});await assert.rejects(mail.sendBusinessMail({to:'reader@example.com',subject:'Test',html:'Test'}),{code:'EAUTH'});assert.equal(attempts,1);}finally{if(previous===undefined)delete process.env.SMTP_PASSWORD;else process.env.SMTP_PASSWORD=previous;}
 });
