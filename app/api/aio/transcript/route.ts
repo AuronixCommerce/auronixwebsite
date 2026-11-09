@@ -1,3 +1,4 @@
+import { normalizeVerificationCode } from '@/lib/aio/verification-code';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createHash, randomInt, randomUUID } from 'crypto';
@@ -8,7 +9,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 const schema = z.object({
   email: z.string().trim().email().max(254).transform(v => v.toLowerCase()),
-  challengeId: z.string().uuid().optional(), code: z.string().regex(/^\d{6}$/).optional(),
+  challengeId: z.string().uuid().optional(), code: z.string().transform(normalizeVerificationCode).pipe(z.string().regex(/^\d{6}$/)).optional(),
   messages: z.array(z.object({role:z.enum(['user','assistant']),content:z.string().trim().min(1).max(12000)})).min(1).max(100),
 });
 const digest = (value:string) => createHash('sha256').update(value).digest('hex');
@@ -32,13 +33,26 @@ export async function POST(request:Request) {
     }
     if (!code) return NextResponse.json({success:false,error:'Enter the six-digit verification code.'},{status:400});
     const ref=adminDb.ref(`aioTranscriptChallenges/${challengeId}`);
+    const claimId=randomUUID();
     const result=await ref.transaction(current=>{
+      // Firebase can first call with an empty local cache. Returning null allows
+      // the server value to load and retry; undefined would abort a valid code.
+      if (current === null) return null;
       if (!current || current.used || current.expiresAt<Date.now() || current.attempts>=5 || current.emailHash!==digest(email)) return;
-      return {...current,attempts:current.attempts+1,used:current.codeHash===digest(`${challengeId}:${code}`)};
+      return {...current,attempts:current.attempts+1,used:current.codeHash===digest(`${challengeId}:${code}`),claimId:current.codeHash===digest(`${challengeId}:${code}`)?claimId:null};
     });
-    if (!result.committed || !result.snapshot.val()?.used) return NextResponse.json({success:false,error:'The code is invalid or expired. Cancel and request a new code if needed.'},{status:400});
+    if (!result.committed || !result.snapshot.val()?.used || result.snapshot.val()?.claimId !== claimId) return NextResponse.json({success:false,error:'The code is invalid or expired. Cancel and request a new code if needed.'},{status:400});
     const transcript=messages.map(m=>`${m.role==='user'?'You':'AIO'}\n${m.content}`).join('\n\n');
+    try {
     await sendProfessionalEmail({to:email,subject:'Your Auronix AI conversation',body:`Your requested AIO conversation copy\n\n${transcript}\n\nAI replies can contain errors. Verify important details. This transcript was supplied from your browser.`},'notification');
+    } catch(error) {
+      await ref.transaction(current=>{
+        if(current === null) return null;
+        if(current?.claimId !== claimId) return;
+        return {...current,used:false,claimId:null};
+      });
+      return NextResponse.json({success:false,code:'DELIVERY_FAILED',error:'Your code was verified, but email delivery failed. You can retry Confirm and send or download the conversation.'},{status:503});
+    }
     return NextResponse.json({success:true});
   } catch(error) {
     const blocked=publicRequestErrorResponse(error); if(blocked) return NextResponse.json(blocked.body,{status:blocked.status});

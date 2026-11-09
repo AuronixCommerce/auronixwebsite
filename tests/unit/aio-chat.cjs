@@ -420,3 +420,23 @@ test('stopping a paced reply cancels promptly and closes its upstream stream',as
  async function* events(){try{yield {type:'token',token:'delayed'};}finally{closed=true;}}
  const stream=paceAioEvents(events(),'aio-one',controller.signal);const next=stream.next();controller.abort();await assert.rejects(next,{name:'AbortError'});assert.equal(closed,true);
 });
+
+test('transcript verification survives an initially empty Firebase cache and allows retry after mail failure',async()=>{
+ const h=harness();let failTranscript=false;
+ const route=load('app/api/aio/transcript/route.ts',{
+  '@/lib/firebase-admin':{adminDb:{ref:p=>{const base=h.ref(p);return {...base,transaction:async fn=>{const initial=fn(null);if(initial===undefined)return {committed:false,snapshot:{val:()=>null}};return base.transaction(fn);}};}}},
+  '@/lib/server-protection':{protectPublicRequest:async()=>{},publicRequestErrorResponse:()=>null},
+  '@/lib/server-mail':{sendProfessionalEmail:async v=>{if(failTranscript&&v.subject==='Your Auronix AI conversation')throw Error('SMTP unavailable');h.mails.push(v);}},
+ });
+ const payload={email:'reader@example.com',messages:[user('Test transcript')]};
+ const call=async body=>{const r=await route.POST(new Request('http://localhost/api/aio/transcript',{method:'POST',body:JSON.stringify(body)}));return {status:r.status,body:await r.json()};};
+ const first=await call(payload);assert.equal(first.status,200);const code=h.mails[0].body.match(/\b\d{6}\b/)[0];
+ const verify={...payload,challengeId:first.body.challengeId,code:` ${code.slice(0,3)} ${code.slice(3)} `};
+ failTranscript=true;const failure=await call(verify);assert.equal(failure.status,503);assert.equal(failure.body.code,'DELIVERY_FAILED');assert.equal(h.data.aioTranscriptChallenges[first.body.challengeId].used,false);
+ failTranscript=false;assert.equal((await call(verify)).status,200);assert.equal(h.mails.length,2);
+ assert.equal((await call(verify)).status,400);
+});
+test('verification code normalization accepts pasted spacing and local keyboard digits without accepting other characters',()=>{
+ const {normalizeVerificationCode}=load('lib/aio/verification-code.ts');
+ assert.equal(normalizeVerificationCode(' 123 456\n'),'123456');assert.equal(normalizeVerificationCode('۱۲۳-۴۵۶'),'123456');assert.equal(normalizeVerificationCode('١٢٣٤٥٦'),'123456');assert.equal(normalizeVerificationCode('abc123456'),'abc123456');
+});

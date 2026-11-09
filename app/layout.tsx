@@ -7,6 +7,7 @@ import './auronix-system.css';
 import './auronix-motion.css';
 import './aio-chat.css';
 import './aio-models.css';
+import './responsive-fixes.css';
 import { MotionRuntime } from '@/components/site/motion-runtime';
 
 
