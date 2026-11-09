@@ -1,3 +1,4 @@
+import { SUPPORT_NAMES, supportPersonaInstructions } from "@/lib/support/personas";
 import { resolveAioModel } from "@/lib/aio/models";
 import { DEFAULT_AIO_SETTINGS } from "@/lib/aio/settings";
 import { randomUUID } from "crypto";
@@ -59,6 +60,7 @@ const requestSchema = z.object({
     .optional(),
   context: z
     .object({
+      supportPersona: z.enum(SUPPORT_NAMES).optional(),
       pageTitle: z.string().trim().max(240).optional(),
       selectedText: z.string().trim().max(4000).optional(),
       relevantSection: z.string().trim().max(600).optional(),
@@ -470,7 +472,7 @@ export async function POST(request: Request) {
   });
 
   const providerMessages = [
-    { role: "system" as const, content: systemPrompt },
+    { role: "system" as const, content: systemPrompt + (parsed.data.context?.supportPersona && (pathname === "/support/chat" || pathname.startsWith("/seller/")) ? "\n\n" + supportPersonaInstructions(parsed.data.context.supportPersona) : "") },
     ...messages.map((message) => ({
       role: message.role,
       content: message.content,

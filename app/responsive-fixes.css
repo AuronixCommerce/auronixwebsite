@@ -111,3 +111,11 @@
  .aio-workspace-brand small{line-height:1.2}
  .aio-workspace-bottom>button{height:34px}
 }
+.ac-support-typing-dots{display:inline-flex!important;align-items:center;gap:5px;padding:10px 12px;background:hsl(var(--secondary));border:1px solid hsl(var(--border));border-radius:14px}
+.ac-support-typing-dots i{height:5px;width:5px;border-radius:50%;background:currentColor;animation:ac-support-pulse 1.3s ease-in-out infinite}
+.ac-support-typing-dots i:nth-child(2){animation-delay:.18s}.ac-support-typing-dots i:nth-child(3){animation-delay:.36s}
+@keyframes ac-support-pulse{0%,70%,100%{opacity:.3;transform:translateY(0)}35%{opacity:1;transform:translateY(-3px)}}
+@media(prefers-reduced-motion:reduce){.ac-support-typing-dots i{animation:none;opacity:.7}}
+.ac-support-room .ac-chat-messages{gap:14px}
+.ac-support-room .ac-message{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;margin-block:10px}
+.ac-support-room .ac-message-content{line-height:1.65}

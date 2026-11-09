@@ -1,4 +1,7 @@
 'use client';
+import { collectSupportReply } from '@/lib/support/reply';
+import { normalizeSupportName, supportReplyDelay, supportIdentityAnswer } from '@/lib/support/personas';
+import { currentChatContext } from '@/lib/aio/preferences';
 import { readApplicationPrefill } from '@/lib/application-prefill';
 import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
@@ -13,15 +16,9 @@ import {
 
 import {
   ArrowRight,
-  Bot,
   ExternalLink,
-  Loader2,
-  MessageCircle,
-  Send,
-  Sparkles,
   Square,
   Trash2,
-  X,
 } from 'lucide-react';
 
 import {
@@ -480,6 +477,8 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
   const thinkingStartedAtRef = useRef(0);
 
   const introStartedRef = useRef(false);
+  const requestVersion = useRef(0);
+  const conversationId = useRef(makeId());
 
   const pathname = usePathname() || '/';
 
@@ -559,14 +558,17 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
   useEffect(() => {
     if (!localMemoryReady) return;
     if (introStartedRef.current) return;
-    introStartedRef.current = true;
     if (messages.length > 0) {
+      introStartedRef.current = true;
       setLoading(false);
       return;
     }
     setLoading(true);
-    const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1200;
+    const delay = 1600;
+    const version=requestVersion.current;
     const timer = window.setTimeout(() => {
+      if(version !== requestVersion.current)return;
+      introStartedRef.current = true;
       setMessages([{ id: makeId(), role: 'assistant', content: ticketReference
         ? `Hi, I’m ${agentName}. I have your ticket reference ${ticketReference}. How may I help you today?`
         : `Hi, I’m ${agentName}. How may I help you today?` }]);
@@ -624,10 +626,11 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
 
   useEffect(() => {
     return () => {
+      requestVersion.current++;
       abortRef.current?.abort();
 
       if (typingTimerRef.current) {
-        clearInterval(
+        clearTimeout(
           typingTimerRef.current
         );
       }
@@ -635,18 +638,19 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
   }, []);
 
   const stopAnswer = () => {
+    introStartedRef.current = true;
+    requestVersion.current++;
     abortRef.current?.abort();
 
     if (typingTimerRef.current) {
-      clearInterval(
+      clearTimeout(
         typingTimerRef.current
       );
 
       typingTimerRef.current = null;
     }
 
-    // Keep only what the visitor has actually seen. The full answer is already
-    // buffered in currentAnswerRef while the typewriter animation is running.
+    // Discard any buffered reply that has not been displayed yet.
     const partial = visibleAnswer;
 
     if (partial.trim()) {
@@ -674,10 +678,11 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
   const clearChatMemory = async () => {
     if (clearingMemory) return;
     setClearingMemory(true);
+    requestVersion.current++;
     abortRef.current?.abort();
 
     if (typingTimerRef.current) {
-      clearInterval(typingTimerRef.current);
+      clearTimeout(typingTimerRef.current);
       typingTimerRef.current = null;
     }
 
@@ -705,14 +710,15 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
   const typeAnswer = (
     answer: string,
     answerSource: 'found' | 'online',
-    responseSeconds: number
+    responseSeconds: number,
+    version: number
   ) => {
-    if (typingTimerRef.current) clearInterval(typingTimerRef.current);
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
     currentAnswerRef.current = answer;
     setVisibleAnswer('');
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const delay = reducedMotion ? 0 : Math.min(1800, 750 + answer.length * 3);
+    const delay = supportReplyDelay(answer.length);
     typingTimerRef.current = window.setTimeout(() => {
+      if(version !== requestVersion.current)return;
       setMessages((existing) => [...existing, {
         id: makeId(), role: 'assistant', content: answer, answerSource, responseSeconds,
       }]);
@@ -729,10 +735,11 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
 
     const text = input.trim();
 
-    if (!text || loading) {
+    if (!text || loading || clearingMemory) {
       return;
     }
 
+    const version=++requestVersion.current;
     setError('');
     setInput('');
 
@@ -771,8 +778,10 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
     abortRef.current = controller;
 
     try {
+      const identityAnswer=supportIdentityAnswer(text,agentName);
+      if(identityAnswer){typeAnswer(identityAnswer,'found',1,version);return;}
       const response = await fetch(
-        '/api/chat',
+        '/api/aio/chat',
         {
           method: 'POST',
 
@@ -781,22 +790,14 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
               'application/json',
 
             Accept:
-              'application/json',
+              'text/event-stream',
           },
 
           body: JSON.stringify({
-            pathname,
-
-            messages:
-              nextMessages.filter((message) => !message.sessionBoundary && message.content.trim()).map(
-                (message) => ({
-                  role:
-                    message.role,
-
-                  content:
-                    message.content,
-                })
-              ),
+            pathname,conversationId:conversationId.current,
+            messages:currentChatContext(nextMessages),
+            preferences:{tone:'friendly',replyLength:'brief',saveHistory:false},
+            context:{supportPersona:normalizeSupportName(agentName)},
           }),
 
           signal:
@@ -804,36 +805,10 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
         }
       );
 
-      let data: any = null;
-
-      try {
-        data = await response.json();
-      } catch {
-        throw new Error(
-          'The AI server returned an invalid response.'
-        );
-      }
-
-      if (
-        !response.ok ||
-        !data?.success
-      ) {
-        throw new Error(
-          data?.error ||
-            'Unable to get an AI response.'
-        );
-      }
-
-      const answer =
-        typeof data.response === 'string'
-          ? data.response.trim()
-          : '';
-
-      if (!answer) {
-        throw new Error(
-          'The AI returned an empty response.'
-        );
-      }
+      if(!response.ok){let message='Unable to get a support reply.';try{const data=await response.json();if(typeof data.error==='string')message=data.error;}catch{}throw new Error(message);}
+      if(!response.body)throw new Error('The reply connection is unavailable. Please retry.');
+      const {answer,answerSource}=await collectSupportReply(response.body,controller.signal);
+      if(version !== requestVersion.current || controller.signal.aborted)return;
 
       const responseSeconds = Math.max(
         1,
@@ -841,16 +816,12 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
           (Date.now() - thinkingStartedAtRef.current) / 1000
         )
       );
-      const answerSource = data.answerSource === 'premade-memory'
-        ? 'found'
-        : 'online';
-
       setCompletedThinkingSeconds(responseSeconds);
       setActiveAnswerSource(answerSource);
-      typeAnswer(answer, answerSource, responseSeconds);
+      typeAnswer(answer, answerSource, responseSeconds, version);
     } catch (caught) {
       if (
-        controller.signal.aborted
+        controller.signal.aborted || version !== requestVersion.current
       ) {
         return;
       }
@@ -896,18 +867,18 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
 
   return (
     <>
-      <section className="ac-conversation" aria-label={seller ? 'Seller AI support' : 'Auronix AI support'}>
+      <section className="ac-conversation" aria-label={seller ? 'Seller support' : 'Auronix support'}>
         <header className="ac-conversation-header">
-          <div className="ac-assistant-identity"><ChatBrandMark className="h-11 w-11"/><div><strong>{agentName} · Support Agent</strong><span>{seller ? 'Seller guidance' : 'Support chat'} · Auronix AI support</span></div></div>
-          <div className="ac-chat-actions"><Link href={seller ? '/seller/support' : '/support/contact'} className="ac-chat-team"><LifeBuoy size={17}/> Contact support</Link><button type="button" className="ac-icon-button" aria-label="Clear saved AI chat memory" disabled={clearingMemory} onClick={()=>setClearDialogOpen(true)}><Trash2 size={18}/></button></div>
+          <div className="ac-assistant-identity"><ChatBrandMark className="h-11 w-11"/><div><strong>{agentName} · Auronix Support</strong><span>{seller ? 'Seller guidance' : 'Here to help'}</span></div></div>
+          <div className="ac-chat-actions"><Link href={seller ? '/seller/support' : '/support/contact'} className="ac-chat-team"><LifeBuoy size={17}/> Contact support</Link><button type="button" className="ac-icon-button" aria-label="Clear saved support chat memory" disabled={clearingMemory} onClick={()=>setClearDialogOpen(true)}><Trash2 size={18}/></button></div>
         </header>
         <div className="ac-chat-scroll" ref={scrollRef} role="log" aria-label="Conversation" aria-live="polite" aria-relevant="additions">
-          {messages.length===0&&!loading&&!visibleAnswer&&!error&&<div className="ac-chat-welcome"><span className="ac-eyebrow">AURONIX SUPPORT</span><h2>Hi, how can I help?</h2><p>{seller ? 'Ask about your seller workspace, catalogs, verification or support. For account-specific help, contact the support team.' : 'I’m Auronix’s AI support assistant. Tell me what you need help with, or choose a topic below.'}</p><div className="ac-chat-suggestions">{(seller?['How do I update my catalog?','Where is my application status?','How do I contact seller support?']:['How can I become a supplier?','What does Auronix Commerce do?','Where can I verify the company?']).map(question=><button type="button" key={question} onClick={()=>askQuick(question)}>{question}<ArrowRight size={16}/></button>)}</div></div>}
+          {messages.length===0&&!loading&&!visibleAnswer&&!error&&<div className="ac-chat-welcome"><span className="ac-eyebrow">AURONIX SUPPORT</span><h2>Hi, how can I help?</h2><p>{seller ? 'Ask about your seller workspace, catalogs, verification or support. For account-specific help, contact the support team.' : 'Tell me what you need help with, or choose a topic below.'}</p><div className="ac-chat-suggestions">{(seller?['How do I update my catalog?','Where is my application status?','How do I contact seller support?']:['How can I become a supplier?','What does Auronix Commerce do?','Where can I verify the company?']).map(question=><button type="button" key={question} onClick={()=>askQuick(question)}>{question}<ArrowRight size={16}/></button>)}</div></div>}
           <div className="ac-chat-messages">{messages.map(message=>message.sessionBoundary?<div key={message.id} className="ac-chat-boundary" role="separator" aria-label="Previous chat ended">Previous chat ended · New chat</div>:<article key={message.id} className="ac-message" data-role={message.role}><div className="ac-message-label">{message.role==='user'?'You':agentName}</div><div className="ac-message-content">{message.role==='assistant'?renderMarkdown(message.content):<p className="whitespace-pre-wrap">{message.content}</p>}</div>{message.role==='assistant'&&<MessageCopy content={message.content}/>}</article>)}</div>
-          {loading&&<article className="ac-message" data-role="assistant"><div className="ac-message-label">{agentName}</div>{visibleAnswer?<div className="ac-message-content">{renderMarkdown(visibleAnswer,true)}</div>:<div className="ac-chat-thinking" role="status"><Spinner className="w-5 h-5"/> {agentName} is typing…</div>}</article>}
+          {loading&&<article className="ac-message" data-role="assistant"><div className="ac-message-label">{agentName}</div>{visibleAnswer?<div className="ac-message-content">{renderMarkdown(visibleAnswer,true)}</div>:<div className="ac-chat-thinking" role="status"><span className="ac-support-typing-dots" aria-hidden="true"><i/><i/><i/></span> {agentName} is typing…</div>}</article>}
           {error&&<div className="ac-chat-error" role="alert"><strong>We couldn’t complete that reply.</strong><p>{error}</p><button type="button" onClick={()=>{const last=[...messages].reverse().find(m=>m.role==='user');if(last)setInput(last.content);setError('');}}>Edit and try again</button></div>}
         </div>
-        <div className="ac-composer-area"><form data-auronix-support-form onSubmit={sendMessage} className="ac-composer"><textarea aria-label="Your message" value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();void sendMessage();}}} rows={1} maxLength={5000} disabled={loading} placeholder="Your message…"/>{loading?<button type="button" aria-label="Stop AI response" onClick={stopAnswer}><Square size={18}/></button>:<button type="submit" aria-label="Send message" disabled={!input.trim()}><ArrowRight size={21}/></button>}</form><p><ShieldCheck size={13}/> AI can make mistakes. Never share passwords or verification codes.{seller?' This conversation is not saved.':' History is saved in this browser.'}</p></div>
+        <div className="ac-composer-area"><form data-auronix-support-form onSubmit={sendMessage} className="ac-composer"><textarea aria-label="Your message" value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();void sendMessage();}}} rows={1} maxLength={5000} disabled={loading} placeholder="Your message…"/>{loading?<button type="button" aria-label="Stop response" onClick={stopAnswer}><Square size={18}/></button>:<button type="submit" aria-label="Send message" disabled={!input.trim()}><ArrowRight size={21}/></button>}</form><p><ShieldCheck size={13}/> Please verify important details. Never share passwords or verification codes.{seller?' This conversation is not saved.':' History is saved in this browser.'}</p></div>
       </section>
       <AlertDialog open={clearDialogOpen} onOpenChange={(nextOpen) => {
         if (!clearingMemory) setClearDialogOpen(nextOpen);
@@ -921,7 +892,7 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
               Delete this chat history?
             </AlertDialogTitle>
             <AlertDialogDescription className="font-sans text-sm leading-6 text-foreground-muted">
-              This removes this Auronix AI conversation. This action cannot be undone.
+              This removes this support conversation. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-6 gap-2 sm:gap-2">
@@ -950,5 +921,5 @@ function MessageCopy({content}:{content:string}) { const [copied,setCopied]=useS
 
 
 function ChatBrandMark({ className }: { className?: string }) {
-  return <span className={`relative inline-flex shrink-0 ${className || ''}`}><AuronixMark className="h-full w-full shadow-none" /><span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-background bg-accent text-white shadow-sm"><Bot className="h-2.5 w-2.5" /></span></span>;
+  return <span className={`relative inline-flex shrink-0 ${className || ''}`}><AuronixMark className="h-full w-full shadow-none" /></span>;
 }

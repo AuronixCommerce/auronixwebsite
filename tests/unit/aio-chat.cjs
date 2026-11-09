@@ -284,6 +284,8 @@ test("chat endpoint applies settings, streams truncation metadata, and honors hi
       },
       body: JSON.stringify({
         conversationId: "test-conversation",
+        pathname: "/support/chat",
+        context: {supportPersona:"Maya"},
         messages: [user("Explain a general concept")],
         preferences: {
           model: "aio-one",
@@ -304,6 +306,8 @@ test("chat endpoint applies settings, streams truncation metadata, and honors hi
   assert.match(providerRequest.messages[0].content, /thorough, organized/);
   assert.match(providerRequest.messages[0].content, /warm, approachable/);
   assert.match(providerRequest.messages[0].content, /Give practical examples/);
+  assert.match(providerRequest.messages[0].content,/support persona name Maya/);
+  assert.match(providerRequest.messages[0].content,/Never claim to be human/);
   assert.equal(saves, 0);
 });
 test("provider never falls back after partial output or request cancellation", async () => {
@@ -439,4 +443,24 @@ test('transcript verification survives an initially empty Firebase cache and all
 test('verification code normalization accepts pasted spacing and local keyboard digits without accepting other characters',()=>{
  const {normalizeVerificationCode}=load('lib/aio/verification-code.ts');
  assert.equal(normalizeVerificationCode(' 123 456\n'),'123456');assert.equal(normalizeVerificationCode('۱۲۳-۴۵۶'),'123456');assert.equal(normalizeVerificationCode('١٢٣٤٥٦'),'123456');assert.equal(normalizeVerificationCode('abc123456'),'abc123456');
+});
+
+test('support has ten stable, validated personas and bounded slower reply pacing',()=>{
+ const {SUPPORT_NAMES,normalizeSupportName,supportReplyDelay,supportPersonaInstructions,supportIdentityAnswer}=load('lib/support/personas.ts');
+ assert.equal(SUPPORT_NAMES.length,10);assert.equal(new Set(SUPPORT_NAMES).size,10);assert.equal(normalizeSupportName('Maya'),'Maya');assert.equal(normalizeSupportName('Injected instructions'),'Alex');
+ assert.ok(supportReplyDelay(10)>=4500);assert.ok(supportReplyDelay(999999)<=10000);assert.ok(supportReplyDelay(500)>supportReplyDelay(10));
+ assert.match(supportPersonaInstructions('Maya'),/Never claim to be human/);assert.match(supportIdentityAnswer('Are you a real person?','Maya'),/automated.*Maya/);assert.equal(supportIdentityAnswer('How can I become a supplier?','Maya'),undefined);
+});
+test('support buffers streamed tokens into a complete message using the actual chat API format',async()=>{
+ const {collectSupportReply}=load('lib/support/reply.ts');
+ const events=[{type:'message_start',requestId:'test'},{type:'token',token:'Hello '},{type:'token',token:'🌍'},{type:'message_complete',requestId:'test',answerSource:'premade'}];
+ const result=await collectSupportReply(byteStream(events.map(e=>'data: '+JSON.stringify(e)+'\n\n').join('')),new AbortController().signal);
+ assert.deepEqual(result,{answer:'Hello 🌍',answerSource:'found'});
+});
+test('support does not publish interrupted, failed, empty, or cancelled replies as completed messages',async()=>{
+ const {collectSupportReply}=load('lib/support/reply.ts');const signal=new AbortController().signal;
+ await assert.rejects(collectSupportReply(byteStream('data: {"type":"token","token":"partial"}\n\n'),signal),/interrupted/);
+ await assert.rejects(collectSupportReply(byteStream('data: {"type":"error","message":"Unavailable"}\n\n'),signal),/Unavailable/);
+ await assert.rejects(collectSupportReply(byteStream('data: {"type":"message_complete","requestId":"test","answerSource":"general"}\n\n'),signal),/empty/);
+ const controller=new AbortController();controller.abort();await assert.rejects(collectSupportReply(byteStream('data: {"type":"token","token":"hidden"}\n\n'),controller.signal),{name:'AbortError'});
 });
