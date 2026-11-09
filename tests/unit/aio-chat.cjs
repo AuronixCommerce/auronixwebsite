@@ -357,3 +357,4 @@ test("provider never falls back after partial output or request cancellation", a
     else process.env.AIO_API_KEY = original;
   }
 });
+test('public AIO selection maps to configured models and rejects arbitrary model IDs',()=>{const {resolveAioModel,normalizeAioModelId}=load('lib/aio/models.ts');assert.equal(resolveAioModel('aio-2',{aioModel:'configured-primary'}),'configured-primary');assert.equal(resolveAioModel('aio-2-fast',{}),'openai/gpt-oss-20b');assert.equal(resolveAioModel('aio-2-fast',{aioFastModel:'configured-fast'}),'configured-fast');assert.equal(normalizeAioModelId('injected-model'),'aio-2');assert.equal(normalizeChatPreferences({model:'aio-2-fast'}).model,'aio-2-fast')});

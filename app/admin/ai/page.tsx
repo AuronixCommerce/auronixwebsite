@@ -31,6 +31,7 @@ export default function AdminAIPage() {
     aioRetrievalLimit: 4,
     aioTemperature: 0.25,
     aioModel: "",
+    aioFastModel: "openai/gpt-oss-20b",
     aioFallbackModel: "",
   });
   const [enabled, setEnabled] = useState(true);
@@ -372,6 +373,19 @@ export default function AdminAIPage() {
                         setReplySettings((v) => ({
                           ...v,
                           aioFallbackModel: e.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <label className="grid gap-2">
+                    AIO 2 Fast model
+                    <input
+                      className="px-3 py-2"
+                      value={replySettings.aioFastModel}
+                      onChange={(e) =>
+                        setReplySettings((v) => ({
+                          ...v,
+                          aioFastModel: e.target.value,
                         }))
                       }
                     />

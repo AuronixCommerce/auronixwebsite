@@ -1,3 +1,4 @@
+import { resolveAioModel } from "@/lib/aio/models";
 import { DEFAULT_AIO_SETTINGS } from "@/lib/aio/settings";
 import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
@@ -50,6 +51,7 @@ const requestSchema = z.object({
   messages: z.array(messageSchema).min(1).max(40),
   preferences: z
     .object({
+      model: z.enum(["aio-2", "aio-2-fast"]).optional(),
       replyLength: z.enum(["adaptive", "brief", "detailed"]).optional(),
       tone: z.enum(["professional", "friendly", "direct"]).optional(),
       saveHistory: z.boolean().optional(),
@@ -460,8 +462,7 @@ export async function POST(request: Request) {
   });
 
   const provider = createAioProvider({
-    model:
-      typeof settings.aioModel === "string" ? settings.aioModel : undefined,
+    model: resolveAioModel(preferences?.model, settings),
     fallbackModel:
       typeof settings.aioFallbackModel === "string"
         ? settings.aioFallbackModel

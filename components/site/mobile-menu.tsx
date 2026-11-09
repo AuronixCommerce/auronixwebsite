@@ -35,6 +35,7 @@ export function MobileMenu({
         <nav aria-label="Mobile navigation">
           <div className="aur-mobile-primary">
             <Link href="/" onClick={onClose}>Home <ArrowRight size={18} /></Link>
+            <Link href="/aio" onClick={onClose}>AIO 2 <ArrowRight size={18}/></Link>
             <Link href="/solutions" onClick={onClose}>Solutions <ArrowRight size={18} /></Link>
             <Link href="/portfolio" onClick={onClose}>Products <ArrowRight size={18} /></Link>
             <Link href="/our-process" onClick={onClose}>Our process <ArrowRight size={18} /></Link>

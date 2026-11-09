@@ -1,12 +1,14 @@
-'use client';
+"use client";
 
-import { ThemeProvider as NextThemesProvider } from 'next-themes';
+import { ThemeProvider as NextThemesProvider } from "next-themes";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (
     <NextThemesProvider
       attribute="class"
       defaultTheme="system"
+      enableColorScheme
+      themes={["light", "dark"]}
       enableSystem
       disableTransitionOnChange
       storageKey="auronix-theme"

@@ -1,4 +1,5 @@
 "use client";
+import { AIO_MODELS, normalizeAioModelId } from "@/lib/aio/models";
 import { AIMessageContent } from "./ai-message-content";
 import {
   CHAT_PREFERENCES_KEY,
@@ -225,11 +226,16 @@ export function AIChat({
   const pathname = usePathname() || "/";
 
   useEffect(() => {
-    if (!selectionRequest?.prompt) {
+    if (!localMemoryReady || !selectionRequest?.prompt) {
       return;
     }
 
     setOpen(true);
+    if (selectionRequest.model)
+      setPreferences((current) => ({
+        ...current,
+        model: normalizeAioModelId(selectionRequest.model),
+      }));
     setSelectedContext(selectionRequest.selectedText || "");
     setError("");
     setTicketStep("idle");
@@ -243,7 +249,7 @@ export function AIChat({
         selectionRequest.prompt.length,
       );
     });
-  }, [selectionRequest]);
+  }, [selectionRequest, localMemoryReady]);
 
   const quickQuestion = useMemo(
     () => (quickIndex >= 0 ? QUICK_QUESTIONS[quickIndex] : ""),
@@ -673,6 +679,7 @@ export function AIChat({
           requestId: streamedRequestId,
           messages: currentChatContext(nextMessages, preferences.useContext),
           preferences: {
+            model: preferences.model,
             replyLength: preferences.followReplyDefaults
               ? undefined
               : preferences.replyLength,
@@ -1024,6 +1031,23 @@ export function AIChat({
               </div>
             </header>
             <div className="aio-toolbar">
+              <label className="aio-model-picker">
+                <span className="sr-only">AIO model</span>
+                <select
+                  aria-label="AIO model"
+                  value={preferences.model}
+                  disabled={loading}
+                  onChange={(event) =>
+                    preference("model", normalizeAioModelId(event.target.value))
+                  }
+                >
+                  {AIO_MODELS.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <button
                 type="button"
                 onClick={() => {
@@ -1084,6 +1108,21 @@ export function AIChat({
                       ? "Using Auronix reply defaults"
                       : "Use Auronix reply defaults"}
                   </button>
+                </div>
+                <div className="aio-model-description">
+                  <strong>
+                    {
+                      AIO_MODELS.find((model) => model.id === preferences.model)
+                        ?.name
+                    }
+                  </strong>
+                  <p>
+                    {
+                      AIO_MODELS.find((model) => model.id === preferences.model)
+                        ?.description
+                    }
+                  </p>
+                  <a href="/aio">Explore AIO 2 →</a>
                 </div>
                 <fieldset>
                   <legend>Reply length</legend>

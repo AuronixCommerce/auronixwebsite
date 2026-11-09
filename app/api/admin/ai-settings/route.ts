@@ -24,6 +24,7 @@ const settingsSchema = z
     aioRetrievalLimit: z.number().int().min(1).max(6),
     aioTemperature: z.number().min(0).max(1),
     aioModel: model,
+    aioFastModel: model,
     aioFallbackModel: model,
   })
   .partial();

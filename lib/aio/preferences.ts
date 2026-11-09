@@ -1,8 +1,10 @@
+import { normalizeAioModelId, type AioModelId } from "./models";
 import type { AioChatMessage } from "./types";
 export const CHAT_PREFERENCES_KEY = "auronix-ai-preferences-v1";
 export type ReplyLength = "adaptive" | "brief" | "detailed";
 export type ReplyTone = "professional" | "friendly" | "direct";
 export type ChatPreferences = {
+  model: AioModelId;
   replyLength: ReplyLength;
   tone: ReplyTone;
   followReplyDefaults: boolean;
@@ -12,6 +14,7 @@ export type ChatPreferences = {
   enterToSend: boolean;
 };
 export const DEFAULT_CHAT_PREFERENCES: ChatPreferences = {
+  model: "aio-2",
   replyLength: "adaptive",
   tone: "professional",
   followReplyDefaults: true,
@@ -25,6 +28,7 @@ export function normalizeChatPreferences(raw: unknown): ChatPreferences {
     raw && typeof raw === "object" ? raw : {}
   ) as Partial<ChatPreferences>;
   return {
+    model: normalizeAioModelId(p.model),
     replyLength: ["adaptive", "brief", "detailed"].includes(
       String(p.replyLength),
     )

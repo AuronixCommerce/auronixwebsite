@@ -26,6 +26,7 @@ export const NAV_GROUPS = [
     title: "Resources",
     note: "Answers, guidance, and company policies.",
     paths: [
+      "/aio",
       "/support",
       "/support/chat",
       "/support/contact",
@@ -41,6 +42,7 @@ export const NAV_GROUPS = [
   },
 ];
 export const PUBLIC_PAGES = [
+  {id:"aio",path:"/aio",title:"AIO 2",category:"Resources"},
   {id:"support-chat",path:"/support/chat",title:"Support Chat",category:"Resources"},
   {id:"support-contact",path:"/support/contact",title:"Contact Support",category:"Resources"},
   ...SITE_PAGES.filter((p) => !["/services", "/portfolio"].includes(p.path)),

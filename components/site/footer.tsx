@@ -253,6 +253,7 @@ export function Footer() {
             </h3>
 
             <nav className="mt-4 space-y-3 text-sm text-foreground-muted">
+            <Link href="/aio">Introducing AIO 2</Link>
               <Link
                 href="/about"
                 className="block hover:text-foreground"

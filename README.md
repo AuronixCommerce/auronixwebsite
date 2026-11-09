@@ -87,3 +87,7 @@ Install the browser runtime once on a new CI worker with `npx playwright install
 
 The included `vercel.json` selects the Next.js framework and schedules the
 operational health and security-maintenance jobs.
+
+### AIO 2 modes
+
+The `/aio` page introduces the AIO 2 assistant experience. The chat selector offers AIO 2 (the configured primary model) and AIO 2 Fast (`aioFastModel`, default `openai/gpt-oss-20b`). These are branded modes over the configured provider, not newly trained foundation models. Provider credentials and model availability are required for live replies. Admin AI settings expose both model mappings. The selected mode is remembered with other chat preferences.

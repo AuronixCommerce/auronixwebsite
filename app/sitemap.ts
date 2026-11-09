@@ -1,4 +1,4 @@
-﻿import type { MetadataRoute } from 'next';
+import type { MetadataRoute } from 'next';
 
 import {
   adminDb,
@@ -23,6 +23,7 @@ const PUBLIC_ROUTES: Array<{
   changeFrequency: Frequency;
   priority: number;
 }> = [
+  {path:'/aio',changeFrequency:'monthly',priority:0.8},
   {
     path: '/',
     changeFrequency: 'weekly',
