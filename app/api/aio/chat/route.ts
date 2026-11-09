@@ -1,4 +1,7 @@
-import { SUPPORT_NAMES, supportPersonaInstructions } from "@/lib/support/personas";
+import {
+  SUPPORT_NAMES,
+  supportPersonaInstructions,
+} from "@/lib/support/personas";
 import { resolveAioModel } from "@/lib/aio/models";
 import { DEFAULT_AIO_SETTINGS } from "@/lib/aio/settings";
 import { randomUUID } from "crypto";
@@ -432,6 +435,8 @@ export async function POST(request: Request) {
       if (identity && saveHistory) {
         await saveAuthenticatedAioTurn({
           uid: identity.uid,
+          requestId,
+          sources,
           conversationId: parsed.data.conversationId,
           userContent: latestUserMessage,
           assistantContent: memoryMatch.answer,
@@ -472,7 +477,16 @@ export async function POST(request: Request) {
   });
 
   const providerMessages = [
-    { role: "system" as const, content: systemPrompt + (parsed.data.context?.supportPersona && (pathname === "/support/chat" || pathname.startsWith("/seller/")) ? "\n\n" + supportPersonaInstructions(parsed.data.context.supportPersona) : "") },
+    {
+      role: "system" as const,
+      content:
+        systemPrompt +
+        (parsed.data.context?.supportPersona &&
+        (pathname === "/support/chat" || pathname.startsWith("/seller/"))
+          ? "\n\n" +
+            supportPersonaInstructions(parsed.data.context.supportPersona)
+          : ""),
+    },
     ...messages.map((message) => ({
       role: message.role,
       content: message.content,
@@ -553,6 +567,8 @@ export async function POST(request: Request) {
       if (identity && saveHistory) {
         await saveAuthenticatedAioTurn({
           uid: identity.uid,
+          requestId,
+          sources,
           conversationId: parsed.data.conversationId,
           userContent: latestUserMessage,
           assistantContent: fullText,

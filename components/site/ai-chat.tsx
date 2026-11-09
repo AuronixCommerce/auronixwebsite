@@ -73,6 +73,7 @@ type ChatMessage = {
   interrupted?: boolean;
   sessionBoundary?: boolean;
   endedAt?: number;
+  pinned?: boolean;
 };
 
 type TicketStep =
@@ -129,10 +130,12 @@ export function AIChat({
   initiallyOpen = false,
   presentation = "popup",
   selectionRequest = null,
+  savedConversation = null,
 }: {
   initiallyOpen?: boolean;
   presentation?: "popup" | "page";
   selectionRequest?: AioSelectionRequest | null;
+  savedConversation?: { id: string; messages: any[] } | null;
 } = {}) {
   const router = useRouter();
   const reducedMotion = useReducedMotion();
@@ -416,6 +419,61 @@ export function AIChat({
     setVisibleAnswer("");
     setActivityLabel("AIO is analyzing…");
     setLoading(false);
+  };
+
+  useEffect(() => {
+    if (!savedConversation) return;
+    requestVersion.current += 1;
+    abortRef.current?.abort();
+    conversationIdRef.current = savedConversation.id;
+    setMessages(
+      savedConversation.messages.map((m) => ({
+        ...m,
+        role: m.role === "assistant" ? "assistant" : "user",
+      })),
+    );
+    setLoading(false);
+    setVisibleAnswer("");
+    setInput("");
+    setError("");
+    setRetryMessages(null);
+    setSelectedContext("");
+    setTranscriptOpen(false);
+    setTicketStep("idle");
+    currentAnswerRef.current = "";
+    currentSourcesRef.current = [];
+    currentActionsRef.current = [];
+  }, [savedConversation]);
+  const togglePinnedAnswer = async (message: ChatMessage) => {
+    if (!auth.currentUser) {
+      setError("Sign in to pin answers to your account.");
+      return;
+    }
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const response = await fetch("/api/aio/conversations", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          id: conversationIdRef.current,
+          messageId: message.id,
+          pinned: !message.pinned,
+        }),
+      });
+      if (!response.ok)
+        throw Error("The answer is still being saved. Try again in a moment.");
+      setMessages((previous) =>
+        previous.map((m) =>
+          m.id === message.id ? { ...m, pinned: !m.pinned } : m,
+        ),
+      );
+      window.dispatchEvent(new Event("aio-workspace-updated"));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unable to pin answer.");
+    }
   };
 
   const clearChatMemory = async () => {
@@ -778,7 +836,11 @@ export function AIChat({
         }
       };
 
-      for await (const event of paceAioEvents(readAioStream(response.body), preferences.model, controller.signal)) {
+      for await (const event of paceAioEvents(
+        readAioStream(response.body),
+        preferences.model,
+        controller.signal,
+      )) {
         if (!isCurrent()) return;
         handleEvent(event);
         if (event.type === "message_complete") break;
@@ -806,6 +868,10 @@ export function AIChat({
         },
       ]);
 
+      window.setTimeout(
+        () => window.dispatchEvent(new Event("aio-workspace-updated")),
+        1000,
+      );
       currentAnswerRef.current = "";
       currentSourcesRef.current = [];
       currentActionsRef.current = [];
@@ -832,6 +898,10 @@ export function AIChat({
         ]);
       }
 
+      window.setTimeout(
+        () => window.dispatchEvent(new Event("aio-workspace-updated")),
+        1000,
+      );
       currentAnswerRef.current = "";
       currentSourcesRef.current = [];
       currentActionsRef.current = [];
@@ -867,6 +937,11 @@ export function AIChat({
     setTicketStep("idle");
     setTicketDraft(EMPTY_TICKET);
     setInput("");
+    if (presentation === "page") {
+      setMessages([]);
+      window.dispatchEvent(new Event("aio-workspace-new"));
+      return;
+    }
     setMessages((existing) => {
       const boundary = existing.reduce(
         (last, message, index) => (message.sessionBoundary ? index : last),
@@ -941,20 +1016,53 @@ export function AIChat({
   const emailTranscript = async (event: FormEvent) => {
     event.preventDefault();
     if (transcriptBusy) return;
-    setTranscriptBusy(true); setTranscriptNotice(""); setTranscriptSent(false);
+    setTranscriptBusy(true);
+    setTranscriptNotice("");
+    setTranscriptSent(false);
     try {
       const response = await fetch("/api/aio/transcript", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: transcriptEmail, challengeId: transcriptChallenge || undefined,
-          code: transcriptChallenge ? normalizeVerificationCode(transcriptCode) : undefined,
-          messages: messages.filter(m => !m.sessionBoundary && m.content.trim()).slice(-100).map(m => ({role:m.role,content:m.content})) }),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: transcriptEmail,
+          challengeId: transcriptChallenge || undefined,
+          code: transcriptChallenge
+            ? normalizeVerificationCode(transcriptCode)
+            : undefined,
+          messages: messages
+            .filter((m) => !m.sessionBoundary && m.content.trim())
+            .slice(-100)
+            .map((m) => ({ role: m.role, content: m.content })),
+        }),
       });
       const result = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.error || "Unable to email the transcript.");
-      if (result.challengeId) { setTranscriptChallenge(result.challengeId); setTranscriptCode(""); setTranscriptNotice("Check your inbox for a verification code. Enter it below to send this conversation."); }
-      else { setTranscriptSent(true); setTranscriptNotice("Transcript accepted by our mail service. Check your inbox and spam folder."); setTranscriptChallenge(""); setTranscriptCode(""); }
-    } catch (error) { setTranscriptNotice(userFacingError(error, "Unable to email the transcript. Please retry.")); }
-    finally { setTranscriptBusy(false); }
+      if (!response.ok || !result.success)
+        throw new Error(result.error || "Unable to email the transcript.");
+      if (result.challengeId) {
+        setTranscriptChallenge(result.challengeId);
+        setTranscriptCode("");
+        setTranscriptNotice(
+          result.queued
+            ? "Your verification email is queued. We are retrying delivery; enter the code when it arrives."
+            : "Check your inbox for a verification code. Enter it below to send this conversation.",
+        );
+      } else {
+        setTranscriptSent(true);
+        setTranscriptNotice(
+          result.queued
+            ? "Your transcript is queued. We will retry email delivery automatically."
+            : "Transcript accepted by our mail service. Check your inbox and spam folder.",
+        );
+        setTranscriptChallenge("");
+        setTranscriptCode("");
+      }
+    } catch (error) {
+      setTranscriptNotice(
+        userFacingError(error, "Unable to email the transcript. Please retry."),
+      );
+    } finally {
+      setTranscriptBusy(false);
+    }
   };
   const exportChat = () => {
     const text = messages
@@ -1008,7 +1116,11 @@ export function AIChat({
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={presentation === "page" ? false : { opacity: 0, y: 16, scale: 0.98 }}
+            initial={
+              presentation === "page"
+                ? false
+                : { opacity: 0, y: 16, scale: 0.98 }
+            }
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.98 }}
             transition={
@@ -1024,28 +1136,45 @@ export function AIChat({
               <div className="aio-identity">
                 <AuronixMark />
                 <div>
-              <label className="aio-model-picker aio-header-model-picker">
-                <span className="sr-only">AIO model</span>
-                <select
-                  aria-label="AIO model"
-                  value={preferences.model}
-                  disabled={loading}
-                  onChange={(event) =>
-                    preference("model", normalizeAioModelId(event.target.value))
-                  }
-                >
-                  {AIO_MODELS.map((model) => (
-                    <option key={model.id} value={model.id}>
-                      {model.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-                  <small>{AIO_MODELS.find(model => model.id === preferences.model)?.label}</small>
+                  <label className="aio-model-picker aio-header-model-picker">
+                    <span className="sr-only">AIO model</span>
+                    <select
+                      aria-label="AIO model"
+                      value={preferences.model}
+                      disabled={loading}
+                      onChange={(event) =>
+                        preference(
+                          "model",
+                          normalizeAioModelId(event.target.value),
+                        )
+                      }
+                    >
+                      {AIO_MODELS.map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <small>
+                    {
+                      AIO_MODELS.find((model) => model.id === preferences.model)
+                        ?.label
+                    }
+                  </small>
                 </div>
               </div>
               <div className="aio-header-tools">
-                {presentation !== "page" && !loading && <Link className="aio-page-link" href="/aio/chat" title="Open full-page chat" aria-label="Open full-page AIO chat"><ExternalLink size={16}/></Link>}
+                {presentation !== "page" && !loading && (
+                  <Link
+                    className="aio-page-link"
+                    href="/aio/chat"
+                    title="Open full-page chat"
+                    aria-label="Open full-page AIO chat"
+                  >
+                    <ExternalLink size={16} />
+                  </Link>
+                )}
                 <button
                   type="button"
                   aria-label="Chat settings"
@@ -1056,27 +1185,34 @@ export function AIChat({
                 >
                   <Settings2 size={17} />
                 </button>
-                {presentation !== "page" && <><button
-                  type="button"
-                  className="aio-expand-toggle"
-                  aria-label={expanded ? "Minimize chat" : "Expand chat"}
-                  title={expanded ? "Minimize" : "Expand"}
-                  onClick={() => setExpanded(!expanded)}
-                >
-                  {expanded ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
-                </button>
-                <button
-                  type="button"
-                  aria-label="Close Auronix AI chat"
-                  title="Close chat"
-                  onClick={() => setOpen(false)}
-                >
-                  <X size={19} />
-                </button></>}
+                {presentation !== "page" && (
+                  <>
+                    <button
+                      type="button"
+                      className="aio-expand-toggle"
+                      aria-label={expanded ? "Minimize chat" : "Expand chat"}
+                      title={expanded ? "Minimize" : "Expand"}
+                      onClick={() => setExpanded(!expanded)}
+                    >
+                      {expanded ? (
+                        <Minimize2 size={17} />
+                      ) : (
+                        <Maximize2 size={17} />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Close Auronix AI chat"
+                      title="Close chat"
+                      onClick={() => setOpen(false)}
+                    >
+                      <X size={19} />
+                    </button>
+                  </>
+                )}
               </div>
             </header>
             <div className="aio-toolbar">
-
               <button
                 type="button"
                 onClick={() => {
@@ -1102,7 +1238,25 @@ export function AIChat({
                 Support
               </button>
               <div />
-              <button type="button" aria-label="Email conversation" title="Email conversation" disabled={loading || !messages.some(m => !m.sessionBoundary && m.content.trim())} onClick={() => {if(!transcriptOpen && transcriptSent){setTranscriptSent(false);setTranscriptNotice("");}setTranscriptOpen(!transcriptOpen);setSettingsOpen(false);}}><Mail size={14}/></button>
+              <button
+                type="button"
+                aria-label="Email conversation"
+                title="Email conversation"
+                disabled={
+                  loading ||
+                  !messages.some((m) => !m.sessionBoundary && m.content.trim())
+                }
+                onClick={() => {
+                  if (!transcriptOpen && transcriptSent) {
+                    setTranscriptSent(false);
+                    setTranscriptNotice("");
+                  }
+                  setTranscriptOpen(!transcriptOpen);
+                  setSettingsOpen(false);
+                }}
+              >
+                <Mail size={14} />
+              </button>
               <button
                 type="button"
                 onClick={exportChat}
@@ -1122,23 +1276,115 @@ export function AIChat({
                 <Trash2 size={14} />
               </button>
             </div>
-            {transcriptOpen && <form className="aio-transcript-form" onSubmit={emailTranscript} aria-label="Email conversation transcript">
-              <div className="aio-transcript-fields">
-                <div className="aio-transcript-heading"><Mail size={22}/><h2>{transcriptSent ? "Transcript requested" : "Email your conversation"}</h2></div>
-                <p>Get a copy of the messages visible in this chat. This does not subscribe you to marketing.</p>
-                {!transcriptSent && <>
-                  <label>Email address<input type="email" autoComplete="email" required maxLength={254} value={transcriptEmail} disabled={transcriptBusy || !!transcriptChallenge} onChange={e=>setTranscriptEmail(e.target.value)} placeholder="you@example.com"/></label>
-                  {transcriptChallenge && <label>Six-digit verification code<input autoFocus required type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={32} value={transcriptCode} disabled={transcriptBusy} onChange={e=>setTranscriptCode(normalizeVerificationCode(e.target.value).slice(0,6))} placeholder="123456"/></label>}
-                  {transcriptChallenge && <p>Use the code in the most recent transcript verification email. It expires after 10 minutes.</p>}
-                  {transcriptChallenge && <button className="aio-transcript-restart" type="button" disabled={transcriptBusy} onClick={()=>{setTranscriptChallenge("");setTranscriptCode("");setTranscriptNotice("");}}>Change email or request a new code</button>}
-                </>}
-                <p role="status" aria-live="polite">{transcriptNotice}</p>
-              </div>
-              <div className="aio-transcript-actions">
-                {!transcriptSent && <button className="ax-btn" type="submit" disabled={transcriptBusy}>{transcriptBusy ? "Please wait…" : transcriptChallenge ? "Confirm and send transcript" : "Send verification code"}</button>}
-                <button type="button" disabled={transcriptBusy} onClick={()=>setTranscriptOpen(false)}>{transcriptSent ? "Back to chat" : "Cancel"}</button>
-              </div>
-            </form>}
+            {transcriptOpen && (
+              <form
+                className="aio-transcript-form"
+                onSubmit={emailTranscript}
+                aria-label="Email conversation transcript"
+              >
+                <div className="aio-transcript-fields">
+                  <div className="aio-transcript-heading">
+                    <Mail size={22} />
+                    <h2>
+                      {transcriptSent
+                        ? "Transcript requested"
+                        : "Email your conversation"}
+                    </h2>
+                  </div>
+                  <p>
+                    Get a copy of the messages visible in this chat. This does
+                    not subscribe you to marketing.
+                  </p>
+                  {!transcriptSent && (
+                    <>
+                      <label>
+                        Email address
+                        <input
+                          type="email"
+                          autoComplete="email"
+                          required
+                          maxLength={254}
+                          value={transcriptEmail}
+                          disabled={transcriptBusy || !!transcriptChallenge}
+                          onChange={(e) => setTranscriptEmail(e.target.value)}
+                          placeholder="you@example.com"
+                        />
+                      </label>
+                      {transcriptChallenge && (
+                        <label>
+                          Six-digit verification code
+                          <input
+                            autoFocus
+                            required
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
+                            pattern="[0-9]{6}"
+                            maxLength={32}
+                            value={transcriptCode}
+                            disabled={transcriptBusy}
+                            onChange={(e) =>
+                              setTranscriptCode(
+                                normalizeVerificationCode(e.target.value).slice(
+                                  0,
+                                  6,
+                                ),
+                              )
+                            }
+                            placeholder="123456"
+                          />
+                        </label>
+                      )}
+                      {transcriptChallenge && (
+                        <p>
+                          Use the code in the most recent transcript
+                          verification email. It expires after 10 minutes.
+                        </p>
+                      )}
+                      {transcriptChallenge && (
+                        <button
+                          className="aio-transcript-restart"
+                          type="button"
+                          disabled={transcriptBusy}
+                          onClick={() => {
+                            setTranscriptChallenge("");
+                            setTranscriptCode("");
+                            setTranscriptNotice("");
+                          }}
+                        >
+                          Change email or request a new code
+                        </button>
+                      )}
+                    </>
+                  )}
+                  <p role="status" aria-live="polite">
+                    {transcriptNotice}
+                  </p>
+                </div>
+                <div className="aio-transcript-actions">
+                  {!transcriptSent && (
+                    <button
+                      className="ax-btn"
+                      type="submit"
+                      disabled={transcriptBusy}
+                    >
+                      {transcriptBusy
+                        ? "Please wait…"
+                        : transcriptChallenge
+                          ? "Confirm and send transcript"
+                          : "Send verification code"}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    disabled={transcriptBusy}
+                    onClick={() => setTranscriptOpen(false)}
+                  >
+                    {transcriptSent ? "Back to chat" : "Cancel"}
+                  </button>
+                </div>
+              </form>
+            )}
             {transcriptOpen ? null : settingsOpen ? (
               <section className="aio-settings" aria-label="Chat preferences">
                 <div className="aio-settings-heading">
@@ -1395,6 +1641,21 @@ export function AIChat({
                                   onNavigate={(href) => router.push(href)}
                                 />
                                 <div className="aio-message-tools">
+                                  <MessageUtilityButton
+                                    label={
+                                      message.pinned
+                                        ? "Unpin answer"
+                                        : "Pin answer"
+                                    }
+                                    pressed={message.pinned}
+                                    onClick={() =>
+                                      void togglePinnedAnswer(message)
+                                    }
+                                  >
+                                    <span aria-hidden="true">
+                                      {message.pinned ? "★" : "☆"}
+                                    </span>
+                                  </MessageUtilityButton>
                                   <MessageUtilityButton
                                     label={
                                       copiedId === message.id

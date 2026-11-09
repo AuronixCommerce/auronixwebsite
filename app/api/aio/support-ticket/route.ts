@@ -1,11 +1,15 @@
-import { NextResponse } from 'next/server';
-import { z } from 'zod';
-import { adminDb } from '@/lib/firebase-admin';
-import { protectPublicRequest, publicRequestErrorResponse } from '@/lib/server-protection';
-import { TICKET_CATEGORIES } from '@/lib/constants';
+import { randomBytes, createHash } from "crypto";
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { adminDb } from "@/lib/firebase-admin";
+import {
+  protectPublicRequest,
+  publicRequestErrorResponse,
+} from "@/lib/server-protection";
+import { TICKET_CATEGORIES } from "@/lib/constants";
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const schema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -19,7 +23,7 @@ const schema = z.object({
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    await protectPublicRequest(request, 'aio-support-ticket', body, {
+    await protectPublicRequest(request, "aio-support-ticket", body, {
       limit: 8,
       windowMs: 60 * 60_000,
     });
@@ -27,33 +31,38 @@ export async function POST(request: Request) {
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: 'Please review the support-ticket details and try again.' },
-        { status: 400 }
+        {
+          success: false,
+          error: "Please review the support-ticket details and try again.",
+        },
+        { status: 400 },
       );
     }
 
     const category = TICKET_CATEGORIES.find(
-      (item) => item.toLowerCase() === parsed.data.category.toLowerCase()
+      (item) => item.toLowerCase() === parsed.data.category.toLowerCase(),
     );
 
     if (!category) {
       return NextResponse.json(
-        { success: false, error: 'Choose a valid support category.' },
-        { status: 400 }
+        { success: false, error: "Choose a valid support category." },
+        { status: 400 },
       );
     }
 
     const now = Date.now();
-    const ref = adminDb.ref('tickets').push();
+    const ref = adminDb.ref("tickets").push();
 
+    const replyToken = randomBytes(32).toString("hex");
     await ref.set({
+      replyTokenHash: createHash("sha256").update(replyToken).digest("hex"),
       name: parsed.data.name,
       email: parsed.data.email.toLowerCase(),
       category,
       subject: parsed.data.subject,
       message: parsed.data.message,
-      status: 'open',
-      source: 'aio',
+      status: "open",
+      source: "aio",
       createdAt: now,
       updatedAt: now,
     });
@@ -62,11 +71,12 @@ export async function POST(request: Request) {
       {
         success: true,
         ticketId: ref.key,
+        replyToken,
       },
       {
         status: 201,
-        headers: { 'Cache-Control': 'no-store' },
-      }
+        headers: { "Cache-Control": "no-store" },
+      },
     );
   } catch (error) {
     const blocked = publicRequestErrorResponse(error);
@@ -74,10 +84,13 @@ export async function POST(request: Request) {
       return NextResponse.json(blocked.body, { status: blocked.status });
     }
 
-    console.error('[AIO support ticket] Failed:', error);
+    console.error("[AIO support ticket] Failed:", error);
     return NextResponse.json(
-      { success: false, error: 'AIO could not create the support ticket. Please try again.' },
-      { status: 503 }
+      {
+        success: false,
+        error: "AIO could not create the support ticket. Please try again.",
+      },
+      { status: 503 },
     );
   }
 }

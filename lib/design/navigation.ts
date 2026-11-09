@@ -32,6 +32,7 @@ export const NAV_GROUPS = [
       "/support/chat",
       "/support/contact",
       "/help",
+      "/status",
       "/faq",
       "/contact",
       "/privacy",
@@ -43,10 +44,31 @@ export const NAV_GROUPS = [
   },
 ];
 export const PUBLIC_PAGES = [
-  {id:"aio-chat",path:"/aio/chat",title:"Chat with AIO",category:"Resources"},
-  {id:"aio",path:"/aio",title:"AIO 2",category:"Resources"},
-  {id:"support-chat",path:"/support/chat",title:"Support Chat",category:"Resources"},
-  {id:"support-contact",path:"/support/contact",title:"Contact Support",category:"Resources"},
+  {
+    id: "status",
+    path: "/status",
+    title: "Service Status",
+    category: "Resources",
+  },
+  {
+    id: "aio-chat",
+    path: "/aio/chat",
+    title: "Chat with AIO",
+    category: "Resources",
+  },
+  { id: "aio", path: "/aio", title: "AIO 2", category: "Resources" },
+  {
+    id: "support-chat",
+    path: "/support/chat",
+    title: "Support Chat",
+    category: "Resources",
+  },
+  {
+    id: "support-contact",
+    path: "/support/contact",
+    title: "Contact Support",
+    category: "Resources",
+  },
   ...SITE_PAGES.filter((p) => !["/services", "/portfolio"].includes(p.path)),
   {
     id: "blog",

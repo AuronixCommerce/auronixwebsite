@@ -1,15 +1,11 @@
-'use client';
-import { userFacingError } from '@/lib/user-facing-error';
-import { Spinner } from '@/components/design/primitives';
+"use client";
+import { userFacingError } from "@/lib/user-facing-error";
+import { Spinner } from "@/components/design/primitives";
 
-import {
-  FormEvent,
-  useEffect,
-  useState,
-} from 'react';
+import { FormEvent, useEffect, useState } from "react";
 
-import Link from 'next/link';
-import { AuronixMark } from '@/components/site/auronix-mark';
+import Link from "next/link";
+import { AuronixMark } from "@/components/site/auronix-mark";
 
 import {
   CheckCircle2,
@@ -23,10 +19,10 @@ import {
   Send,
   ShoppingBag,
   ArrowUpRight,
-} from 'lucide-react';
-import { onValue, ref } from 'firebase/database';
-import { db } from '@/lib/firebase';
-import { SHOP_URL } from '@/lib/constants';
+} from "lucide-react";
+import { onValue, ref } from "firebase/database";
+import { db } from "@/lib/firebase";
+import { SHOP_URL } from "@/lib/constants";
 
 type PublicCompanySettings = {
   companyName?: string;
@@ -38,233 +34,216 @@ type PublicCompanySettings = {
   x?: string;
 };
 
-function socialUrl(platform: 'whatsapp' | 'linkedin' | 'instagram' | 'facebook' | 'x', raw?: string) {
-  const value = String(raw || '').trim();
-  if (!value) return '';
+function socialUrl(
+  platform: "whatsapp" | "linkedin" | "instagram" | "facebook" | "x",
+  raw?: string,
+) {
+  const value = String(raw || "").trim();
+  if (!value) return "";
   if (/^https?:\/\//i.test(value)) {
-    try { const url = new URL(value); return ['http:', 'https:'].includes(url.protocol) ? url.toString() : ''; } catch { return ''; }
+    try {
+      const url = new URL(value);
+      return ["http:", "https:"].includes(url.protocol) ? url.toString() : "";
+    } catch {
+      return "";
+    }
   }
-  if (platform === 'whatsapp') {
-    const digits = value.replace(/\D/g, '');
-    return /^\d{8,15}$/.test(digits) ? `https://wa.me/${digits}` : '';
+  if (platform === "whatsapp") {
+    const digits = value.replace(/\D/g, "");
+    return /^\d{8,15}$/.test(digits) ? `https://wa.me/${digits}` : "";
   }
-  const handle = value.replace(/^@/, '').replace(/^\/+|\/+$/g, '');
-  if (!handle || /[\s<>]/.test(handle)) return '';
-  const bases = { linkedin: 'https://www.linkedin.com/', instagram: 'https://www.instagram.com/', facebook: 'https://www.facebook.com/', x: 'https://x.com/' };
+  const handle = value.replace(/^@/, "").replace(/^\/+|\/+$/g, "");
+  if (!handle || /[\s<>]/.test(handle)) return "";
+  const bases = {
+    linkedin: "https://www.linkedin.com/",
+    instagram: "https://www.instagram.com/",
+    facebook: "https://www.facebook.com/",
+    x: "https://x.com/",
+  };
   return `${bases[platform]}${handle}`;
 }
 
 export function Footer() {
   const [company, setCompany] = useState<PublicCompanySettings>({});
-  const [
-    email,
-    setEmail,
-  ] =
-    useState('');
+  const [email, setEmail] = useState("");
 
-  const [
-    loading,
-    setLoading,
-  ] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!db) return;
-    return onValue(ref(db, 'site/settings/company'), snapshot => setCompany(snapshot.val() || {}), () => setCompany({}));
+    return onValue(
+      ref(db, "site/settings/company"),
+      (snapshot) => setCompany(snapshot.val() || {}),
+      () => setCompany({}),
+    );
   }, []);
 
   const socials = [
-    { key: 'whatsapp' as const, label: 'WhatsApp', icon: MessageCircle, value: company.whatsapp },
-    { key: 'linkedin' as const, label: 'LinkedIn', icon: Linkedin, value: company.linkedin },
-    { key: 'instagram' as const, label: 'Instagram', icon: Instagram, value: company.instagram },
-    { key: 'facebook' as const, label: 'Facebook', icon: Facebook, value: company.facebook },
-    { key: 'x' as const, label: 'X', icon: Twitter, value: company.x },
-  ].map(item => ({ ...item, href: socialUrl(item.key, item.value) })).filter(item => item.href);
+    {
+      key: "whatsapp" as const,
+      label: "WhatsApp",
+      icon: MessageCircle,
+      value: company.whatsapp,
+    },
+    {
+      key: "linkedin" as const,
+      label: "LinkedIn",
+      icon: Linkedin,
+      value: company.linkedin,
+    },
+    {
+      key: "instagram" as const,
+      label: "Instagram",
+      icon: Instagram,
+      value: company.instagram,
+    },
+    {
+      key: "facebook" as const,
+      label: "Facebook",
+      icon: Facebook,
+      value: company.facebook,
+    },
+    { key: "x" as const, label: "X", icon: Twitter, value: company.x },
+  ]
+    .map((item) => ({ ...item, href: socialUrl(item.key, item.value) }))
+    .filter((item) => item.href);
 
-  const [
-    message,
-    setMessage,
-  ] =
-    useState('');
+  const [message, setMessage] = useState("");
 
-  const [
-    success,
-    setSuccess,
-  ] =
-    useState(false);
+  const [success, setSuccess] = useState(false);
 
-  const subscribe = async (
-    event: FormEvent<HTMLFormElement>
-  ) => {
+  const subscribe = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (
-      loading ||
-      !email.trim()
-    ) {
+    if (loading || !email.trim()) {
       return;
     }
 
-    setLoading(
-      true
-    );
+    setLoading(true);
 
-    setMessage(
-      ''
-    );
+    setMessage("");
 
-    setSuccess(
-      false
-    );
+    setSuccess(false);
 
     try {
-      const response =
-        await fetch(
-          '/api/newsletter/subscribe',
-          {
-            method:
-              'POST',
+      const response = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
 
-            headers: {
-              'Content-Type':
-                'application/json',
+        headers: {
+          "Content-Type": "application/json",
 
-              Accept:
-                'application/json',
-            },
+          Accept: "application/json",
+        },
 
-            body:
-              JSON.stringify({
-                email:
-                  email.trim(),
-              }),
+        body: JSON.stringify({
+          email: email.trim(),
+        }),
 
-            cache:
-              'no-store',
-          }
-        );
+        cache: "no-store",
+      });
 
-      const contentType =
-        response.headers.get(
-          'content-type'
-        ) || '';
+      const contentType = response.headers.get("content-type") || "";
 
-      let data:
-        | {
-            success?: boolean;
-            alreadySubscribed?: boolean;
-            confirmationRequired?: boolean;
-            error?: string;
-          }
-        | null =
-        null;
+      let data: {
+        success?: boolean;
+        alreadySubscribed?: boolean;
+        confirmationRequired?: boolean;
+        error?: string;
+      } | null = null;
 
-      if (
-        contentType.includes(
-          'application/json'
-        )
-      ) {
-        data =
-          await response.json();
+      if (contentType.includes("application/json")) {
+        data = await response.json();
       } else {
         throw new Error(
-          'Newsletter service is temporarily unavailable. Please try again later.'
+          "Newsletter service is temporarily unavailable. Please try again later.",
         );
       }
 
-      if (
-        !response.ok ||
-        !data?.success
-      ) {
+      if (!response.ok || !data?.success) {
         throw new Error(
-          data?.error ||
-            'Unable to subscribe to the newsletter.'
+          data?.error || "Unable to subscribe to the newsletter.",
         );
       }
 
-      setSuccess(
-        true
-      );
+      setSuccess(true);
 
       setMessage(
         data.alreadySubscribed
-          ? 'You are already subscribed.'
+          ? "You are already subscribed."
           : data.confirmationRequired
-            ? 'Check your email and confirm your subscription.'
-            : 'You are now subscribed to Auronix Commerce updates.'
+            ? "Check your email and confirm your subscription."
+            : "You are now subscribed to Auronix Commerce updates.",
       );
 
-      setEmail(
-        ''
-      );
-    } catch (
-      error
-    ) {
-      setSuccess(
-        false
-      );
+      setEmail("");
+    } catch (error) {
+      setSuccess(false);
 
       setMessage(
         error instanceof Error
           ? userFacingError(error)
-          : 'Unable to subscribe to the newsletter.'
+          : "Unable to subscribe to the newsletter.",
       );
     } finally {
-      setLoading(
-        false
-      );
+      setLoading(false);
     }
   };
 
   return (
     <footer className="ac-footer border-t border-border text-foreground">
       <div className="mx-auto max-w-7xl px-5 py-12 sm:px-6 lg:px-8">
-
         <div className="ac-footer-grid">
-
           {/* BRAND */}
           <div>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2"
-            >
+            <Link href="/" className="inline-flex items-center gap-2">
               <AuronixMark />
 
               <span className="font-semibold tracking-tight">
-                {company.companyName || 'Auronix Commerce LLC'}
+                {company.companyName || "Auronix Commerce LLC"}
               </span>
             </Link>
 
             <p className="mt-4 max-w-sm text-sm leading-6 text-foreground-muted">
-              {company.footerDescription || 'Trusted eCommerce sourcing, supplier partnerships, and marketplace solutions.'}
+              {company.footerDescription ||
+                "Trusted eCommerce sourcing, supplier partnerships, and marketplace solutions."}
             </p>
 
             {socials.length > 0 && (
-              <div className="mt-5 flex flex-wrap gap-2" aria-label="Auronix Commerce social profiles">
-                {socials.map(item => { const Icon = item.icon; return <a key={item.key} href={item.href} target="_blank" rel="noopener noreferrer" aria-label={`Auronix Commerce on ${item.label}`} title={item.label} className="inline-flex h-10 w-10 items-center justify-center ac-content-panel text-foreground-muted transition hover:-translate-y-0.5 hover:border-accent/35 hover:bg-accent/10 hover:text-accent"><Icon className="h-4 w-4" /></a>; })}
+              <div
+                className="mt-5 flex flex-wrap gap-2"
+                aria-label="Auronix Commerce social profiles"
+              >
+                {socials.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <a
+                      key={item.key}
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Auronix Commerce on ${item.label}`}
+                      title={item.label}
+                      className="inline-flex h-10 w-10 items-center justify-center ac-content-panel text-foreground-muted transition hover:-translate-y-0.5 hover:border-accent/35 hover:bg-accent/10 hover:text-accent"
+                    >
+                      <Icon className="h-4 w-4" />
+                    </a>
+                  );
+                })}
               </div>
             )}
           </div>
 
           {/* COMPANY */}
           <div>
-            <h3 className="text-sm font-semibold">
-              Company
-            </h3>
+            <h3 className="text-sm font-semibold">Company</h3>
 
             <nav className="mt-4 space-y-3 text-sm text-foreground-muted">
-            <Link href="/aio">Introducing AIO 2</Link>
-              <Link
-                href="/about"
-                className="block hover:text-foreground"
-              >
+              <Link href="/aio">Introducing AIO 2</Link>
+              <Link href="/about" className="block hover:text-foreground">
                 About
               </Link>
 
-              <Link
-                href="/our-process"
-                className="block hover:text-foreground"
-              >
+              <Link href="/our-process" className="block hover:text-foreground">
                 Our Process
               </Link>
 
@@ -282,32 +261,23 @@ export function Footer() {
                 Company Verification
               </Link>
 
-              <Link
-                href="/careers"
-                className="block hover:text-foreground"
-              >
+              <Link href="/careers" className="block hover:text-foreground">
                 Careers
               </Link>
 
-              <Link
-                href="/blog"
-                className="block hover:text-foreground"
-              >
+              <Link href="/blog" className="block hover:text-foreground">
                 Blog & Insights
               </Link>
 
-              <Link
-                href="/faq"
-                className="block hover:text-foreground"
-              >
+              <Link href="/faq" className="block hover:text-foreground">
                 Frequently Asked Questions
               </Link>
 
-              <Link
-                href="/help"
-                className="block hover:text-foreground"
-              >
+              <Link href="/help" className="block hover:text-foreground">
                 Help & Troubleshooting
+              </Link>
+              <Link href="/status" className="block hover:text-foreground">
+                Service Status
               </Link>
 
               <Link
@@ -328,9 +298,7 @@ export function Footer() {
 
           {/* SELLERS */}
           <div>
-            <h3 className="text-sm font-semibold">
-              Sellers & Partners
-            </h3>
+            <h3 className="text-sm font-semibold">Sellers & Partners</h3>
 
             <nav className="mt-4 space-y-3 text-sm text-foreground-muted">
               <a
@@ -344,10 +312,7 @@ export function Footer() {
                 <ArrowUpRight className="h-3.5 w-3.5" />
               </a>
 
-              <Link
-                href="/seller"
-                className="block hover:text-foreground"
-              >
+              <Link href="/seller" className="block hover:text-foreground">
                 Seller Access
               </Link>
 
@@ -358,10 +323,7 @@ export function Footer() {
                 Seller Policy
               </Link>
 
-              <Link
-                href="/supplier"
-                className="block hover:text-foreground"
-              >
+              <Link href="/supplier" className="block hover:text-foreground">
                 Become a Supplier
               </Link>
 
@@ -372,10 +334,7 @@ export function Footer() {
                 Partner Portal
               </Link>
 
-              <Link
-                href="/contact"
-                className="block hover:text-foreground"
-              >
+              <Link href="/contact" className="block hover:text-foreground">
                 Contact Us
               </Link>
             </nav>
@@ -383,29 +342,18 @@ export function Footer() {
 
           {/* LEGAL */}
           <div>
-            <h3 className="text-sm font-semibold">
-              Legal
-            </h3>
+            <h3 className="text-sm font-semibold">Legal</h3>
 
             <nav className="mt-4 space-y-3 text-sm text-foreground-muted">
-              <Link
-                href="/privacy"
-                className="block hover:text-foreground"
-              >
+              <Link href="/privacy" className="block hover:text-foreground">
                 Privacy Policy
               </Link>
 
-              <Link
-                href="/terms"
-                className="block hover:text-foreground"
-              >
+              <Link href="/terms" className="block hover:text-foreground">
                 Terms of Service
               </Link>
 
-              <Link
-                href="/disclaimer"
-                className="block hover:text-foreground"
-              >
+              <Link href="/disclaimer" className="block hover:text-foreground">
                 Disclaimer
               </Link>
 
@@ -416,7 +364,15 @@ export function Footer() {
                 Cookie Policy
               </Link>
 
-              <button type="button" onClick={() => window.dispatchEvent(new Event('auronix:open-cookie-settings'))} className="block text-left hover:text-foreground">
+              <button
+                type="button"
+                onClick={() =>
+                  window.dispatchEvent(
+                    new Event("auronix:open-cookie-settings"),
+                  )
+                }
+                className="block text-left hover:text-foreground"
+              >
                 Cookie Settings
               </button>
 
@@ -433,46 +389,32 @@ export function Footer() {
         {/* NEWSLETTER */}
         <div className="ac-content-panel mt-10 p-6 sm:p-7">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-
             <div className="flex items-start gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-secondary">
                 <Mail className="h-5 w-5" />
               </div>
 
               <div>
-                <h3 className="font-semibold">
-                  Stay updated
-                </h3>
+                <h3 className="font-semibold">Stay updated</h3>
 
                 <p className="mt-1 max-w-2xl text-sm leading-6 text-foreground-muted">
-                  Get Auronix Commerce news, website
-                  updates, partnership announcements,
-                  eCommerce insights, and important
-                  policy changes.
+                  Get Auronix Commerce news, website updates, partnership
+                  announcements, eCommerce insights, and important policy
+                  changes.
                 </p>
               </div>
             </div>
 
             <form
-              onSubmit={
-                subscribe
-              }
+              onSubmit={subscribe}
               className="flex w-full flex-col gap-3 sm:flex-row lg:max-w-xl"
             >
               <input
                 type="email"
                 aria-label="Newsletter email address"
                 required
-                value={
-                  email
-                }
-                onChange={(
-                  event
-                ) =>
-                  setEmail(
-                    event.target.value
-                  )
-                }
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
                 placeholder="you@example.com"
                 autoComplete="email"
                 className="h-12 flex-1 rounded-xl border border-border bg-background px-4 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
@@ -480,9 +422,7 @@ export function Footer() {
 
               <button
                 type="submit"
-                disabled={
-                  loading
-                }
+                disabled={loading}
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? (
@@ -491,9 +431,7 @@ export function Footer() {
                   <Send className="h-4 w-4" />
                 )}
 
-                {loading
-                  ? 'Subscribing...'
-                  : 'Subscribe'}
+                {loading ? "Subscribing..." : "Subscribe"}
               </button>
             </form>
           </div>
@@ -501,40 +439,36 @@ export function Footer() {
           {message && (
             <div
               className={`mt-4 flex items-start gap-2 text-sm ${
-                success
-                  ? 'text-green-700'
-                  : 'text-red-700'
+                success ? "text-green-700" : "text-red-700"
               }`}
             >
-              {success && (
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-              )}
+              {success && <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />}
 
-              <span>
-                {
-                  message
-                }
-              </span>
+              <span>{message}</span>
             </div>
           )}
 
           <p className="mt-4 text-xs leading-5 text-foreground-muted">
-            You can <Link href="/newsletter/unsubscribe" className="font-medium text-accent underline decoration-accent/35 underline-offset-2 hover:decoration-accent">unsubscribe</Link> from newsletter emails at any time.
+            You can{" "}
+            <Link
+              href="/newsletter/unsubscribe"
+              className="font-medium text-accent underline decoration-accent/35 underline-offset-2 hover:decoration-accent"
+            >
+              unsubscribe
+            </Link>{" "}
+            from newsletter emails at any time.
           </p>
         </div>
 
         {/* BOTTOM */}
         <div className="mt-10 flex flex-col gap-4 border-t border-border pt-6 text-xs text-foreground-muted sm:flex-row sm:items-center sm:justify-between">
           <p>
-            © {new Date().getFullYear()} Auronix Commerce LLC.
-            All rights reserved.
+            © {new Date().getFullYear()} Auronix Commerce LLC. All rights
+            reserved.
           </p>
 
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            <Link
-              href="/seller"
-              className="font-medium hover:text-foreground"
-            >
+            <Link href="/seller" className="font-medium hover:text-foreground">
               Seller Login or Apply
             </Link>
 
@@ -554,24 +488,20 @@ export function Footer() {
               Seller Policy
             </Link>
 
-            <Link
-              href="/privacy"
-              className="hover:text-foreground"
-            >
+            <Link href="/privacy" className="hover:text-foreground">
               Privacy
             </Link>
 
-            <Link
-              href="/terms"
-              className="hover:text-foreground"
-            >
+            <Link href="/terms" className="hover:text-foreground">
               Terms
             </Link>
           </div>
         </div>
 
-        <div className="ng-footer-signature" aria-hidden="true"><span>AURONIX</span><small>COMMERCE / LLC</small></div>
-
+        <div className="ng-footer-signature" aria-hidden="true">
+          <span>AURONIX</span>
+          <small>COMMERCE / LLC</small>
+        </div>
       </div>
     </footer>
   );

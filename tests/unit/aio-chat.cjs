@@ -6,9 +6,20 @@ const ts = require("typescript");
 const { harness } = require("../helpers/route-harness.cjs");
 const root = path.resolve(__dirname, "../..");
 function load(file, mocks = {}) {
-  mocks={
-    '@/lib/documents/server':{serverPdf:async()=>Buffer.from('%PDF-test')},
-    '@/lib/documents/transcript-mail':{transcriptPlainText:m=>m.map(x=>x.content).join('\n'),transcriptMarkdown:m=>m.map(x=>x.content).join('\n'),buildTranscriptEmail:()=>'<p>Transcript</p>'},
+  mocks = {
+    "@/lib/mail-queue": {
+      enqueueMail: async (mail) => mail,
+      processMailJob: async (mail, send) => send(mail, "test-id"),
+      drainMailQueue: async () => ({ processed: 0 }),
+    },
+    "@/lib/documents/server": {
+      serverPdf: async () => Buffer.from("%PDF-test"),
+    },
+    "@/lib/documents/transcript-mail": {
+      transcriptPlainText: (m) => m.map((x) => x.content).join("\n"),
+      transcriptMarkdown: (m) => m.map((x) => x.content).join("\n"),
+      buildTranscriptEmail: () => "<p>Transcript</p>",
+    },
     ...mocks,
   };
   const code = ts.transpileModule(
@@ -239,7 +250,8 @@ test("chat endpoint applies settings, streams truncation metadata, and honors hi
       },
     },
   });
-  let providerRequest, providerConfig,
+  let providerRequest,
+    providerConfig,
     saves = 0;
   const route = load("app/api/aio/chat/route.ts", {
     "@/lib/firebase-admin": {
@@ -263,21 +275,24 @@ test("chat endpoint applies settings, streams truncation metadata, and honors hi
     "@/lib/aio/provider": {
       isAioConfigured: () => true,
       AioProviderError: class extends Error {},
-      createAioProvider: (options) => (providerConfig=options, {
-        name: "test",
-        async *stream(request) {
-          providerRequest = request;
-          yield {
-            token: "Example answer",
-            info: { provider: "test", model: "test", usedFallback: false },
-          };
-          yield {
-            token: "",
-            finishReason: "length",
-            info: { provider: "test", model: "test", usedFallback: false },
-          };
-        },
-      }),
+      createAioProvider: (options) => (
+        (providerConfig = options),
+        {
+          name: "test",
+          async *stream(request) {
+            providerRequest = request;
+            yield {
+              token: "Example answer",
+              info: { provider: "test", model: "test", usedFallback: false },
+            };
+            yield {
+              token: "",
+              finishReason: "length",
+              info: { provider: "test", model: "test", usedFallback: false },
+            };
+          },
+        }
+      ),
     },
   });
   const response = await route.POST(
@@ -290,7 +305,7 @@ test("chat endpoint applies settings, streams truncation metadata, and honors hi
       body: JSON.stringify({
         conversationId: "test-conversation",
         pathname: "/support/chat",
-        context: {supportPersona:"Maya"},
+        context: { supportPersona: "Maya" },
         messages: [user("Explain a general concept")],
         preferences: {
           model: "aio-one",
@@ -311,8 +326,11 @@ test("chat endpoint applies settings, streams truncation metadata, and honors hi
   assert.match(providerRequest.messages[0].content, /thorough, organized/);
   assert.match(providerRequest.messages[0].content, /warm, approachable/);
   assert.match(providerRequest.messages[0].content, /Give practical examples/);
-  assert.match(providerRequest.messages[0].content,/support persona name Maya/);
-  assert.match(providerRequest.messages[0].content,/Never claim to be human/);
+  assert.match(
+    providerRequest.messages[0].content,
+    /support persona name Maya/,
+  );
+  assert.match(providerRequest.messages[0].content, /Never claim to be human/);
   assert.equal(saves, 0);
 });
 test("provider never falls back after partial output or request cancellation", async () => {
@@ -369,153 +387,661 @@ test("provider never falls back after partial output or request cancellation", a
     else process.env.AIO_API_KEY = original;
   }
 });
-test('public AIO selection maps to configured models and rejects arbitrary model IDs',()=>{const {resolveAioModel,normalizeAioModelId}=load('lib/aio/models.ts');assert.equal(resolveAioModel('aio-2',{aioModel:'configured-primary'}),'configured-primary');assert.equal(resolveAioModel('aio-2-fast',{}),'openai/gpt-oss-20b');assert.equal(resolveAioModel('aio-2-fast',{aioFastModel:'configured-fast'}),'configured-fast');assert.equal(normalizeAioModelId('injected-model'),'aio-2');assert.equal(normalizeChatPreferences({model:'aio-2-fast'}).model,'aio-2-fast')});
-
-test('transcript emails require inbox verification, expire, and cannot be replayed', async()=>{
-  const h=harness();const route='app/api/aio/transcript/route.ts';
-  const payload={email:'reader@example.com',messages:[user('<script>private</script>'),assistant('Answer')]};
-  assert.equal((await h.call(route,{...payload,email:'bad'})).status,400);
-  const first=await h.call(route,payload);assert.equal(first.status,200);assert.equal(h.mails.length,1);
-  assert.ok(!h.mails[0].body.includes('private'));
-  const code=h.mails[0].body.match(/\b\d{6}\b/)[0];
-  assert.equal((await h.call(route,{...payload,challengeId:first.body.challengeId,code:'000000'})).status,400);
-  assert.equal((await h.call(route,{...payload,email:'other@example.com',challengeId:first.body.challengeId,code})).status,400);
-  assert.equal((await h.call(route,{...payload,challengeId:first.body.challengeId,code})).status,200);
-  assert.ok(h.mails[1].body.includes('private'));
-  assert.equal((await h.call(route,{...payload,challengeId:first.body.challengeId,code})).status,400);
-  const expired=await h.call(route,payload);h.data.aioTranscriptChallenges[expired.body.challengeId].expiresAt=0;
-  assert.equal((await h.call(route,{...payload,challengeId:expired.body.challengeId,code})).status,400);
-});
-test('transcript mail failure reports an error and removes unsent challenges',async()=>{
-  const h=harness();h.failMail(true);const r=await h.call('app/api/aio/transcript/route.ts',{email:'reader@example.com',messages:[user('hello')]});
-  assert.equal(r.status,503);assert.equal(r.body.success,false);assert.equal(Object.keys(h.data.aioTranscriptChallenges).length,0);
-});
-test('shared mail reports accepted delivery, escapes transcript HTML, and avoids retrying partially accepted recipients',async()=>{
-  const previous=process.env.SMTP_PASSWORD;process.env.SMTP_PASSWORD='test-only';let captured;
-  try{
-    const mail=load('lib/server-mail.ts',{nodemailer:{default:{createTransport:()=>({sendMail:async options=>{captured=options;return {accepted:['reader@example.com'],rejected:[],messageId:'test-mail'};}})}}});
-    const r=await mail.sendProfessionalEmail({to:'reader@example.com',body:'<script>alert(1)</script>',subject:'Transcript',inReplyTo:'thread-id'});
-    assert.equal(r.success,true);assert.ok(captured.html.includes('&lt;script&gt;'));assert.equal(captured.inReplyTo,'thread-id');
-    await mail.sendTicketResponseEmail('reader@example.com','Support subject','Support body');assert.equal(captured.text,'Support body');
-    let calls=0;
-    const partial=load('lib/server-mail.ts',{nodemailer:{default:{createTransport:()=>({sendMail:async()=>{calls++;return {accepted:['one@example.com'],rejected:['two@example.com']};}})}}});
-    await assert.rejects(partial.sendBusinessMail({to:['one@example.com','two@example.com'],subject:'Test',html:'Test'}));assert.equal(calls,1);
-  }finally{if(previous===undefined)delete process.env.SMTP_PASSWORD;else process.env.SMTP_PASSWORD=previous;}
-});
-test('site search ranks exact and prefix titles, finds affiliate aliases and common typos',()=>{
-  const {fuzzyScore}=load('lib/design/search-score.ts');
-  assert.ok(fuzzyScore('Affiliate Shop','affliate')>0);assert.ok(fuzzyScore('Affiliate Shop','products')>0);
-  assert.ok(fuzzyScore('Supplier application','suplier')>0);
-  assert.ok(fuzzyScore('Support','Support')>fuzzyScore('Contact support team','Support'));
-  assert.equal(fuzzyScore('Support','unrelated'),0);
-});
-test('admin composer validates recipients and returns explicit success after SMTP acceptance',async()=>{
-  const route=load('app/api/admin/email/send/route.ts',{'@/lib/server-auth':{requireAdmin:async()=>({uid:'admin'})},'@/lib/server-mail':{sendProfessionalEmail:async()=>({success:true,messageId:'accepted-mail'})}});
-  const call=async body=>{const r=await route.POST(new Request('http://localhost/api/admin/email/send',{method:'POST',body:JSON.stringify(body)}));return {status:r.status,body:await r.json()};};
-  assert.equal((await call({to:'invalid',subject:'Hello',body:'Test'})).status,400);
-  const result=await call({to:'customer@example.com',subject:'Hello',body:'Test'});assert.equal(result.status,200);assert.equal(result.body.success,true);assert.equal(result.body.messageId,'accepted-mail');
+test("public AIO selection maps to configured models and rejects arbitrary model IDs", () => {
+  const { resolveAioModel, normalizeAioModelId } = load("lib/aio/models.ts");
+  assert.equal(
+    resolveAioModel("aio-2", { aioModel: "configured-primary" }),
+    "configured-primary",
+  );
+  assert.equal(resolveAioModel("aio-2-fast", {}), "openai/gpt-oss-20b");
+  assert.equal(
+    resolveAioModel("aio-2-fast", { aioFastModel: "configured-fast" }),
+    "configured-fast",
+  );
+  assert.equal(normalizeAioModelId("injected-model"), "aio-2");
+  assert.equal(
+    normalizeChatPreferences({ model: "aio-2-fast" }).model,
+    "aio-2-fast",
+  );
 });
 
-test('AIO One is selectable and uses its own configured provider mapping',()=>{const {resolveAioModel,normalizeAioModelId}=load('lib/aio/models.ts');assert.equal(normalizeAioModelId('aio-one'),'aio-one');assert.equal(normalizeChatPreferences({model:'aio-one'}).model,'aio-one');assert.equal(resolveAioModel('aio-one',{}),'openai/gpt-oss-20b');assert.equal(resolveAioModel('aio-one',{aioOneModel:'classic-provider'}),'classic-provider');});
-test('classic reply pacing preserves Unicode, event order and completion without slowing other modes',async()=>{
- const {paceAioEvents}=load('lib/aio/pace.ts'); const text='A🌍'.repeat(30);const original=[{type:'status',label:'Working'},{type:'token',token:text},{type:'message_complete',requestId:'test',answerSource:'general'}];
- async function* events(){yield* original;}
- let waits=0;const result=[];for await(const e of paceAioEvents(events(),'aio-one',new AbortController().signal,async()=>{waits++;}))result.push(e);
- assert.ok(waits>1);assert.equal(result.filter(e=>e.type==='token').map(e=>e.token).join(''),text);assert.equal(result[0].type,'status');assert.equal(result.at(-1).type,'message_complete');
- for await(const e of paceAioEvents(events(),'aio-2',new AbortController().signal,async()=>{assert.fail('modern mode must not wait');}))void e;
+test("transcript emails require inbox verification, expire, and cannot be replayed", async () => {
+  const h = harness();
+  const route = "app/api/aio/transcript/route.ts";
+  const payload = {
+    email: "reader@example.com",
+    messages: [user("<script>private</script>"), assistant("Answer")],
+  };
+  assert.equal((await h.call(route, { ...payload, email: "bad" })).status, 400);
+  const first = await h.call(route, payload);
+  assert.equal(first.status, 200);
+  assert.equal(h.mails.length, 1);
+  assert.ok(!h.mails[0].body.includes("private"));
+  const code = h.mails[0].body.match(/\b\d{6}\b/)[0];
+  assert.equal(
+    (
+      await h.call(route, {
+        ...payload,
+        challengeId: first.body.challengeId,
+        code: "000000",
+      })
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await h.call(route, {
+        ...payload,
+        email: "other@example.com",
+        challengeId: first.body.challengeId,
+        code,
+      })
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await h.call(route, {
+        ...payload,
+        challengeId: first.body.challengeId,
+        code,
+      })
+    ).status,
+    200,
+  );
+  assert.ok(h.mails[1].body.includes("private"));
+  assert.equal(
+    (
+      await h.call(route, {
+        ...payload,
+        challengeId: first.body.challengeId,
+        code,
+      })
+    ).status,
+    400,
+  );
+  const expired = await h.call(route, payload);
+  h.data.aioTranscriptChallenges[expired.body.challengeId].expiresAt = 0;
+  assert.equal(
+    (
+      await h.call(route, {
+        ...payload,
+        challengeId: expired.body.challengeId,
+        code,
+      })
+    ).status,
+    400,
+  );
 });
-test('stopping a paced reply cancels promptly and closes its upstream stream',async()=>{
- const {paceAioEvents}=load('lib/aio/pace.ts');const controller=new AbortController();let closed=false;
- async function* events(){try{yield {type:'token',token:'delayed'};}finally{closed=true;}}
- const stream=paceAioEvents(events(),'aio-one',controller.signal);const next=stream.next();controller.abort();await assert.rejects(next,{name:'AbortError'});assert.equal(closed,true);
+test("transcript mail failure reports an error and removes unsent challenges", async () => {
+  const h = harness();
+  h.failMail(true);
+  const r = await h.call("app/api/aio/transcript/route.ts", {
+    email: "reader@example.com",
+    messages: [user("hello")],
+  });
+  assert.equal(r.status, 503);
+  assert.equal(r.body.success, false);
+  assert.equal(Object.keys(h.data.aioTranscriptChallenges).length, 0);
+});
+test("shared mail reports accepted delivery, escapes transcript HTML, and avoids retrying partially accepted recipients", async () => {
+  const previous = process.env.SMTP_PASSWORD;
+  process.env.SMTP_PASSWORD = "test-only";
+  let captured;
+  try {
+    const mail = load("lib/server-mail.ts", {
+      nodemailer: {
+        default: {
+          createTransport: () => ({
+            sendMail: async (options) => {
+              captured = options;
+              return {
+                accepted: ["reader@example.com"],
+                rejected: [],
+                messageId: "test-mail",
+              };
+            },
+          }),
+        },
+      },
+    });
+    const r = await mail.sendProfessionalEmail({
+      to: "reader@example.com",
+      body: "<script>alert(1)</script>",
+      subject: "Transcript",
+      inReplyTo: "thread-id",
+    });
+    assert.equal(r.success, true);
+    assert.ok(captured.html.includes("&lt;script&gt;"));
+    assert.equal(captured.inReplyTo, "thread-id");
+    await mail.sendTicketResponseEmail(
+      "reader@example.com",
+      "Support subject",
+      "Support body",
+    );
+    assert.equal(captured.text, "Support body");
+    let calls = 0;
+    const partial = load("lib/server-mail.ts", {
+      nodemailer: {
+        default: {
+          createTransport: () => ({
+            sendMail: async () => {
+              calls++;
+              return {
+                accepted: ["one@example.com"],
+                rejected: ["two@example.com"],
+              };
+            },
+          }),
+        },
+      },
+    });
+    await assert.rejects(
+      partial.sendBusinessMail({
+        to: ["one@example.com", "two@example.com"],
+        subject: "Test",
+        html: "Test",
+      }),
+    );
+    assert.equal(calls, 1);
+  } finally {
+    if (previous === undefined) delete process.env.SMTP_PASSWORD;
+    else process.env.SMTP_PASSWORD = previous;
+  }
+});
+test("site search ranks exact and prefix titles, finds affiliate aliases and common typos", () => {
+  const { fuzzyScore } = load("lib/design/search-score.ts");
+  assert.ok(fuzzyScore("Affiliate Shop", "affliate") > 0);
+  assert.ok(fuzzyScore("Affiliate Shop", "products") > 0);
+  assert.ok(fuzzyScore("Supplier application", "suplier") > 0);
+  assert.ok(
+    fuzzyScore("Support", "Support") >
+      fuzzyScore("Contact support team", "Support"),
+  );
+  assert.equal(fuzzyScore("Support", "unrelated"), 0);
+});
+test("admin composer validates recipients and returns explicit success after SMTP acceptance", async () => {
+  const route = load("app/api/admin/email/send/route.ts", {
+    "@/lib/server-auth": { requireAdmin: async () => ({ uid: "admin" }) },
+    "@/lib/server-mail": {
+      sendProfessionalEmail: async () => ({
+        success: true,
+        messageId: "accepted-mail",
+      }),
+    },
+  });
+  const call = async (body) => {
+    const r = await route.POST(
+      new Request("http://localhost/api/admin/email/send", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    );
+    return { status: r.status, body: await r.json() };
+  };
+  assert.equal(
+    (await call({ to: "invalid", subject: "Hello", body: "Test" })).status,
+    400,
+  );
+  const result = await call({
+    to: "customer@example.com",
+    subject: "Hello",
+    body: "Test",
+  });
+  assert.equal(result.status, 200);
+  assert.equal(result.body.success, true);
+  assert.equal(result.body.messageId, "accepted-mail");
 });
 
-test('transcript verification survives an initially empty Firebase cache and allows retry after mail failure',async()=>{
- const h=harness();let failTranscript=false;
- const route=load('app/api/aio/transcript/route.ts',{
-  '@/lib/firebase-admin':{adminDb:{ref:p=>{const base=h.ref(p);return {...base,transaction:async fn=>{const initial=fn(null);if(initial===undefined)return {committed:false,snapshot:{val:()=>null}};return base.transaction(fn);}};}}},
-  '@/lib/server-protection':{protectPublicRequest:async()=>{},publicRequestErrorResponse:()=>null},
-  '@/lib/server-mail':{sendProfessionalEmail:async v=>{if(failTranscript&&v.subject==='Your Auronix AI conversation')throw Error('SMTP unavailable');h.mails.push(v);}},
- });
- const payload={email:'reader@example.com',messages:[user('Test transcript')]};
- const call=async body=>{const r=await route.POST(new Request('http://localhost/api/aio/transcript',{method:'POST',body:JSON.stringify(body)}));return {status:r.status,body:await r.json()};};
- const first=await call(payload);assert.equal(first.status,200);const code=h.mails[0].body.match(/\b\d{6}\b/)[0];
- const verify={...payload,challengeId:first.body.challengeId,code:` ${code.slice(0,3)} ${code.slice(3)} `};
- failTranscript=true;const failure=await call(verify);assert.equal(failure.status,503);assert.equal(failure.body.code,'DELIVERY_FAILED');assert.equal(h.data.aioTranscriptChallenges[first.body.challengeId].used,false);
- failTranscript=false;assert.equal((await call(verify)).status,200);assert.equal(h.mails.length,2);
- assert.equal((await call(verify)).status,400);
+test("AIO One is selectable and uses its own configured provider mapping", () => {
+  const { resolveAioModel, normalizeAioModelId } = load("lib/aio/models.ts");
+  assert.equal(normalizeAioModelId("aio-one"), "aio-one");
+  assert.equal(normalizeChatPreferences({ model: "aio-one" }).model, "aio-one");
+  assert.equal(resolveAioModel("aio-one", {}), "openai/gpt-oss-20b");
+  assert.equal(
+    resolveAioModel("aio-one", { aioOneModel: "classic-provider" }),
+    "classic-provider",
+  );
 });
-test('verification code normalization accepts pasted spacing and local keyboard digits without accepting other characters',()=>{
- const {normalizeVerificationCode}=load('lib/aio/verification-code.ts');
- assert.equal(normalizeVerificationCode(' 123 456\n'),'123456');assert.equal(normalizeVerificationCode('۱۲۳-۴۵۶'),'123456');assert.equal(normalizeVerificationCode('١٢٣٤٥٦'),'123456');assert.equal(normalizeVerificationCode('abc123456'),'abc123456');
+test("classic reply pacing preserves Unicode, event order and completion without slowing other modes", async () => {
+  const { paceAioEvents } = load("lib/aio/pace.ts");
+  const text = "A🌍".repeat(30);
+  const original = [
+    { type: "status", label: "Working" },
+    { type: "token", token: text },
+    { type: "message_complete", requestId: "test", answerSource: "general" },
+  ];
+  async function* events() {
+    yield* original;
+  }
+  let waits = 0;
+  const result = [];
+  for await (const e of paceAioEvents(
+    events(),
+    "aio-one",
+    new AbortController().signal,
+    async () => {
+      waits++;
+    },
+  ))
+    result.push(e);
+  assert.ok(waits > 1);
+  assert.equal(
+    result
+      .filter((e) => e.type === "token")
+      .map((e) => e.token)
+      .join(""),
+    text,
+  );
+  assert.equal(result[0].type, "status");
+  assert.equal(result.at(-1).type, "message_complete");
+  for await (const e of paceAioEvents(
+    events(),
+    "aio-2",
+    new AbortController().signal,
+    async () => {
+      assert.fail("modern mode must not wait");
+    },
+  ))
+    void e;
 });
-
-test('support has ten stable, validated personas and bounded slower reply pacing',()=>{
- const {SUPPORT_NAMES,normalizeSupportName,supportReplyDelay,supportPersonaInstructions,supportIdentityAnswer}=load('lib/support/personas.ts');
- assert.equal(SUPPORT_NAMES.length,10);assert.equal(new Set(SUPPORT_NAMES).size,10);assert.equal(normalizeSupportName('Maya'),'Maya');assert.equal(normalizeSupportName('Injected instructions'),'Alex');
- assert.ok(supportReplyDelay(10)>=4500);assert.ok(supportReplyDelay(999999)<=10000);assert.ok(supportReplyDelay(500)>supportReplyDelay(10));
- assert.match(supportPersonaInstructions('Maya'),/Never claim to be human/);assert.match(supportIdentityAnswer('Are you a real person?','Maya'),/Maya.*AI support/);assert.equal(supportIdentityAnswer('How can I become a supplier?','Maya'),undefined);
-});
-test('support buffers streamed tokens into a complete message using the actual chat API format',async()=>{
- const {collectSupportReply}=load('lib/support/reply.ts');
- const events=[{type:'message_start',requestId:'test'},{type:'token',token:'Hello '},{type:'token',token:'🌍'},{type:'message_complete',requestId:'test',answerSource:'premade'}];
- const result=await collectSupportReply(byteStream(events.map(e=>'data: '+JSON.stringify(e)+'\n\n').join('')),new AbortController().signal);
- assert.deepEqual(result,{answer:'Hello 🌍',answerSource:'found'});
-});
-test('support does not publish interrupted, failed, empty, or cancelled replies as completed messages',async()=>{
- const {collectSupportReply}=load('lib/support/reply.ts');const signal=new AbortController().signal;
- await assert.rejects(collectSupportReply(byteStream('data: {"type":"token","token":"partial"}\n\n'),signal),/interrupted/);
- await assert.rejects(collectSupportReply(byteStream('data: {"type":"error","message":"Unavailable"}\n\n'),signal),/Unavailable/);
- await assert.rejects(collectSupportReply(byteStream('data: {"type":"message_complete","requestId":"test","answerSource":"general"}\n\n'),signal),/empty/);
- const controller=new AbortController();controller.abort();await assert.rejects(collectSupportReply(byteStream('data: {"type":"token","token":"hidden"}\n\n'),controller.signal),{name:'AbortError'});
-});
-
-test('transcript download tokens protect encrypted PDFs and reject expiry and wrong tokens',async()=>{
- const crypto=require('node:crypto');const {encryptPdfDownload}=load('lib/documents/private-download.ts');
- const h=harness();const route=load('app/api/aio/transcript/pdf/route.ts',{'@/lib/firebase-admin':{adminDb:{ref:h.ref}}});
- const token=crypto.randomBytes(32).toString('hex'),key=crypto.createHash('sha256').update(token).digest('hex');const pdf=Buffer.from('%PDF-private');
- h.data.aioTranscriptDownloads={[key]:{...encryptPdfDownload(pdf,token),expiresAt:Date.now()+60000}};
- assert.ok(!JSON.stringify(h.data).includes('%PDF-private'));
- const call=token=>route.GET(new Request('http://localhost/api/aio/transcript/pdf?token='+token));
- assert.equal((await call('bad')).status,404);assert.equal((await call('a'.repeat(64))).status,404);
- const ok=await call(token);assert.equal(ok.headers.get('content-type'),'application/pdf');assert.deepEqual(Buffer.from(await ok.arrayBuffer()),pdf);assert.match(ok.headers.get('cache-control'),/no-store/);
- h.data.aioTranscriptDownloads[key].expiresAt=0;assert.equal((await call(token)).status,410);
-});
-test('Markdown email renders actual emphasis and rejects executable links or raw HTML',async()=>{
- const esm={'unified':await import('unified'),'remark-parse':await import('remark-parse'),'remark-gfm':await import('remark-gfm')};
- const {markdownEmailHtml}=load('lib/documents/markdown.ts',esm);
- const html=markdownEmailHtml('**Important** normal text.\n\n1. First\n2. [Support](/support)\n\n<script>alert(1)</script>\n\n[bad](javascript:alert(1))');
- const {buildTranscriptEmail}=load('lib/documents/transcript-mail.ts',esm);const mail=load('lib/server-mail.ts');
- const email=mail.emailShell({preheader:'Your AIO transcript',title:'Your AIO conversation',body:buildTranscriptEmail([{role:'user',content:'How do I get started?'},{role:'assistant',content:'**Start here:** Open [Support](/support).\n\n1. Choose your topic.\n2. Keep your reference.\n\n| Item | Status |\n| --- | --- |\n| Guide | Ready |'}],'https://auronixcommerce.com/api/aio/transcript/pdf?token=example')});
- assert.match(email,/Download transcript PDF/);assert.match(email,/<strong[^>]*>Start here:<\/strong>/);if(process.env.AURONIX_EMAIL_QA)fs.writeFileSync(process.env.AURONIX_EMAIL_QA,email);
- assert.match(html,/<strong[^>]*>Important<\/strong>/);assert.ok(!html.includes('**Important**'));assert.match(html,/<ol/);assert.match(html,/https:\/\/auronixcommerce.com\/support/);assert.ok(!html.includes('<script>'));assert.ok(!html.includes('href="javascript:'));
-});
-test('branded PDFs paginate long guides and render rich transcript content',async()=>{
- const esm={'unified':await import('unified'),'remark-parse':await import('remark-parse'),'remark-gfm':await import('remark-gfm'),'@pdf-lib/fontkit':{default:require('@pdf-lib/fontkit')}};
- const {createBrandedPdf}=load('lib/documents/pdf.ts',esm);const {helpHandbookMarkdown}=load('lib/documents/guides.ts');
- const bytes=await createBrandedPdf({title:'Auronix Offline Help Handbook',subtitle:'OFFLINE GUIDE | AURONIX',markdown:helpHandbookMarkdown()+'\n\n# Sample transcript\n\n**Important:** Your formatted transcript.\n\n1. Visit [Support](/support).\n2. Read offline.',source:'https://auronixcommerce.com/help'},{regular:fs.readFileSync(path.join(root,'public/fonts/manrope-400.ttf')),bold:fs.readFileSync(path.join(root,'public/fonts/manrope-700.ttf')),logo:fs.readFileSync(path.join(root,'public/auronix-signature.jpeg'))});
- const pdf=await require('pdf-lib').PDFDocument.load(bytes);assert.ok(pdf.getPageCount()>3);assert.equal(pdf.getAuthor(),'Auronix Commerce LLC');
- if(process.env.AURONIX_PDF_QA)fs.writeFileSync(process.env.AURONIX_PDF_QA,bytes);
-});
-test('mail fallback retries an unauthorized continue URL with the standard recovery page',async()=>{
- const previous=process.env.NEXT_PUBLIC_FIREBASE_API_KEY,oldFetch=global.fetch;process.env.NEXT_PUBLIC_FIREBASE_API_KEY='test-key';const calls=[];
- try{global.fetch=async(_,options)=>{calls.push(JSON.parse(options.body));return calls.length===1?new Response(JSON.stringify({error:{message:'UNAUTHORIZED_DOMAIN'}}),{status:400}):new Response('{}',{status:200});};const mail=load('lib/server-mail.ts');await mail.sendPasswordResetFallback({email:'reader@example.com',continueUrl:'https://auronixcommerce.com/seller/login'});assert.equal(calls.length,2);assert.ok(calls[0].continueUrl);assert.equal(calls[1].continueUrl,undefined);assert.equal(calls[1].requestType,'PASSWORD_RESET');}
- finally{global.fetch=oldFetch;if(previous===undefined)delete process.env.NEXT_PUBLIC_FIREBASE_API_KEY;else process.env.NEXT_PUBLIC_FIREBASE_API_KEY=previous;}
-});
-test('SMTP authentication failure exits promptly so password-recovery fallback can run',async()=>{
- const previous=process.env.SMTP_PASSWORD;process.env.SMTP_PASSWORD='test-only';let attempts=0;
- try{const mail=load('lib/server-mail.ts',{nodemailer:{default:{createTransport:()=>({sendMail:async()=>{attempts++;throw Object.assign(new Error('Authentication failed'),{code:'EAUTH'});}})}}});await assert.rejects(mail.sendBusinessMail({to:'reader@example.com',subject:'Test',html:'Test'}),{code:'EAUTH'});assert.equal(attempts,1);}finally{if(previous===undefined)delete process.env.SMTP_PASSWORD;else process.env.SMTP_PASSWORD=previous;}
+test("stopping a paced reply cancels promptly and closes its upstream stream", async () => {
+  const { paceAioEvents } = load("lib/aio/pace.ts");
+  const controller = new AbortController();
+  let closed = false;
+  async function* events() {
+    try {
+      yield { type: "token", token: "delayed" };
+    } finally {
+      closed = true;
+    }
+  }
+  const stream = paceAioEvents(events(), "aio-one", controller.signal);
+  const next = stream.next();
+  controller.abort();
+  await assert.rejects(next, { name: "AbortError" });
+  assert.equal(closed, true);
 });
 
-test('support assigns issue topics to ten dedicated support personas',()=>{
- const {SUPPORT_PROFILES,routeSupportIssue,getSupportProfile,supportTransferMessage}=load('lib/support/routing.ts');const {SUPPORT_NAMES}=load('lib/support/personas.ts');
- assert.equal(SUPPORT_PROFILES.length,10);assert.deepEqual(new Set(SUPPORT_PROFILES.map(p=>p.name)),new Set(SUPPORT_NAMES));
- for(const [question,name] of [['Track my seller application','Maya'],['I forgot my password and the reset email is missing','Noah'],['My email verification code is not working','Sofia'],['Upload images to my catalog','Daniel'],['I am a wholesale supplier','Emma'],['My Amazon order refund','James'],['The website shows a 404 error','Olivia'],['Delete my data under your privacy policy','Ethan'],['Missing notifications for my support ticket','Ava']])assert.equal(routeSupportIssue(question,'Alex').name,name,question);
- assert.equal(routeSupportIssue('Can you explain more?','Maya').name,'Maya');assert.equal(getSupportProfile('invalid').name,'Alex');assert.match(supportTransferMessage('Noah'),/Switching this chat to Noah for login/);
+test("transcript verification survives an initially empty Firebase cache and allows retry after mail failure", async () => {
+  const h = harness();
+  let failTranscript = false;
+  const route = load("app/api/aio/transcript/route.ts", {
+    "@/lib/firebase-admin": {
+      adminDb: {
+        ref: (p) => {
+          const base = h.ref(p);
+          return {
+            ...base,
+            transaction: async (fn) => {
+              const initial = fn(null);
+              if (initial === undefined)
+                return { committed: false, snapshot: { val: () => null } };
+              return base.transaction(fn);
+            },
+          };
+        },
+      },
+    },
+    "@/lib/server-protection": {
+      protectPublicRequest: async () => {},
+      publicRequestErrorResponse: () => null,
+    },
+    "@/lib/server-mail": {
+      sendProfessionalEmail: async (v) => {
+        if (failTranscript && v.subject === "Your Auronix AI conversation")
+          throw Error("SMTP unavailable");
+        h.mails.push(v);
+      },
+    },
+  });
+  const payload = {
+    email: "reader@example.com",
+    messages: [user("Test transcript")],
+  };
+  const call = async (body) => {
+    const r = await route.POST(
+      new Request("http://localhost/api/aio/transcript", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    );
+    return { status: r.status, body: await r.json() };
+  };
+  const first = await call(payload);
+  assert.equal(first.status, 200);
+  const code = h.mails[0].body.match(/\b\d{6}\b/)[0];
+  const verify = {
+    ...payload,
+    challengeId: first.body.challengeId,
+    code: ` ${code.slice(0, 3)} ${code.slice(3)} `,
+  };
+  failTranscript = true;
+  const failure = await call(verify);
+  assert.equal(failure.status, 503);
+  assert.equal(failure.body.code, "DELIVERY_FAILED");
+  assert.equal(
+    h.data.aioTranscriptChallenges[first.body.challengeId].used,
+    false,
+  );
+  failTranscript = false;
+  assert.equal((await call(verify)).status, 200);
+  assert.equal(h.mails.length, 2);
+  assert.equal((await call(verify)).status, 400);
 });
-test('support keeps identity answers concise and removes only trailing name signatures',()=>{
- const {supportIdentityAnswer,trimSupportSignature,supportPersonaInstructions}=load('lib/support/personas.ts');
- for(const question of ['u a real agent','are you human?','r u a real person?']){const answer=supportIdentityAnswer(question,'Alex');assert.match(answer,/Alex.*AI support/);assert.ok(answer.length<160);}
- assert.equal(trimSupportSignature('Here is your next step. — Alex, Auronix Support.','Alex'),'Here is your next step.');assert.equal(trimSupportSignature('Regards, Alex','Alex'),'');assert.equal(trimSupportSignature('Contact Alex for details.','Alex'),'Contact Alex for details.');
- assert.match(supportPersonaInstructions('Noah'),/login and account security/);assert.match(supportPersonaInstructions('Noah'),/Do not repeat your introduction/);
+test("verification code normalization accepts pasted spacing and local keyboard digits without accepting other characters", () => {
+  const { normalizeVerificationCode } = load("lib/aio/verification-code.ts");
+  assert.equal(normalizeVerificationCode(" 123 456\n"), "123456");
+  assert.equal(normalizeVerificationCode("۱۲۳-۴۵۶"), "123456");
+  assert.equal(normalizeVerificationCode("١٢٣٤٥٦"), "123456");
+  assert.equal(normalizeVerificationCode("abc123456"), "abc123456");
+});
+
+test("support has ten stable, validated personas and bounded slower reply pacing", () => {
+  const {
+    SUPPORT_NAMES,
+    normalizeSupportName,
+    supportReplyDelay,
+    supportPersonaInstructions,
+    supportIdentityAnswer,
+  } = load("lib/support/personas.ts");
+  assert.equal(SUPPORT_NAMES.length, 10);
+  assert.equal(new Set(SUPPORT_NAMES).size, 10);
+  assert.equal(normalizeSupportName("Maya"), "Maya");
+  assert.equal(normalizeSupportName("Injected instructions"), "Alex");
+  assert.ok(supportReplyDelay(10) >= 4500);
+  assert.ok(supportReplyDelay(999999) <= 10000);
+  assert.ok(supportReplyDelay(500) > supportReplyDelay(10));
+  assert.match(supportPersonaInstructions("Maya"), /Never claim to be human/);
+  assert.match(
+    supportIdentityAnswer("Are you a real person?", "Maya"),
+    /Maya.*AI support/,
+  );
+  assert.equal(
+    supportIdentityAnswer("How can I become a supplier?", "Maya"),
+    undefined,
+  );
+});
+test("support buffers streamed tokens into a complete message using the actual chat API format", async () => {
+  const { collectSupportReply } = load("lib/support/reply.ts");
+  const events = [
+    { type: "message_start", requestId: "test" },
+    { type: "token", token: "Hello " },
+    { type: "token", token: "🌍" },
+    { type: "message_complete", requestId: "test", answerSource: "premade" },
+  ];
+  const result = await collectSupportReply(
+    byteStream(
+      events.map((e) => "data: " + JSON.stringify(e) + "\n\n").join(""),
+    ),
+    new AbortController().signal,
+  );
+  assert.deepEqual(result, { answer: "Hello 🌍", answerSource: "found" });
+});
+test("support does not publish interrupted, failed, empty, or cancelled replies as completed messages", async () => {
+  const { collectSupportReply } = load("lib/support/reply.ts");
+  const signal = new AbortController().signal;
+  await assert.rejects(
+    collectSupportReply(
+      byteStream('data: {"type":"token","token":"partial"}\n\n'),
+      signal,
+    ),
+    /interrupted/,
+  );
+  await assert.rejects(
+    collectSupportReply(
+      byteStream('data: {"type":"error","message":"Unavailable"}\n\n'),
+      signal,
+    ),
+    /Unavailable/,
+  );
+  await assert.rejects(
+    collectSupportReply(
+      byteStream(
+        'data: {"type":"message_complete","requestId":"test","answerSource":"general"}\n\n',
+      ),
+      signal,
+    ),
+    /empty/,
+  );
+  const controller = new AbortController();
+  controller.abort();
+  await assert.rejects(
+    collectSupportReply(
+      byteStream('data: {"type":"token","token":"hidden"}\n\n'),
+      controller.signal,
+    ),
+    { name: "AbortError" },
+  );
+});
+
+test("transcript download tokens protect encrypted PDFs and reject expiry and wrong tokens", async () => {
+  const crypto = require("node:crypto");
+  const { encryptPdfDownload } = load("lib/documents/private-download.ts");
+  const h = harness();
+  const route = load("app/api/aio/transcript/pdf/route.ts", {
+    "@/lib/firebase-admin": { adminDb: { ref: h.ref } },
+  });
+  const token = crypto.randomBytes(32).toString("hex"),
+    key = crypto.createHash("sha256").update(token).digest("hex");
+  const pdf = Buffer.from("%PDF-private");
+  h.data.aioTranscriptDownloads = {
+    [key]: { ...encryptPdfDownload(pdf, token), expiresAt: Date.now() + 60000 },
+  };
+  assert.ok(!JSON.stringify(h.data).includes("%PDF-private"));
+  const call = (token) =>
+    route.GET(
+      new Request("http://localhost/api/aio/transcript/pdf?token=" + token),
+    );
+  assert.equal((await call("bad")).status, 404);
+  assert.equal((await call("a".repeat(64))).status, 404);
+  const ok = await call(token);
+  assert.equal(ok.headers.get("content-type"), "application/pdf");
+  assert.deepEqual(Buffer.from(await ok.arrayBuffer()), pdf);
+  assert.match(ok.headers.get("cache-control"), /no-store/);
+  h.data.aioTranscriptDownloads[key].expiresAt = 0;
+  assert.equal((await call(token)).status, 410);
+});
+test("Markdown email renders actual emphasis and rejects executable links or raw HTML", async () => {
+  const esm = {
+    unified: await import("unified"),
+    "remark-parse": await import("remark-parse"),
+    "remark-gfm": await import("remark-gfm"),
+  };
+  const { markdownEmailHtml } = load("lib/documents/markdown.ts", esm);
+  const html = markdownEmailHtml(
+    "**Important** normal text.\n\n1. First\n2. [Support](/support)\n\n<script>alert(1)</script>\n\n[bad](javascript:alert(1))",
+  );
+  const { buildTranscriptEmail } = load(
+    "lib/documents/transcript-mail.ts",
+    esm,
+  );
+  const mail = load("lib/server-mail.ts");
+  const email = mail.emailShell({
+    preheader: "Your AIO transcript",
+    title: "Your AIO conversation",
+    body: buildTranscriptEmail(
+      [
+        { role: "user", content: "How do I get started?" },
+        {
+          role: "assistant",
+          content:
+            "**Start here:** Open [Support](/support).\n\n1. Choose your topic.\n2. Keep your reference.\n\n| Item | Status |\n| --- | --- |\n| Guide | Ready |",
+        },
+      ],
+      "https://auronixcommerce.com/api/aio/transcript/pdf?token=example",
+    ),
+  });
+  assert.match(email, /Download transcript PDF/);
+  assert.match(email, /<strong[^>]*>Start here:<\/strong>/);
+  if (process.env.AURONIX_EMAIL_QA)
+    fs.writeFileSync(process.env.AURONIX_EMAIL_QA, email);
+  assert.match(html, /<strong[^>]*>Important<\/strong>/);
+  assert.ok(!html.includes("**Important**"));
+  assert.match(html, /<ol/);
+  assert.match(html, /https:\/\/auronixcommerce.com\/support/);
+  assert.ok(!html.includes("<script>"));
+  assert.ok(!html.includes('href="javascript:'));
+});
+test("branded PDFs paginate long guides and render rich transcript content", async () => {
+  const esm = {
+    unified: await import("unified"),
+    "remark-parse": await import("remark-parse"),
+    "remark-gfm": await import("remark-gfm"),
+    "@pdf-lib/fontkit": { default: require("@pdf-lib/fontkit") },
+  };
+  const { createBrandedPdf } = load("lib/documents/pdf.ts", esm);
+  const { helpHandbookMarkdown } = load("lib/documents/guides.ts");
+  const bytes = await createBrandedPdf(
+    {
+      title: "Auronix Offline Help Handbook",
+      subtitle: "OFFLINE GUIDE | AURONIX",
+      markdown:
+        helpHandbookMarkdown() +
+        "\n\n# Sample transcript\n\n**Important:** Your formatted transcript.\n\n1. Visit [Support](/support).\n2. Read offline.",
+      source: "https://auronixcommerce.com/help",
+    },
+    {
+      regular: fs.readFileSync(path.join(root, "public/fonts/manrope-400.ttf")),
+      bold: fs.readFileSync(path.join(root, "public/fonts/manrope-700.ttf")),
+      logo: fs.readFileSync(path.join(root, "public/auronix-signature.jpeg")),
+    },
+  );
+  const pdf = await require("pdf-lib").PDFDocument.load(bytes);
+  assert.ok(pdf.getPageCount() > 3);
+  assert.equal(pdf.getAuthor(), "Auronix Commerce LLC");
+  if (process.env.AURONIX_PDF_QA)
+    fs.writeFileSync(process.env.AURONIX_PDF_QA, bytes);
+});
+test("mail fallback retries an unauthorized continue URL with the standard recovery page", async () => {
+  const previous = process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    oldFetch = global.fetch;
+  process.env.NEXT_PUBLIC_FIREBASE_API_KEY = "test-key";
+  const calls = [];
+  try {
+    global.fetch = async (_, options) => {
+      calls.push(JSON.parse(options.body));
+      return calls.length === 1
+        ? new Response(
+            JSON.stringify({ error: { message: "UNAUTHORIZED_DOMAIN" } }),
+            { status: 400 },
+          )
+        : new Response("{}", { status: 200 });
+    };
+    const mail = load("lib/server-mail.ts");
+    await mail.sendPasswordResetFallback({
+      email: "reader@example.com",
+      continueUrl: "https://auronixcommerce.com/seller/login",
+    });
+    assert.equal(calls.length, 2);
+    assert.ok(calls[0].continueUrl);
+    assert.equal(calls[1].continueUrl, undefined);
+    assert.equal(calls[1].requestType, "PASSWORD_RESET");
+  } finally {
+    global.fetch = oldFetch;
+    if (previous === undefined) delete process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+    else process.env.NEXT_PUBLIC_FIREBASE_API_KEY = previous;
+  }
+});
+test("SMTP authentication failure exits promptly so password-recovery fallback can run", async () => {
+  const previous = process.env.SMTP_PASSWORD;
+  process.env.SMTP_PASSWORD = "test-only";
+  let attempts = 0;
+  try {
+    const mail = load("lib/server-mail.ts", {
+      nodemailer: {
+        default: {
+          createTransport: () => ({
+            sendMail: async () => {
+              attempts++;
+              throw Object.assign(new Error("Authentication failed"), {
+                code: "EAUTH",
+              });
+            },
+          }),
+        },
+      },
+    });
+    await assert.rejects(
+      mail.sendBusinessMail({
+        to: "reader@example.com",
+        subject: "Test",
+        html: "Test",
+      }),
+      { code: "EAUTH" },
+    );
+    assert.equal(attempts, 1);
+  } finally {
+    if (previous === undefined) delete process.env.SMTP_PASSWORD;
+    else process.env.SMTP_PASSWORD = previous;
+  }
+});
+
+test("support assigns issue topics to ten dedicated support personas", () => {
+  const {
+    SUPPORT_PROFILES,
+    routeSupportIssue,
+    getSupportProfile,
+    supportTransferMessage,
+  } = load("lib/support/routing.ts");
+  const { SUPPORT_NAMES } = load("lib/support/personas.ts");
+  assert.equal(SUPPORT_PROFILES.length, 10);
+  assert.deepEqual(
+    new Set(SUPPORT_PROFILES.map((p) => p.name)),
+    new Set(SUPPORT_NAMES),
+  );
+  for (const [question, name] of [
+    ["Track my seller application", "Maya"],
+    ["I forgot my password and the reset email is missing", "Noah"],
+    ["My email verification code is not working", "Sofia"],
+    ["Upload images to my catalog", "Daniel"],
+    ["I am a wholesale supplier", "Emma"],
+    ["My Amazon order refund", "James"],
+    ["The website shows a 404 error", "Olivia"],
+    ["Delete my data under your privacy policy", "Ethan"],
+    ["Missing notifications for my support ticket", "Ava"],
+  ])
+    assert.equal(routeSupportIssue(question, "Alex").name, name, question);
+  assert.equal(routeSupportIssue("Can you explain more?", "Maya").name, "Maya");
+  assert.equal(getSupportProfile("invalid").name, "Alex");
+  assert.match(
+    supportTransferMessage("Noah"),
+    /Switching this chat to Noah for login/,
+  );
+});
+test("support keeps identity answers concise and removes only trailing name signatures", () => {
+  const {
+    supportIdentityAnswer,
+    trimSupportSignature,
+    supportPersonaInstructions,
+  } = load("lib/support/personas.ts");
+  for (const question of [
+    "u a real agent",
+    "are you human?",
+    "r u a real person?",
+  ]) {
+    const answer = supportIdentityAnswer(question, "Alex");
+    assert.match(answer, /Alex.*AI support/);
+    assert.ok(answer.length < 160);
+  }
+  assert.equal(
+    trimSupportSignature(
+      "Here is your next step. — Alex, Auronix Support.",
+      "Alex",
+    ),
+    "Here is your next step.",
+  );
+  assert.equal(trimSupportSignature("Regards, Alex", "Alex"), "");
+  assert.equal(
+    trimSupportSignature("Contact Alex for details.", "Alex"),
+    "Contact Alex for details.",
+  );
+  assert.match(
+    supportPersonaInstructions("Noah"),
+    /login and account security/,
+  );
+  assert.match(
+    supportPersonaInstructions("Noah"),
+    /Do not repeat your introduction/,
+  );
 });

@@ -1,38 +1,45 @@
-'use client';
-import { userFacingError } from '@/lib/user-facing-error';
-import { Spinner } from '@/components/design/primitives';
+"use client";
+import { userFacingError } from "@/lib/user-facing-error";
+import { Spinner } from "@/components/design/primitives";
 
-import { GlobalSearch } from '@/components/design/search-trigger';
-import { FormField } from '@/components/design/primitives';
-import { useState } from 'react';
-import { SiteLayout } from '@/components/site/site-layout';
-import { PageHeader } from '@/components/site/page-header';
-import { Section, SectionHeading } from '@/components/site/section';
-import { Reveal } from '@/components/site/reveal';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import { GlobalSearch } from "@/components/design/search-trigger";
+import { FormField } from "@/components/design/primitives";
+import { useState } from "react";
+import { SiteLayout } from "@/components/site/site-layout";
+import { PageHeader } from "@/components/site/page-header";
+import { Section, SectionHeading } from "@/components/site/section";
+import { Reveal } from "@/components/site/reveal";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { toast } from '@/hooks/use-toast';
-import { pushData, getTimestamp } from '@/lib/firebase-db';
-import type { SupportTicket } from '@/lib/types';
-import { TICKET_CATEGORIES } from '@/lib/constants';
-import { CheckCircle2, ArrowRight, Loader2, LifeBuoy, Search, Ticket } from 'lucide-react';
-import Link from 'next/link';
+} from "@/components/ui/dialog";
+import { toast } from "@/hooks/use-toast";
+import { pushData, getTimestamp } from "@/lib/firebase-db";
+import type { SupportTicket } from "@/lib/types";
+import { TICKET_CATEGORIES } from "@/lib/constants";
+import {
+  CheckCircle2,
+  ArrowRight,
+  Loader2,
+  LifeBuoy,
+  Search,
+  Ticket,
+} from "lucide-react";
+import Link from "next/link";
 
 export default function SupportPage() {
   const [submitting, setSubmitting] = useState(false);
@@ -40,21 +47,22 @@ export default function SupportPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
-    name: '',
-    email: '',
-    category: '',
-    subject: '',
-    message: '',
+    name: "",
+    email: "",
+    category: "",
+    subject: "",
+    message: "",
   });
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!form.name.trim()) e.name = 'Name is required.';
-    if (!form.email.trim()) e.email = 'Email is required.';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Please enter a valid email.';
-    if (!form.category) e.category = 'Please select a category.';
-    if (!form.subject.trim()) e.subject = 'Subject is required.';
-    if (!form.message.trim()) e.message = 'Message is required.';
+    if (!form.name.trim()) e.name = "Name is required.";
+    if (!form.email.trim()) e.email = "Email is required.";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+      e.email = "Please enter a valid email.";
+    if (!form.category) e.category = "Please select a category.";
+    if (!form.subject.trim()) e.subject = "Subject is required.";
+    if (!form.message.trim()) e.message = "Message is required.";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -73,19 +81,28 @@ export default function SupportPage() {
         category: form.category,
         subject: form.subject.trim(),
         message: form.message.trim(),
-        status: 'open',
+        status: "open",
         createdAt: now,
         updatedAt: now,
       };
 
-      await pushData('tickets', ticket as unknown as Record<string, unknown>);
+      const response = await fetch("/api/aio/support-ticket", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...ticket, confirmed: true }),
+      });
+      if (!response.ok)
+        throw Error(
+          (await response.json()).error || "Unable to create ticket.",
+        );
       setSuccess(true);
-      toast({ title: 'Ticket created', description: 'We will respond soon.' });
+      toast({ title: "Ticket created", description: "We will respond soon." });
     } catch (err) {
       toast({
-        title: 'Failed to create ticket',
-        description: err instanceof Error ? userFacingError(err) : 'Please try again.',
-        variant: 'destructive',
+        title: "Failed to create ticket",
+        description:
+          err instanceof Error ? userFacingError(err) : "Please try again.",
+        variant: "destructive",
       });
     } finally {
       setSubmitting(false);
@@ -94,7 +111,7 @@ export default function SupportPage() {
 
   const update = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: '' }));
+    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: "" }));
   };
 
   return (
@@ -105,9 +122,25 @@ export default function SupportPage() {
         description="Search our FAQ, contact support, or create a ticket. We are here to help with any questions or issues."
       />
 
-      <div className="ac-container ac-support-choices"><Link href="/support/chat"><LifeBuoy size={24}/><h2>Talk it through with AI</h2><p>Clear guidance, one question at a time.</p><ArrowRight size={19}/></Link><Link href="/support/contact"><Ticket size={24}/><h2>Message the support team</h2><p>A dedicated conversation for your question.</p><ArrowRight size={19}/></Link></div>
+      <div className="ac-container ac-support-choices">
+        <Link href="/support/chat">
+          <LifeBuoy size={24} />
+          <h2>Talk it through with AI</h2>
+          <p>Clear guidance, one question at a time.</p>
+          <ArrowRight size={19} />
+        </Link>
+        <Link href="/support/contact">
+          <Ticket size={24} />
+          <h2>Message the support team</h2>
+          <p>A dedicated conversation for your question.</p>
+          <ArrowRight size={19} />
+        </Link>
+      </div>
       <Section className="border-t border-border">
-        <div className="mb-10 max-w-3xl"><GlobalSearch label="Search answers, services, and support"/></div><div className="grid lg:grid-cols-3 gap-5">
+        <div className="mb-10 max-w-3xl">
+          <GlobalSearch label="Search answers, services, and support" />
+        </div>
+        <div className="grid lg:grid-cols-3 gap-5">
           {/* FAQ link */}
           <Reveal>
             <Link href="/faq">
@@ -115,9 +148,12 @@ export default function SupportPage() {
                 <div className="w-12 h-12 rounded-xl bg-primary/5 border border-border flex items-center justify-center mb-5 group-hover:bg-accent/10 group-hover:border-accent/20 transition-colors">
                   <Search className="w-5 h-5 text-foreground group-hover:text-accent transition-colors" />
                 </div>
-                <h3 className="text-lg font-semibold tracking-tight mb-2">Search FAQ</h3>
+                <h3 className="text-lg font-semibold tracking-tight mb-2">
+                  Search FAQ
+                </h3>
                 <p className="text-sm text-foreground-muted leading-relaxed mb-4">
-                  Find quick answers to common questions about Auronix, our services, and partnerships.
+                  Find quick answers to common questions about Auronix, our
+                  services, and partnerships.
                 </p>
                 <span className="inline-flex items-center gap-1 text-sm font-medium text-foreground group-hover:gap-2 transition-all">
                   Browse FAQs
@@ -134,9 +170,12 @@ export default function SupportPage() {
                 <div className="w-12 h-12 rounded-xl bg-primary/5 border border-border flex items-center justify-center mb-5 group-hover:bg-accent/10 group-hover:border-accent/20 transition-colors">
                   <LifeBuoy className="w-5 h-5 text-foreground group-hover:text-accent transition-colors" />
                 </div>
-                <h3 className="text-lg font-semibold tracking-tight mb-2">Contact Support</h3>
+                <h3 className="text-lg font-semibold tracking-tight mb-2">
+                  Contact Support
+                </h3>
                 <p className="text-sm text-foreground-muted leading-relaxed mb-4">
-                  Send us a message and we will get back to you as soon as possible.
+                  Send us a message and we will get back to you as soon as
+                  possible.
                 </p>
                 <span className="inline-flex items-center gap-1 text-sm font-medium text-foreground group-hover:gap-2 transition-all">
                   Contact Us
@@ -155,9 +194,12 @@ export default function SupportPage() {
                     <div className="w-12 h-12 rounded-xl bg-primary/5 border border-border flex items-center justify-center mb-5 group-hover:bg-accent/10 group-hover:border-accent/20 transition-colors">
                       <Ticket className="w-5 h-5 text-foreground group-hover:text-accent transition-colors" />
                     </div>
-                    <h3 className="text-lg font-semibold tracking-tight mb-2">Create a Ticket</h3>
+                    <h3 className="text-lg font-semibold tracking-tight mb-2">
+                      Create a Ticket
+                    </h3>
                     <p className="text-sm text-foreground-muted leading-relaxed mb-4">
-                      Submit a support ticket for detailed or account-specific issues.
+                      Submit a support ticket for detailed or account-specific
+                      issues.
                     </p>
                     <span className="inline-flex items-center gap-1 text-sm font-medium text-foreground group-hover:gap-2 transition-all">
                       Open Ticket
@@ -175,7 +217,9 @@ export default function SupportPage() {
                     <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4">
                       <CheckCircle2 className="w-8 h-8 text-green-600" />
                     </div>
-                    <h3 className="text-lg font-semibold mb-2">Ticket created.</h3>
+                    <h3 className="text-lg font-semibold mb-2">
+                      Ticket created.
+                    </h3>
                     <p className="text-sm text-foreground-muted mb-6">
                       We have received your ticket and will respond soon.
                     </p>
@@ -184,7 +228,13 @@ export default function SupportPage() {
                       onClick={() => {
                         setSuccess(false);
                         setOpen(false);
-                        setForm({ name: '', email: '', category: '', subject: '', message: '' });
+                        setForm({
+                          name: "",
+                          email: "",
+                          category: "",
+                          subject: "",
+                          message: "",
+                        });
                       }}
                     >
                       Close
@@ -196,7 +246,7 @@ export default function SupportPage() {
                       <FormField label="Name" required error={errors.name}>
                         <Input
                           value={form.name}
-                          onChange={(e) => update('name', e.target.value)}
+                          onChange={(e) => update("name", e.target.value)}
                           aria-invalid={!!errors.name}
                         />
                       </FormField>
@@ -204,15 +254,19 @@ export default function SupportPage() {
                         <Input
                           type="email"
                           value={form.email}
-                          onChange={(e) => update('email', e.target.value)}
+                          onChange={(e) => update("email", e.target.value)}
                           aria-invalid={!!errors.email}
                         />
                       </FormField>
                     </div>
-                    <FormField label="Category" required error={errors.category}>
+                    <FormField
+                      label="Category"
+                      required
+                      error={errors.category}
+                    >
                       <Select
                         value={form.category}
-                        onValueChange={(v) => update('category', v)}
+                        onValueChange={(v) => update("category", v)}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select category" />
@@ -229,19 +283,23 @@ export default function SupportPage() {
                     <FormField label="Subject" required error={errors.subject}>
                       <Input
                         value={form.subject}
-                        onChange={(e) => update('subject', e.target.value)}
+                        onChange={(e) => update("subject", e.target.value)}
                         aria-invalid={!!errors.subject}
                       />
                     </FormField>
                     <FormField label="Message" required error={errors.message}>
                       <Textarea
                         value={form.message}
-                        onChange={(e) => update('message', e.target.value)}
+                        onChange={(e) => update("message", e.target.value)}
                         rows={4}
                         aria-invalid={!!errors.message}
                       />
                     </FormField>
-                    <Button type="submit" disabled={submitting} className="w-full">
+                    <Button
+                      type="submit"
+                      disabled={submitting}
+                      className="w-full"
+                    >
                       {submitting ? (
                         <>
                           <Spinner className="w-4 h-4 mr-2" />

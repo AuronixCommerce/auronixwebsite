@@ -1,18 +1,10 @@
-'use client';
-import { userFacingError } from '@/lib/user-facing-error';
-import { Spinner } from '@/components/design/primitives';
+"use client";
+import { userFacingError } from "@/lib/user-facing-error";
+import { Spinner } from "@/components/design/primitives";
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  onValue,
-  ref,
-} from 'firebase/database';
+import { onValue, ref } from "firebase/database";
 
 import {
   AlertTriangle,
@@ -33,29 +25,28 @@ import {
   Trash2,
   User,
   XCircle,
-} from 'lucide-react';
-import Link from 'next/link';
-import { confirmAction, notifyAction, promptAction } from '@/components/ui/confirm-action';
-import { onAuthChange } from '@/lib/auth';
-
+} from "lucide-react";
+import Link from "next/link";
 import {
-  auth,
-  db,
-} from '@/lib/firebase';
+  confirmAction,
+  notifyAction,
+  promptAction,
+} from "@/components/ui/confirm-action";
+import { onAuthChange } from "@/lib/auth";
 
-import { AdminLayout } from '@/components/admin/admin-layout';
+import { auth, db } from "@/lib/firebase";
 
-import {
-  SellerAIScreeningCard,
-} from '@/components/admin/seller-ai-screening-card';
+import { AdminLayout } from "@/components/admin/admin-layout";
+
+import { SellerAIScreeningCard } from "@/components/admin/seller-ai-screening-card";
 
 type Filter =
-  | 'all'
-  | 'pending'
-  | 'under_review'
-  | 'changes_requested'
-  | 'approved'
-  | 'rejected';
+  | "all"
+  | "pending"
+  | "under_review"
+  | "changes_requested"
+  | "approved"
+  | "rejected";
 
 type SellerApplication = {
   id: string;
@@ -141,451 +132,245 @@ type SellerApplication = {
   [key: string]: unknown;
 };
 
-function text(
-  value: unknown
-): string {
-  if (
-    typeof value === 'string' ||
-    typeof value === 'number'
-  ) {
+function text(value: unknown): string {
+  if (typeof value === "string" || typeof value === "number") {
     return String(value).trim();
   }
 
-  return '';
+  return "";
 }
 
-function getStatus(
-  application: SellerApplication
-): string {
-  return (
-    text(
-      application.status
-    ).toLowerCase() ||
-    'pending'
-  );
+function getStatus(application: SellerApplication): string {
+  return text(application.status).toLowerCase() || "pending";
 }
 
-function getName(
-  application: SellerApplication
-): string {
-  return (
-    text(
-      application.fullName
-    ) ||
-    'Unnamed applicant'
-  );
+function getName(application: SellerApplication): string {
+  return text(application.fullName) || "Unnamed applicant";
 }
 
-function getEmail(
-  application: SellerApplication
-): string {
-  return text(
-    application.businessEmail
-  );
+function getEmail(application: SellerApplication): string {
+  return text(application.businessEmail);
 }
 
-function getCompany(
-  application: SellerApplication
-): string {
-  return text(
-    application.businessName
-  );
+function getCompany(application: SellerApplication): string {
+  return text(application.businessName);
 }
 
-function getWebsite(
-  application: SellerApplication
-): string {
-  return text(
-    application.website
-  );
+function getWebsite(application: SellerApplication): string {
+  return text(application.website);
 }
 
-function getBusinessInformation(
-  application: SellerApplication
-): string {
-  return text(
-    application.businessInformation
-  );
+function getBusinessInformation(application: SellerApplication): string {
+  return text(application.businessInformation);
 }
 
-function getWhyAuronix(
-  application: SellerApplication
-): string {
-  return text(
-    application.whyWorkWithAuronix
-  );
+function getWhyAuronix(application: SellerApplication): string {
+  return text(application.whyWorkWithAuronix);
 }
 
-function getProductCategories(
-  application: SellerApplication
-): string {
-  return text(
-    application.productCategories
-  );
+function getProductCategories(application: SellerApplication): string {
+  return text(application.productCategories);
 }
 
-function getScore(
-  application: SellerApplication
-): number {
-  const screening =
-    application.aiScreening;
+function getScore(application: SellerApplication): number {
+  const screening = application.aiScreening;
 
-  const confidence =
-    Number(
-      screening?.confidence
-    );
+  const confidence = Number(screening?.confidence);
 
-  if (
-    Number.isFinite(
-      confidence
-    )
-  ) {
-    return Math.max(
-      0,
-      Math.min(
-        100,
-        Math.round(
-          confidence
-        )
-      )
-    );
+  if (Number.isFinite(confidence)) {
+    return Math.max(0, Math.min(100, Math.round(confidence)));
   }
 
   /*
    * Compatibility with older records.
    * New display should come from aiScreening.
    */
-  const score =
-    Number(
-      screening?.score
-    );
+  const score = Number(screening?.score);
 
-  if (
-    Number.isFinite(
-      score
-    )
-  ) {
-    return Math.max(
-      0,
-      Math.min(
-        100,
-        Math.round(score)
-      )
-    );
+  if (Number.isFinite(score)) {
+    return Math.max(0, Math.min(100, Math.round(score)));
   }
 
   return 0;
 }
 
-function getScreeningLabel(
-  application: SellerApplication
-): string {
-  return (
-    text(
-      application.aiScreening
-        ?.label
-    ) ||
-    'NOT_SCREENED'
-  );
+function getScreeningLabel(application: SellerApplication): string {
+  return text(application.aiScreening?.label) || "NOT_SCREENED";
 }
 
-function getScreeningClass(
-  label: string
-): string {
+function getScreeningClass(label: string): string {
   switch (label) {
-    case 'AI_APPROVED':
-      return 'border-green-500/20 bg-green-500/10 text-green-700';
+    case "AI_APPROVED":
+      return "border-green-500/20 bg-green-500/10 text-green-700";
 
-    case 'LOOKS_GOOD':
-      return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700';
+    case "LOOKS_GOOD":
+      return "border-emerald-500/20 bg-emerald-500/10 text-emerald-700";
 
-    case 'NEEDS_REVIEW':
-      return 'border-yellow-500/20 bg-yellow-500/10 text-yellow-700';
+    case "NEEDS_REVIEW":
+      return "border-yellow-500/20 bg-yellow-500/10 text-yellow-700";
 
-    case 'LOOKS_BUG':
-      return 'border-orange-500/20 bg-orange-500/10 text-orange-700';
+    case "LOOKS_BUG":
+      return "border-orange-500/20 bg-orange-500/10 text-orange-700";
 
-    case 'LOOKS_SPAM':
-    case 'HIGH_RISK':
-      return 'border-red-500/20 bg-red-500/10 text-red-700';
+    case "LOOKS_SPAM":
+    case "HIGH_RISK":
+      return "border-red-500/20 bg-red-500/10 text-red-700";
 
     default:
-      return 'border-border bg-secondary text-foreground-muted';
+      return "border-border bg-secondary text-foreground-muted";
   }
 }
 
-function getScreeningTitle(
-  label: string
-): string {
+function getScreeningTitle(label: string): string {
   switch (label) {
-    case 'AI_APPROVED':
-      return 'AI Approved';
+    case "AI_APPROVED":
+      return "AI Approved";
 
-    case 'LOOKS_GOOD':
-      return 'Looks Good';
+    case "LOOKS_GOOD":
+      return "Looks Good";
 
-    case 'NEEDS_REVIEW':
-      return 'Needs Review';
+    case "NEEDS_REVIEW":
+      return "Needs Review";
 
-    case 'LOOKS_BUG':
-      return 'Looks Bug';
+    case "LOOKS_BUG":
+      return "Looks Bug";
 
-    case 'LOOKS_SPAM':
-      return 'Looks Spam';
+    case "LOOKS_SPAM":
+      return "Looks Spam";
 
-    case 'HIGH_RISK':
-      return 'High Risk';
+    case "HIGH_RISK":
+      return "High Risk";
 
     default:
-      return 'Not Screened';
+      return "Not Screened";
   }
 }
 
-function getListDate(
-  application: SellerApplication
-): number {
-  return Number(
-    application.updatedAt ||
-      application.createdAt ||
-      0
-  );
+function getListDate(application: SellerApplication): number {
+  return Number(application.updatedAt || application.createdAt || 0);
 }
 
-function formatDate(
-  value: unknown
-): string {
+function formatDate(value: unknown): string {
   if (!value) {
-    return 'Unknown date';
+    return "Unknown date";
   }
 
-  const timestamp =
-    Number(value);
+  const timestamp = Number(value);
 
-  const date =
-    Number.isFinite(
-      timestamp
-    )
-      ? new Date(timestamp)
-      : new Date(
-          String(value)
-        );
+  const date = Number.isFinite(timestamp)
+    ? new Date(timestamp)
+    : new Date(String(value));
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return 'Unknown date';
+  if (Number.isNaN(date.getTime())) {
+    return "Unknown date";
   }
 
   return date.toLocaleString();
 }
 
-function normalizeScreening(
-  application: SellerApplication
-) {
-  const screening =
-    application.aiScreening;
+function normalizeScreening(application: SellerApplication) {
+  const screening = application.aiScreening;
 
   if (!screening) {
     return undefined;
   }
 
-  const label =
-    text(
-      screening.label
-    );
+  const label = text(screening.label);
 
   if (
     ![
-      'AI_APPROVED',
-      'LOOKS_GOOD',
-      'NEEDS_REVIEW',
-      'LOOKS_BUG',
-      'LOOKS_SPAM',
-      'HIGH_RISK',
-    ].includes(
-      label
-    )
+      "AI_APPROVED",
+      "LOOKS_GOOD",
+      "NEEDS_REVIEW",
+      "LOOKS_BUG",
+      "LOOKS_SPAM",
+      "HIGH_RISK",
+    ].includes(label)
   ) {
     return undefined;
   }
 
-  const array = (
-    value: unknown
-  ): string[] =>
-    Array.isArray(value)
-      ? value
-          .map(text)
-          .filter(Boolean)
-      : [];
+  const array = (value: unknown): string[] =>
+    Array.isArray(value) ? value.map(text).filter(Boolean) : [];
 
   return {
-    label:
-      label as
-        | 'AI_APPROVED'
-        | 'LOOKS_GOOD'
-        | 'NEEDS_REVIEW'
-        | 'LOOKS_BUG'
-        | 'LOOKS_SPAM'
-        | 'HIGH_RISK',
+    label: label as
+      | "AI_APPROVED"
+      | "LOOKS_GOOD"
+      | "NEEDS_REVIEW"
+      | "LOOKS_BUG"
+      | "LOOKS_SPAM"
+      | "HIGH_RISK",
 
-    score:
-      getScore(
-        application
-      ),
+    score: getScore(application),
 
-    summary:
-      text(
-        screening.summary
-      ),
+    summary: text(screening.summary),
 
-    reasons:
-      array(
-        screening.reasons
-      ),
+    reasons: array(screening.reasons),
 
-    positiveSignals:
-      array(
-        screening.positiveSignals
-      ),
+    positiveSignals: array(screening.positiveSignals),
 
-    riskSignals:
-      array(
-        screening.riskSignals
-      ),
+    riskSignals: array(screening.riskSignals),
 
-    missingInformation:
-      array(
-        screening.missingInformation
-      ),
+    missingInformation: array(screening.missingInformation),
 
-    contradictions:
-      array(
-        screening.contradictions
-      ),
+    contradictions: array(screening.contradictions),
 
-    recommendation:
-      text(
-        screening.recommendation
-      ) as
-        | 'AUTO_ONBOARD'
-        | 'MANUAL_REVIEW'
-        | 'DO_NOT_AUTO_APPROVE'
-        | undefined,
+    recommendation: text(screening.recommendation) as
+      | "AUTO_ONBOARD"
+      | "MANUAL_REVIEW"
+      | "DO_NOT_AUTO_APPROVE"
+      | undefined,
 
-    autoEligible:
-      screening.autoEligible ===
-      true,
+    autoEligible: screening.autoEligible === true,
 
-    screenedAt:
-      Number(
-        screening.screenedAt
-      ) || undefined,
+    screenedAt: Number(screening.screenedAt) || undefined,
 
-    firstPass:
-      screening.firstPass
-        ? {
-            label:
-              text(
-                screening.firstPass
-                  .label
-              ),
+    firstPass: screening.firstPass
+      ? {
+          label: text(screening.firstPass.label),
 
-            confidence:
-              Number(
-                screening.firstPass
-                  .confidence
-              ) || 0,
-          }
-        : undefined,
+          confidence: Number(screening.firstPass.confidence) || 0,
+        }
+      : undefined,
 
-    secondPass:
-      screening.secondPass
-        ? {
-            approved:
-              screening.secondPass
-                .approved ===
-              true,
+    secondPass: screening.secondPass
+      ? {
+          approved: screening.secondPass.approved === true,
 
-            confidence:
-              Number(
-                screening.secondPass
-                  .confidence
-              ) || 0,
-          }
-        : undefined,
+          confidence: Number(screening.secondPass.confidence) || 0,
+        }
+      : undefined,
 
-    deterministicQuality:
-      Number(
-        screening.deterministicQuality
-      ) || 0,
+    deterministicQuality: Number(screening.deterministicQuality) || 0,
 
-    verificationRoutes:
-      array(
-        screening.verificationRoutes
-      ),
+    verificationRoutes: array(screening.verificationRoutes),
   };
 }
 
 export default function AdminSellersPage() {
-  const [
-    applications,
-    setApplications,
-  ] =
-    useState<
-      SellerApplication[]
-    >([]);
+  const [applications, setApplications] = useState<SellerApplication[]>([]);
 
-  const [
-    loading,
-    setLoading,
-  ] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [
-    search,
-    setSearch,
-  ] =
-    useState('');
+  const [search, setSearch] = useState("");
 
-  const [
-    filter,
-    setFilter,
-  ] =
-    useState<Filter>(
-      'all'
-    );
+  const [filter, setFilter] = useState<Filter>("all");
 
-  const [
-    selectedId,
-    setSelectedId,
-  ] =
-    useState<
-      string | null
-    >(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const [
-    actionLoading,
-    setActionLoading,
-  ] =
-    useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  const [
-    autoScreening,
-    setAutoScreening,
-  ] =
-    useState(false);
+  const [autoScreening, setAutoScreening] = useState(false);
   const [authReady, setAuthReady] = useState(false);
 
-  useEffect(() => onAuthChange(user => setAuthReady(Boolean(user))), []);
+  useEffect(() => onAuthChange((user) => setAuthReady(Boolean(user))), []);
 
   /*
    * Prevent multiple automatic screening calls during
    * Auronix realtime data updates.
    */
-  const autoScreenStarted =
-    useRef(false);
+  const autoScreenStarted = useRef(false);
 
   useEffect(() => {
     if (!db) {
@@ -593,53 +378,29 @@ export default function AdminSellersPage() {
       return;
     }
 
-    const unsubscribe =
-      onValue(
-        ref(
-          db,
-          'sellerApplications'
-        ),
-        (snapshot) => {
-          const value =
-            snapshot.exists()
-              ? snapshot.val()
-              : {};
+    const unsubscribe = onValue(
+      ref(db, "sellerApplications"),
+      (snapshot) => {
+        const value = snapshot.exists() ? snapshot.val() : {};
 
-          const list =
-            Object.entries(
-              value || {}
-            ).map(
-              ([id, item]) => ({
-                id,
+        const list = Object.entries(value || {}).map(([id, item]) => ({
+          id,
 
-                ...(item as Record<
-                  string,
-                  unknown
-                >),
-              })
-            ) as SellerApplication[];
+          ...(item as Record<string, unknown>),
+        })) as SellerApplication[];
 
-          list.sort(
-            (a, b) =>
-              getListDate(b) -
-              getListDate(a)
-          );
+        list.sort((a, b) => getListDate(b) - getListDate(a));
 
-          setApplications(
-            list
-          );
+        setApplications(list);
 
-          setLoading(false);
-        },
-        (error) => {
-          console.error(
-            'Unable to load seller applications:',
-            error
-          );
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Unable to load seller applications:", error);
 
-          setLoading(false);
-        }
-      );
+        setLoading(false);
+      },
+    );
 
     return () => {
       unsubscribe();
@@ -653,15 +414,11 @@ export default function AdminSellersPage() {
    * pipeline when the Seller Applications page is opened.
    */
   useEffect(() => {
-    if (
-      autoScreenStarted.current
-    ) {
+    if (autoScreenStarted.current) {
       return;
     }
 
-    if (
-      !applications.length
-    ) {
+    if (!applications.length) {
       return;
     }
 
@@ -669,80 +426,53 @@ export default function AdminSellersPage() {
       return;
     }
 
-    autoScreenStarted.current =
-      true;
+    autoScreenStarted.current = true;
 
     let cancelled = false;
 
     async function screenPendingApplications() {
-      if (
-        cancelled
-      ) {
+      if (cancelled) {
         return;
       }
 
-      setAutoScreening(
-        true
-      );
+      setAutoScreening(true);
 
       try {
-        const token =
-          await auth.currentUser!.getIdToken();
+        const token = await auth.currentUser!.getIdToken();
 
-        const response =
-          await fetch(
-            '/api/admin/sellers/ai-screen',
-            {
-              method:
-                'POST',
+        let remaining = 1;
+        while (remaining > 0 && !cancelled) {
+          const response = await fetch("/api/admin/sellers/ai-screen", {
+            method: "POST",
 
-              headers: {
-                'Content-Type':
-                  'application/json',
+            headers: {
+              "Content-Type": "application/json",
 
-                Authorization:
-                  `Bearer ${token}`,
-              },
+              Authorization: `Bearer ${token}`,
+            },
 
-              body:
-                JSON.stringify({
-                  screenAll:
-                    true,
+            body: JSON.stringify({
+              screenAll: true,
 
-                  automatic:
-                    true,
-                }),
-            }
-          );
+              automatic: false,
+            }),
+          });
 
-        const data =
-          await response.json();
+          const data = await response.json();
 
-        if (
-          !response.ok
-        ) {
-          throw new Error(
-            data.error ||
-              'Automatic seller screening failed.'
-          );
+          if (!response.ok) {
+            throw new Error(data.error || "Automatic seller screening failed.");
+          }
+
+          console.log("Seller AI screening completed:", data);
+
+          remaining = Number(data.remaining || 0);
         }
-
-        console.log(
-          'Seller AI screening completed:',
-          data
-        );
       } catch (error) {
-        console.error(
-          'Automatic seller screening failed:',
-          error
-        );
+        console.error("Automatic seller screening failed:", error);
       } finally {
-        if (
-          !cancelled
-        ) {
-          setAutoScreening(
-            false
-          );
+        if (!cancelled) {
+          setAutoScreening(false);
         }
       }
     }
@@ -752,507 +482,345 @@ export default function AdminSellersPage() {
     return () => {
       cancelled = true;
     };
-  }, [
-    applications.length,
-    authReady,
-  ]);
+  }, [applications.length, authReady]);
 
   const selected =
-    applications.find(
-      (application) =>
-        application.id ===
-        selectedId
-    ) || null;
+    applications.find((application) => application.id === selectedId) || null;
 
-  const filtered =
-    useMemo(() => {
-      const query =
-        search
-          .trim()
-          .toLowerCase();
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
 
-      return applications.filter(
-        (application) => {
-          const status =
-            getStatus(
-              application
-            );
+    return applications.filter((application) => {
+      const status = getStatus(application);
 
-          const matchesFilter =
-            filter ===
-              'all' ||
-            status ===
-              filter;
+      const matchesFilter = filter === "all" || status === filter;
 
-          const searchable = [
-            getName(
-              application
-            ),
+      const searchable = [
+        getName(application),
 
-            getCompany(
-              application
-            ),
+        getCompany(application),
 
-            getEmail(
-              application
-            ),
+        getEmail(application),
 
-            getWebsite(
-              application
-            ),
+        getWebsite(application),
 
-            getProductCategories(
-              application
-            ),
+        getProductCategories(application),
 
-            getBusinessInformation(
-              application
-            ),
+        getBusinessInformation(application),
 
-            getWhyAuronix(
-              application
-            ),
-          ]
-            .join(' ')
-            .toLowerCase();
+        getWhyAuronix(application),
+      ]
+        .join(" ")
+        .toLowerCase();
 
-          const matchesSearch =
-            !query ||
-            searchable.includes(
-              query
-            );
+      const matchesSearch = !query || searchable.includes(query);
 
-          return (
-            matchesFilter &&
-            matchesSearch
-          );
-        }
+      return matchesFilter && matchesSearch;
+    });
+  }, [applications, filter, search]);
+
+  const approveManually = async () => {
+    if (!selected || !auth.currentUser || actionLoading || autoScreening) {
+      return;
+    }
+
+    if (
+      !(await confirmAction({
+        title: `Approve ${getName(selected)}?`,
+        description:
+          "This approves the application and creates a secure seller account invitation.",
+        confirmLabel: "Approve application",
+      }))
+    ) {
+      return;
+    }
+
+    setActionLoading(true);
+
+    try {
+      const token = await auth.currentUser.getIdToken();
+
+      const response = await fetch("/api/admin/sellers/approve", {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+
+          Authorization: `Bearer ${token}`,
+        },
+
+        body: JSON.stringify({
+          applicationId: selected.id,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to approve seller.");
+      }
+
+      notifyAction("Seller approved and invitation sent.");
+    } catch (error) {
+      notifyAction(
+        error instanceof Error
+          ? userFacingError(error)
+          : "Unable to approve seller.",
       );
-    }, [
-      applications,
-      filter,
-      search,
-    ]);
-
-  const approveManually =
-    async () => {
-      if (
-        !selected ||
-        !auth.currentUser ||
-        actionLoading ||
-        autoScreening
-      ) {
-        return;
-      }
-
-      if (
-        !await confirmAction({
-          title: `Approve ${getName(selected)}?`,
-          description: 'This approves the application and creates a secure seller account invitation.',
-          confirmLabel: 'Approve application',
-        })
-      ) {
-        return;
-      }
-
-      setActionLoading(
-        true
-      );
-
-      try {
-        const token =
-          await auth.currentUser.getIdToken();
-
-        const response =
-          await fetch(
-            '/api/admin/sellers/approve',
-            {
-              method:
-                'POST',
-
-              headers: {
-                'Content-Type':
-                  'application/json',
-
-                Authorization:
-                  `Bearer ${token}`,
-              },
-
-              body:
-                JSON.stringify({
-                  applicationId:
-                    selected.id,
-                }),
-            }
-          );
-
-        const data =
-          await response.json();
-
-        if (
-          !response.ok
-        ) {
-          throw new Error(
-            data.error ||
-              'Unable to approve seller.'
-          );
-        }
-
-        notifyAction(
-          'Seller approved and invitation sent.'
-        );
-      } catch (error) {
-        notifyAction(
-          error instanceof Error
-            ? userFacingError(error)
-            : 'Unable to approve seller.'
-        );
-      } finally {
-        setActionLoading(
-          false
-        );
-      }
-    };
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const requestChanges = async () => {
     if (!selected || !auth.currentUser || actionLoading) return;
-    const fieldInput = await promptAction({ title: 'Choose fields for correction', description: 'Enter application field names separated by commas. These appear as field-level requests in the applicant timeline.', label: 'Fields to change', defaultValue: 'businessInformation, productCategories', confirmLabel: 'Continue' });
+    const fieldInput = await promptAction({
+      title: "Choose fields for correction",
+      description:
+        "Enter application field names separated by commas. These appear as field-level requests in the applicant timeline.",
+      label: "Fields to change",
+      defaultValue: "businessInformation, productCategories",
+      confirmLabel: "Continue",
+    });
     if (fieldInput === null) return;
-    const message = await promptAction({ title: 'Request application corrections', description: 'This message appears in tracking and is emailed to the applicant.', label: 'What should the applicant fix?', confirmLabel: 'Send correction request' });
+    const message = await promptAction({
+      title: "Request application corrections",
+      description:
+        "This message appears in tracking and is emailed to the applicant.",
+      label: "What should the applicant fix?",
+      confirmLabel: "Send correction request",
+    });
     if (!message || message.trim().length < 10) return;
     setActionLoading(true);
     try {
       const token = await auth.currentUser.getIdToken();
-      const requestedFields = fieldInput.split(',').map(field => field.trim()).filter(Boolean);
-      const response = await fetch('/api/admin/sellers/request-changes', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ applicationId: selected.id, message, requestedFields }) });
+      const requestedFields = fieldInput
+        .split(",")
+        .map((field) => field.trim())
+        .filter(Boolean);
+      const response = await fetch("/api/admin/sellers/request-changes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          applicationId: selected.id,
+          message,
+          requestedFields,
+        }),
+      });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Unable to request corrections.');
-      notifyAction(data.emailSent ? 'Correction request saved and emailed.' : 'Correction request saved. Email delivery is delayed.');
-    } catch (error) { notifyAction(userFacingError(error)); }
-    finally { setActionLoading(false); }
+      if (!response.ok)
+        throw new Error(data.error || "Unable to request corrections.");
+      notifyAction(
+        data.emailSent
+          ? "Correction request saved and emailed."
+          : "Correction request saved. Email delivery is delayed.",
+      );
+    } catch (error) {
+      notifyAction(userFacingError(error));
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const reject =
-    async () => {
-      if (
-        !selected ||
-        !auth.currentUser ||
-        actionLoading
-      ) {
-        return;
+  const reject = async () => {
+    if (!selected || !auth.currentUser || actionLoading) {
+      return;
+    }
+
+    const reason = await promptAction({
+      title: `Reject ${getName(selected)}'s application?`,
+      description:
+        "Provide a professional reason to share with the applicant by email and in application tracking.",
+      label: "Rejection reason",
+      defaultValue: "The application did not meet the current requirements.",
+      confirmLabel: "Reject application",
+      destructive: true,
+    });
+
+    if (reason === null) {
+      return;
+    }
+
+    setActionLoading(true);
+
+    try {
+      const token = await auth.currentUser.getIdToken();
+
+      const response = await fetch("/api/admin/sellers/reject", {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+
+          Authorization: `Bearer ${token}`,
+        },
+
+        body: JSON.stringify({
+          applicationId: selected.id,
+
+          reason: reason.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to reject seller.");
       }
-
-      const reason =
-        await promptAction({
-          title: `Reject ${getName(selected)}'s application?`,
-          description: 'Provide a professional reason to share with the applicant by email and in application tracking.',
-          label: 'Rejection reason',
-          defaultValue: 'The application did not meet the current requirements.',
-          confirmLabel: 'Reject application',
-          destructive: true,
-        });
-
-      if (
-        reason === null
-      ) {
-        return;
-      }
-
-      setActionLoading(
-        true
+    } catch (error) {
+      notifyAction(
+        error instanceof Error
+          ? userFacingError(error)
+          : "Unable to reject seller.",
       );
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
-      try {
-        const token =
-          await auth.currentUser.getIdToken();
+  const remove = async () => {
+    if (!selected || !auth.currentUser || actionLoading) {
+      return;
+    }
 
-        const response =
-          await fetch(
-            '/api/admin/sellers/reject',
-            {
-              method:
-                'POST',
+    if (
+      !(await confirmAction({
+        title: `Delete ${getName(selected)}'s application?`,
+        description:
+          "The seller application will be permanently removed. This action cannot be undone.",
+        confirmLabel: "Delete application",
+        destructive: true,
+      }))
+    ) {
+      return;
+    }
 
-              headers: {
-                'Content-Type':
-                  'application/json',
+    setActionLoading(true);
 
-                Authorization:
-                  `Bearer ${token}`,
-              },
+    try {
+      const token = await auth.currentUser.getIdToken();
 
-              body:
-                JSON.stringify({
-                  applicationId:
-                    selected.id,
+      const response = await fetch("/api/admin/sellers/delete", {
+        method: "POST",
 
-                  reason:
-                    reason.trim(),
-                }),
-            }
-          );
+        headers: {
+          "Content-Type": "application/json",
 
-        const data =
-          await response.json();
+          Authorization: `Bearer ${token}`,
+        },
 
-        if (
-          !response.ok
-        ) {
-          throw new Error(
-            data.error ||
-              'Unable to reject seller.'
-          );
-        }
-      } catch (error) {
-        notifyAction(
-          error instanceof Error
-            ? userFacingError(error)
-            : 'Unable to reject seller.'
-        );
-      } finally {
-        setActionLoading(
-          false
-        );
-      }
-    };
+        body: JSON.stringify({
+          applicationId: selected.id,
+        }),
+      });
 
-  const remove =
-    async () => {
-      if (
-        !selected ||
-        !auth.currentUser ||
-        actionLoading
-      ) {
-        return;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to delete seller application.");
       }
 
-      if (
-        !await confirmAction({
-          title: `Delete ${getName(selected)}'s application?`,
-          description: 'The seller application will be permanently removed. This action cannot be undone.',
-          confirmLabel: 'Delete application',
-          destructive: true,
-        })
-      ) {
-        return;
-      }
-
-      setActionLoading(
-        true
+      setSelectedId(null);
+    } catch (error) {
+      notifyAction(
+        error instanceof Error
+          ? userFacingError(error)
+          : "Unable to delete application.",
       );
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
-      try {
-        const token =
-          await auth.currentUser.getIdToken();
+  const runAgain = async () => {
+    if (!selected || !auth.currentUser || actionLoading) {
+      return;
+    }
 
-        const response =
-          await fetch(
-            '/api/admin/sellers/delete',
-            {
-              method:
-                'POST',
+    setActionLoading(true);
 
-              headers: {
-                'Content-Type':
-                  'application/json',
+    try {
+      const token = await auth.currentUser.getIdToken();
 
-                Authorization:
-                  `Bearer ${token}`,
-              },
+      const response = await fetch("/api/admin/sellers/ai-screen", {
+        method: "POST",
 
-              body:
-                JSON.stringify({
-                  applicationId:
-                    selected.id,
-                }),
-            }
-          );
+        headers: {
+          "Content-Type": "application/json",
 
-        const data =
-          await response.json();
+          Authorization: `Bearer ${token}`,
+        },
 
-        if (
-          !response.ok
-        ) {
-          throw new Error(
-            data.error ||
-              'Unable to delete seller application.'
-          );
-        }
+        body: JSON.stringify({
+          applicationId: selected.id,
 
-        setSelectedId(
-          null
-        );
-      } catch (error) {
-        notifyAction(
-          error instanceof Error
-            ? userFacingError(error)
-            : 'Unable to delete application.'
-        );
-      } finally {
-        setActionLoading(
-          false
-        );
+          /*
+           * Manual re-run should NOT
+           * automatically approve.
+           */
+          automatic: false,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "AI screening failed.");
       }
-    };
-
-  const runAgain =
-    async () => {
-      if (
-        !selected ||
-        !auth.currentUser ||
-        actionLoading
-      ) {
-        return;
-      }
-
-      setActionLoading(
-        true
+    } catch (error) {
+      notifyAction(
+        error instanceof Error
+          ? userFacingError(error)
+          : "AI screening failed.",
       );
-
-      try {
-        const token =
-          await auth.currentUser.getIdToken();
-
-        const response =
-          await fetch(
-            '/api/admin/sellers/ai-screen',
-            {
-              method:
-                'POST',
-
-              headers: {
-                'Content-Type':
-                  'application/json',
-
-                Authorization:
-                  `Bearer ${token}`,
-              },
-
-              body:
-                JSON.stringify({
-                  applicationId:
-                    selected.id,
-
-                  /*
-                   * Manual re-run should NOT
-                   * automatically approve.
-                   */
-                  automatic:
-                    false,
-                }),
-            }
-          );
-
-        const data =
-          await response.json();
-
-        if (
-          !response.ok
-        ) {
-          throw new Error(
-            data.error ||
-              'AI screening failed.'
-          );
-        }
-      } catch (error) {
-        notifyAction(
-          error instanceof Error
-            ? userFacingError(error)
-            : 'AI screening failed.'
-        );
-      } finally {
-        setActionLoading(
-          false
-        );
-      }
-    };
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const counts = {
-    all:
-      applications.length,
+    all: applications.length,
 
-    pending:
-      applications.filter(
-        (item) =>
-          getStatus(item) ===
-          'pending'
-      ).length,
+    pending: applications.filter((item) => getStatus(item) === "pending")
+      .length,
 
-    approved:
-      applications.filter(
-        (item) =>
-          getStatus(item) ===
-          'approved'
-      ).length,
+    approved: applications.filter((item) => getStatus(item) === "approved")
+      .length,
 
-    rejected:
-      applications.filter(
-        (item) =>
-          getStatus(item) ===
-          'rejected'
-      ).length,
+    rejected: applications.filter((item) => getStatus(item) === "rejected")
+      .length,
 
-    aiApproved:
-      applications.filter(
-        (item) =>
-          getScreeningLabel(
-            item
-          ) ===
-          'AI_APPROVED'
-      ).length,
+    aiApproved: applications.filter(
+      (item) => getScreeningLabel(item) === "AI_APPROVED",
+    ).length,
 
-    risk:
-      applications.filter(
-        (item) => {
-          const label =
-            getScreeningLabel(
-              item
-            );
+    risk: applications.filter((item) => {
+      const label = getScreeningLabel(item);
 
-          return (
-            label ===
-              'HIGH_RISK' ||
-            label ===
-              'LOOKS_SPAM'
-          );
-        }
-      ).length,
+      return label === "HIGH_RISK" || label === "LOOKS_SPAM";
+    }).length,
   };
 
-  const screening =
-    selected
-      ? normalizeScreening(
-          selected
-        )
-      : undefined;
+  const screening = selected ? normalizeScreening(selected) : undefined;
 
-  const address =
-    selected
-      ? [
-          text(
-            selected.address
-          ),
+  const address = selected
+    ? [
+        text(selected.address),
 
-          text(
-            selected.city
-          ),
+        text(selected.city),
 
-          text(
-            selected.state
-          ),
+        text(selected.state),
 
-          text(
-            selected.zipCode
-          ),
+        text(selected.zipCode),
 
-          text(
-            selected.country
-          ),
-        ]
-          .filter(Boolean)
-          .join(', ')
-      : '';
+        text(selected.country),
+      ]
+        .filter(Boolean)
+        .join(", ")
+    : "";
 
   return (
     <AdminLayout>
@@ -1269,8 +837,8 @@ export default function AdminSellersPage() {
             </h1>
 
             <p className="mt-2 max-w-3xl text-sm leading-6 text-foreground-muted">
-              Review seller applications, inspect business information,
-              and manage the multi-stage AI screening workflow.
+              Review seller applications, inspect business information, and
+              manage the multi-stage AI screening workflow.
             </p>
           </div>
 
@@ -1278,8 +846,8 @@ export default function AdminSellersPage() {
             <div
               className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs ${
                 autoScreening
-                  ? 'border-blue-500/20 bg-blue-500/10 text-blue-700'
-                  : 'border-border bg-card text-foreground-muted'
+                  ? "border-blue-500/20 bg-blue-500/10 text-blue-700"
+                  : "border-border bg-card text-foreground-muted"
               }`}
             >
               {autoScreening ? (
@@ -1297,9 +865,7 @@ export default function AdminSellersPage() {
 
             <button
               type="button"
-              onClick={() =>
-                window.location.reload()
-              }
+              onClick={() => window.location.reload()}
               className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium hover:bg-secondary"
             >
               <RefreshCw className="h-4 w-4" />
@@ -1310,49 +876,17 @@ export default function AdminSellersPage() {
 
         {/* STATS */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
-          <Stat
-            label="All"
-            value={
-              counts.all
-            }
-          />
+          <Stat label="All" value={counts.all} />
 
-          <Stat
-            label="Pending"
-            value={
-              counts.pending
-            }
-          />
+          <Stat label="Pending" value={counts.pending} />
 
-          <Stat
-            label="Approved"
-            value={
-              counts.approved
-            }
-          />
+          <Stat label="Approved" value={counts.approved} />
 
-          <Stat
-            label="Rejected"
-            value={
-              counts.rejected
-            }
-          />
+          <Stat label="Rejected" value={counts.rejected} />
 
-          <Stat
-            label="AI Approved"
-            value={
-              counts.aiApproved
-            }
-            green
-          />
+          <Stat label="AI Approved" value={counts.aiApproved} green />
 
-          <Stat
-            label="Risk / Spam"
-            value={
-              counts.risk
-            }
-            red
-          />
+          <Stat label="Risk / Spam" value={counts.risk} red />
         </div>
 
         {/* SEARCH */}
@@ -1361,51 +895,27 @@ export default function AdminSellersPage() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground-muted" />
 
             <input
-              value={
-                search
-              }
-              onChange={(
-                event
-              ) =>
-                setSearch(
-                  event.target.value
-                )
-              }
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
               placeholder="Search applicant, business, email, website..."
               className="h-11 w-full ac-content-panel pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-accent/20"
             />
           </div>
 
           <select
-            value={
-              filter
-            }
-            onChange={(
-              event
-            ) =>
-              setFilter(
-                event.target.value as Filter
-              )
-            }
+            value={filter}
+            onChange={(event) => setFilter(event.target.value as Filter)}
             className="h-11 ac-content-panel px-3 text-sm outline-none"
           >
-            <option value="all">
-              All Applications
-            </option>
+            <option value="all">All Applications</option>
 
-            <option value="pending">
-              Pending
-            </option>
+            <option value="pending">Pending</option>
 
             <option value="under_review">In review</option>
             <option value="changes_requested">Corrections requested</option>
-            <option value="approved">
-              Approved
-            </option>
+            <option value="approved">Approved</option>
 
-            <option value="rejected">
-              Rejected
-            </option>
+            <option value="rejected">Rejected</option>
           </select>
         </div>
 
@@ -1421,9 +931,7 @@ export default function AdminSellersPage() {
               <div className="p-12 text-center">
                 <User className="mx-auto h-8 w-8 text-foreground-muted" />
 
-                <h2 className="mt-4 font-semibold">
-                  No applications
-                </h2>
+                <h2 className="mt-4 font-semibold">No applications</h2>
 
                 <p className="mt-2 text-sm text-foreground-muted">
                   No seller applications match the current filter.
@@ -1431,106 +939,68 @@ export default function AdminSellersPage() {
               </div>
             ) : (
               <div className="max-h-[820px] divide-y divide-border overflow-y-auto">
-                {filtered.map(
-                  (
-                    application
-                  ) => {
-                    const label =
-                      getScreeningLabel(
-                        application
-                      );
+                {filtered.map((application) => {
+                  const label = getScreeningLabel(application);
 
-                    const score =
-                      getScore(
-                        application
-                      );
+                  const score = getScore(application);
 
-                    return (
-                      <button
-                        key={
-                          application.id
-                        }
-                        type="button"
-                        onClick={() =>
-                          setSelectedId(
-                            application.id
-                          )
-                        }
-                        className={`w-full p-4 text-left transition hover:bg-secondary/40 ${
-                          selectedId ===
-                          application.id
-                            ? 'bg-secondary'
-                            : ''
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="truncate font-medium">
-                              {getName(
-                                application
-                              )}
-                            </div>
-
-                            <div className="mt-1 truncate text-xs text-foreground-muted">
-                              {getCompany(
-                                application
-                              )}
-                            </div>
-
-                            <div className="mt-1 truncate text-xs text-foreground-muted">
-                              {getEmail(
-                                application
-                              )}
-                            </div>
+                  return (
+                    <button
+                      key={application.id}
+                      type="button"
+                      onClick={() => setSelectedId(application.id)}
+                      className={`w-full p-4 text-left transition hover:bg-secondary/40 ${
+                        selectedId === application.id ? "bg-secondary" : ""
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="truncate font-medium">
+                            {getName(application)}
                           </div>
 
-                          <StatusBadge
-                            status={
-                              getStatus(
-                                application
-                              )
-                            }
-                          />
+                          <div className="mt-1 truncate text-xs text-foreground-muted">
+                            {getCompany(application)}
+                          </div>
+
+                          <div className="mt-1 truncate text-xs text-foreground-muted">
+                            {getEmail(application)}
+                          </div>
                         </div>
 
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <span
-                            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${getScreeningClass(
-                              label
-                            )}`}
-                          >
-                            <Bot className="h-3 w-3" />
+                        <StatusBadge status={getStatus(application)} />
+                      </div>
 
-                            {getScreeningTitle(
-                              label
-                            )}
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${getScreeningClass(
+                            label,
+                          )}`}
+                        >
+                          <Bot className="h-3 w-3" />
 
-                            {label !==
-                              'NOT_SCREENED' &&
-                            score > 0
-                              ? ` · ${score}%`
-                              : ''}
+                          {getScreeningTitle(label)}
+
+                          {label !== "NOT_SCREENED" && score > 0
+                            ? ` · ${score}%`
+                            : ""}
+                        </span>
+
+                        {screeningAutoEligible(application) && (
+                          <span className="rounded-full bg-green-600 px-2.5 py-1 text-[10px] font-semibold text-white">
+                            AUTO ELIGIBLE
                           </span>
+                        )}
 
-                          {screeningAutoEligible(
-                            application
-                          ) && (
-                            <span className="rounded-full bg-green-600 px-2.5 py-1 text-[10px] font-semibold text-white">
-                              AUTO ELIGIBLE
-                            </span>
-                          )}
-
-                          {application.aiAutoApproved ===
-                            true && (
-                            <span className="rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-semibold text-white">
-                              AUTO ONBOARDED
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  }
-                )}
+                        {application.aiAutoApproved === true && (
+                          <span className="rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-semibold text-white">
+                            AUTO ONBOARDED
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1547,8 +1017,8 @@ export default function AdminSellersPage() {
                   </h2>
 
                   <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-foreground-muted">
-                    Select an application to see its complete
-                    business information and AI review.
+                    Select an application to see its complete business
+                    information and AI review.
                   </p>
                 </div>
               </div>
@@ -1559,98 +1029,91 @@ export default function AdminSellersPage() {
                   <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                     <div>
                       <div className="flex flex-wrap gap-2">
-                        <StatusBadge
-                          status={
-                            getStatus(
-                              selected
-                            )
-                          }
-                        />
+                        <StatusBadge status={getStatus(selected)} />
 
                         <span
                           className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${getScreeningClass(
-                            getScreeningLabel(
-                              selected
-                            )
+                            getScreeningLabel(selected),
                           )}`}
                         >
                           <Bot className="h-3 w-3" />
 
-                          {getScreeningTitle(
-                            getScreeningLabel(
-                              selected
-                            )
-                          )}
+                          {getScreeningTitle(getScreeningLabel(selected))}
 
-                          {getScore(
-                            selected
-                          ) > 0
-                            ? ` · ${getScore(
-                                selected
-                              )}%`
-                            : ''}
+                          {getScore(selected) > 0
+                            ? ` · ${getScore(selected)}%`
+                            : ""}
                         </span>
                       </div>
 
                       <h2 className="mt-4 text-2xl font-semibold tracking-tight">
-                        {getName(
-                          selected
-                        )}
+                        {getName(selected)}
                       </h2>
 
                       <p className="mt-1 text-sm text-foreground-muted">
-                        {getCompany(
-                          selected
-                        )}
+                        {getCompany(selected)}
                       </p>
 
                       <p className="mt-1 text-sm text-foreground-muted">
-                        Submitted{' '}
-                        {formatDate(
-                          selected.createdAt
-                        )}
+                        Submitted {formatDate(selected.createdAt)}
                       </p>
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                    <Link href={`/admin/deal-room?application=${encodeURIComponent(selected.id)}`} className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium hover:bg-secondary"><BriefcaseBusiness className="h-4 w-4" />Open Deal Room</Link>
-                    <button
-                      type="button"
-                      onClick={
-                        runAgain
-                      }
-                      disabled={
-                        actionLoading ||
-                        autoScreening
-                      }
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-50"
-                    >
-                      {actionLoading || autoScreening ? (
-                        <Spinner className="h-4 w-4" />
-                      ) : (
-                        <Sparkles className="h-4 w-4" />
-                      )}
+                      <Link
+                        href={`/admin/deal-room?application=${encodeURIComponent(selected.id)}`}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium hover:bg-secondary"
+                      >
+                        <BriefcaseBusiness className="h-4 w-4" />
+                        Open Deal Room
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={runAgain}
+                        disabled={actionLoading || autoScreening}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                      >
+                        {actionLoading || autoScreening ? (
+                          <Spinner className="h-4 w-4" />
+                        ) : (
+                          <Sparkles className="h-4 w-4" />
+                        )}
 
-                      {autoScreening ? 'Screening queue running' : 'Run AI Again'}
-                    </button>
+                        {autoScreening
+                          ? "Screening queue running"
+                          : "Run AI Again"}
+                      </button>
                     </div>
                   </div>
 
-                  {getStatus(selected) === 'changes_requested' && <p className="mt-5 rounded-xl border border-amber-500/30 p-4 text-sm">Waiting for applicant corrections.</p>}
+                  {getStatus(selected) === "changes_requested" && (
+                    <p className="mt-5 rounded-xl border border-amber-500/30 p-4 text-sm">
+                      Waiting for applicant corrections.
+                    </p>
+                  )}
                   {/* ACTIONS */}
                   <div className="mt-6 flex flex-wrap gap-3 border-t border-border pt-5">
-                    <button type="button" onClick={requestChanges} disabled={actionLoading || !['pending','screening','under_review','changes_requested'].includes(getStatus(selected))} className="ac-button ac-button-secondary">Request corrections</button>
                     <button
                       type="button"
-                      onClick={
-                        approveManually
-                      }
+                      onClick={requestChanges}
                       disabled={
                         actionLoading ||
-                        getStatus(
-                          selected
-                        ) ===
-                          'approved'
+                        ![
+                          "pending",
+                          "screening",
+                          "under_review",
+                          "changes_requested",
+                        ].includes(getStatus(selected))
+                      }
+                      className="ac-button ac-button-secondary"
+                    >
+                      Request corrections
+                    </button>
+                    <button
+                      type="button"
+                      onClick={approveManually}
+                      disabled={
+                        actionLoading || getStatus(selected) === "approved"
                       }
                       className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
                     >
@@ -1660,15 +1123,9 @@ export default function AdminSellersPage() {
 
                     <button
                       type="button"
-                      onClick={
-                        reject
-                      }
+                      onClick={reject}
                       disabled={
-                        actionLoading ||
-                        getStatus(
-                          selected
-                        ) ===
-                          'rejected'
+                        actionLoading || getStatus(selected) === "rejected"
                       }
                       className="inline-flex items-center gap-2 rounded-xl border border-orange-500/20 px-4 py-2.5 text-sm font-medium text-orange-700 disabled:opacity-50"
                     >
@@ -1678,12 +1135,8 @@ export default function AdminSellersPage() {
 
                     <button
                       type="button"
-                      onClick={
-                        remove
-                      }
-                      disabled={
-                        actionLoading
-                      }
+                      onClick={remove}
+                      disabled={actionLoading}
                       className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 px-4 py-2.5 text-sm font-medium text-red-700 disabled:opacity-50"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -1694,120 +1147,61 @@ export default function AdminSellersPage() {
 
                 {/* AI CARD */}
                 <SellerAIScreeningCard
-                  applicationId={
-                    selected.id
-                  }
-                  initialScreening={
-                    screening
-                  }
+                  applicationId={selected.id}
+                  initialScreening={screening}
                 />
 
                 {/* CONTACT */}
                 <InfoSection title="Contact Information">
                   <InfoRow
-                    icon={
-                      <User className="h-4 w-4" />
-                    }
+                    icon={<User className="h-4 w-4" />}
                     label="Full Name"
-                    value={
-                      getName(
-                        selected
-                      )
-                    }
+                    value={getName(selected)}
                   />
 
                   <InfoRow
-                    icon={
-                      <Mail className="h-4 w-4" />
-                    }
+                    icon={<Mail className="h-4 w-4" />}
                     label="Business Email"
-                    value={
-                      getEmail(
-                        selected
-                      ) ||
-                      'Not provided'
-                    }
+                    value={getEmail(selected) || "Not provided"}
                   />
 
                   <InfoRow
-                    icon={
-                      <Phone className="h-4 w-4" />
-                    }
+                    icon={<Phone className="h-4 w-4" />}
                     label="Phone"
-                    value={
-                      text(
-                        selected.phone
-                      ) ||
-                      'Not provided'
-                    }
+                    value={text(selected.phone) || "Not provided"}
                   />
 
                   <InfoRow
-                    icon={
-                      <MapPin className="h-4 w-4" />
-                    }
+                    icon={<MapPin className="h-4 w-4" />}
                     label="Country"
-                    value={
-                      text(
-                        selected.country
-                      ) ||
-                      'Not provided'
-                    }
+                    value={text(selected.country) || "Not provided"}
                   />
                 </InfoSection>
 
                 {/* ADDRESS */}
                 <InfoSection title="Business Address">
                   <InfoRow
-                    icon={
-                      <MapPin className="h-4 w-4" />
-                    }
+                    icon={<MapPin className="h-4 w-4" />}
                     label="Full Address"
-                    value={
-                      address ||
-                      'Not provided'
-                    }
+                    value={address || "Not provided"}
                   />
 
                   <div className="grid gap-0 md:grid-cols-4">
-                    <InfoCell
-                      label="City"
-                      value={
-                        text(
-                          selected.city
-                        ) ||
-                        '—'
-                      }
-                    />
+                    <InfoCell label="City" value={text(selected.city) || "—"} />
 
                     <InfoCell
                       label="State / Province"
-                      value={
-                        text(
-                          selected.state
-                        ) ||
-                        '—'
-                      }
+                      value={text(selected.state) || "—"}
                     />
 
                     <InfoCell
                       label="ZIP / Postal Code"
-                      value={
-                        text(
-                          selected.zipCode
-                        ) ||
-                        '—'
-                      }
+                      value={text(selected.zipCode) || "—"}
                     />
 
                     <InfoCell
                       label="Country"
-                      value={
-                        text(
-                          selected.country
-                        ) ||
-                        '—'
-                      }
+                      value={text(selected.country) || "—"}
                     />
                   </div>
                 </InfoSection>
@@ -1815,189 +1209,123 @@ export default function AdminSellersPage() {
                 {/* BUSINESS */}
                 <InfoSection title="Business Information">
                   <InfoRow
-                    icon={
-                      <Building2 className="h-4 w-4" />
-                    }
+                    icon={<Building2 className="h-4 w-4" />}
                     label="Business Name"
-                    value={
-                      getCompany(
-                        selected
-                      ) ||
-                      'Not provided'
-                    }
+                    value={getCompany(selected) || "Not provided"}
                   />
 
                   <InfoRow
-                    icon={
-                      <Building2 className="h-4 w-4" />
-                    }
+                    icon={<Building2 className="h-4 w-4" />}
                     label="Business Type"
-                    value={
-                      text(
-                        selected.businessType
-                      ) ||
-                      'Not provided'
-                    }
+                    value={text(selected.businessType) || "Not provided"}
                   />
 
                   <InfoRow
-                    icon={
-                      <Clock className="h-4 w-4" />
-                    }
+                    icon={<Clock className="h-4 w-4" />}
                     label="Years in Business"
-                    value={
-                      text(
-                        selected.yearsInBusiness
-                      ) ||
-                      'Not provided'
-                    }
+                    value={text(selected.yearsInBusiness) || "Not provided"}
                   />
 
                   <InfoRow
-                    icon={
-                      <Globe className="h-4 w-4" />
-                    }
+                    icon={<Globe className="h-4 w-4" />}
                     label="Website"
-                    value={
-                      getWebsite(
-                        selected
-                      ) ||
-                      'Not provided'
-                    }
+                    value={getWebsite(selected) || "Not provided"}
                   />
                 </InfoSection>
 
                 {/* PRODUCTS / DESCRIPTION */}
                 <InfoSection title="Products & Business Profile">
                   <InfoRow
-                    icon={
-                      <Sparkles className="h-4 w-4" />
-                    }
+                    icon={<Sparkles className="h-4 w-4" />}
                     label="Product Categories"
-                    value={
-                      getProductCategories(
-                        selected
-                      ) ||
-                      'Not provided'
-                    }
+                    value={getProductCategories(selected) || "Not provided"}
                   />
 
                   <InfoBlock
                     label="Business Information"
                     value={
-                      getBusinessInformation(
-                        selected
-                      ) ||
-                      'No business information provided.'
+                      getBusinessInformation(selected) ||
+                      "No business information provided."
                     }
                   />
 
                   <InfoBlock
                     label="Why do you want to work with Auronix?"
-                    value={
-                      getWhyAuronix(
-                        selected
-                      ) ||
-                      'No response provided.'
-                    }
+                    value={getWhyAuronix(selected) || "No response provided."}
                   />
 
                   <InfoRow
-                    icon={
-                      <Globe className="h-4 w-4" />
-                    }
+                    icon={<Globe className="h-4 w-4" />}
                     label="Catalog URL"
-                    value={
-                      text(
-                        selected.catalogUrl
-                      ) ||
-                      'Not provided'
-                    }
+                    value={text(selected.catalogUrl) || "Not provided"}
                   />
                 </InfoSection>
 
                 {/* VERIFICATION INFO */}
                 <InfoSection title="Verification Pipeline">
                   <InfoRow
-                    icon={
-                      <Bot className="h-4 w-4" />
-                    }
+                    icon={<Bot className="h-4 w-4" />}
                     label="AI Result"
                     value={
                       screening
                         ? `${getScreeningTitle(
-                            screening.label
+                            screening.label,
                           )} · ${screening.score}%`
-                        : 'Not screened'
+                        : "Not screened"
                     }
                   />
 
                   <InfoRow
-                    icon={
-                      <ShieldAlert className="h-4 w-4" />
-                    }
+                    icon={<ShieldAlert className="h-4 w-4" />}
                     label="Deterministic Quality"
                     value={
                       screening
                         ? `${screening.deterministicQuality}/100`
-                        : 'Not available'
+                        : "Not available"
                     }
                   />
 
                   <InfoRow
-                    icon={
-                      <Bot className="h-4 w-4" />
-                    }
+                    icon={<Bot className="h-4 w-4" />}
                     label="First AI Review"
                     value={
                       screening?.firstPass
                         ? `${screening.firstPass.label} · ${screening.firstPass.confidence}%`
-                        : 'Not available'
+                        : "Not available"
                     }
                   />
 
                   <InfoRow
-                    icon={
-                      <ShieldAlert className="h-4 w-4" />
-                    }
+                    icon={<ShieldAlert className="h-4 w-4" />}
                     label="Second AI Verification"
                     value={
                       screening?.secondPass
-                        ? `${screening.secondPass.approved ? 'Passed' : 'Failed'} · ${screening.secondPass.confidence}%`
-                        : 'Not triggered'
+                        ? `${screening.secondPass.approved ? "Passed" : "Failed"} · ${screening.secondPass.confidence}%`
+                        : "Not triggered"
                     }
                   />
 
                   <InfoRow
-                    icon={
-                      <CheckCircle2 className="h-4 w-4" />
-                    }
+                    icon={<CheckCircle2 className="h-4 w-4" />}
                     label="Automatic Onboarding"
                     value={
-                      screening?.autoEligible
-                        ? 'Eligible'
-                        : 'Not eligible'
+                      screening?.autoEligible ? "Eligible" : "Not eligible"
                     }
                   />
 
                   <InfoRow
-                    icon={
-                      <Clock className="h-4 w-4" />
-                    }
+                    icon={<Clock className="h-4 w-4" />}
                     label="Screened At"
                     value={
                       screening?.screenedAt
-                        ? formatDate(
-                            screening.screenedAt
-                          )
-                        : 'Not screened'
+                        ? formatDate(screening.screenedAt)
+                        : "Not screened"
                     }
                   />
                 </InfoSection>
 
                 {/* AUTO APPROVAL STATUS */}
-                {selected.aiAutoApproved ===
-                  true && (
+                {selected.aiAutoApproved === true && (
                   <div className="rounded-2xl border border-green-500/20 bg-green-500/5 p-5">
                     <div className="flex items-start gap-3">
                       <CheckCircle2 className="mt-0.5 h-5 w-5 text-green-600" />
@@ -2008,17 +1336,14 @@ export default function AdminSellersPage() {
                         </h3>
 
                         <p className="mt-1 text-sm leading-6 text-green-700/80">
-                          This application passed the configured
-                          two-stage AI verification pipeline and
-                          was automatically approved.
+                          This application passed the configured two-stage AI
+                          verification pipeline and was automatically approved.
                         </p>
 
                         {Boolean(selected.invitationSentAt) && (
                           <p className="mt-2 text-xs text-green-700/70">
-                            Invitation sent{' '}
-                            {formatDate(
-                              selected.invitationSentAt
-                            )}
+                            Invitation sent{" "}
+                            {formatDate(selected.invitationSentAt)}
                           </p>
                         )}
                       </div>
@@ -2028,10 +1353,10 @@ export default function AdminSellersPage() {
 
                 {/* DISCLAIMER */}
                 <div className="rounded-2xl border border-border bg-secondary/30 p-5 text-xs leading-5 text-foreground-muted">
-                  AI screening is an internal business-application
-                  quality and risk assessment. It does not by itself
-                  establish legal identity, ownership, licensing, or
-                  real-world business authenticity.
+                  AI screening is an internal business-application quality and
+                  risk assessment. It does not by itself establish legal
+                  identity, ownership, licensing, or real-world business
+                  authenticity.
                 </div>
               </div>
             )}
@@ -2042,14 +1367,8 @@ export default function AdminSellersPage() {
   );
 }
 
-function screeningAutoEligible(
-  application: SellerApplication
-): boolean {
-  return (
-    application.aiScreening
-      ?.autoEligible ===
-    true
-  );
+function screeningAutoEligible(application: SellerApplication): boolean {
+  return application.aiScreening?.autoEligible === true;
 }
 
 function Stat({
@@ -2067,68 +1386,45 @@ function Stat({
     <div
       className={`rounded-2xl border bg-card p-5 ${
         green
-          ? 'border-green-500/20'
+          ? "border-green-500/20"
           : red
-            ? 'border-red-500/20'
-            : 'border-border'
+            ? "border-red-500/20"
+            : "border-border"
       }`}
     >
       <div
         className={`text-2xl font-semibold ${
-          green
-            ? 'text-green-700'
-            : red
-              ? 'text-red-700'
-              : ''
+          green ? "text-green-700" : red ? "text-red-700" : ""
         }`}
       >
         {value}
       </div>
 
-      <div className="mt-1 text-sm text-foreground-muted">
-        {label}
-      </div>
+      <div className="mt-1 text-sm text-foreground-muted">{label}</div>
     </div>
   );
 }
 
-function StatusBadge({
-  status,
-}: {
-  status: string;
-}) {
-  let className =
-    'border-border bg-secondary text-foreground-muted';
+function StatusBadge({ status }: { status: string }) {
+  let className = "border-border bg-secondary text-foreground-muted";
 
-  if (
-    status ===
-    'approved'
-  ) {
-    className =
-      'border-green-500/20 bg-green-500/10 text-green-700';
+  if (status === "approved") {
+    className = "border-green-500/20 bg-green-500/10 text-green-700";
   }
 
-  if (
-    status ===
-    'pending'
-  ) {
-    className =
-      'border-yellow-500/20 bg-yellow-500/10 text-yellow-700';
+  if (status === "pending") {
+    className = "border-yellow-500/20 bg-yellow-500/10 text-yellow-700";
   }
 
-  if (
-    status ===
-    'rejected'
-  ) {
-    className =
-      'border-red-500/20 bg-red-500/10 text-red-700';
+  if (status === "rejected") {
+    className = "border-red-500/20 bg-red-500/10 text-red-700";
   }
 
   return (
     <span
       className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${className}`}
     >
-      {status.replace(/_/g, ' ')}
+      {status.replace(/_/g, " ")}
     </span>
   );
 }
@@ -2143,14 +1439,10 @@ function InfoSection({
   return (
     <section className="overflow-hidden ac-content-panel">
       <div className="border-b border-border px-5 py-4">
-        <h3 className="text-sm font-semibold">
-          {title}
-        </h3>
+        <h3 className="text-sm font-semibold">{title}</h3>
       </div>
 
-      <div className="divide-y divide-border">
-        {children}
-      </div>
+      <div className="divide-y divide-border">{children}</div>
     </section>
   );
 }
@@ -2166,59 +1458,39 @@ function InfoRow({
 }) {
   return (
     <div className="flex gap-4 px-5 py-4">
-      <div className="mt-0.5 text-foreground-muted">
-        {icon}
-      </div>
+      <div className="mt-0.5 text-foreground-muted">{icon}</div>
 
       <div className="min-w-0 flex-1">
         <div className="text-xs uppercase tracking-wide text-foreground-muted">
           {label}
         </div>
 
-        <div className="mt-1 break-words text-sm">
-          {value}
-        </div>
+        <div className="mt-1 break-words text-sm">{value}</div>
       </div>
     </div>
   );
 }
 
-function InfoCell({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function InfoCell({ label, value }: { label: string; value: string }) {
   return (
     <div className="border-t border-border px-5 py-4">
       <div className="text-xs uppercase tracking-wide text-foreground-muted">
         {label}
       </div>
 
-      <div className="mt-1 text-sm">
-        {value}
-      </div>
+      <div className="mt-1 text-sm">{value}</div>
     </div>
   );
 }
 
-function InfoBlock({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function InfoBlock({ label, value }: { label: string; value: string }) {
   return (
     <div className="px-5 py-5">
       <div className="text-xs font-medium uppercase tracking-wide text-foreground-muted">
         {label}
       </div>
 
-      <div className="mt-3 whitespace-pre-wrap text-sm leading-7">
-        {value}
-      </div>
+      <div className="mt-3 whitespace-pre-wrap text-sm leading-7">{value}</div>
     </div>
   );
 }

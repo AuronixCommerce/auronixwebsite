@@ -1,15 +1,13 @@
-import { userFacingError } from '@/lib/user-facing-error';
-import { NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase-admin';
-import { requireAdmin } from '@/lib/server-auth';
+import { userFacingError } from "@/lib/user-facing-error";
+import { NextResponse } from "next/server";
+import { adminDb } from "@/lib/firebase-admin";
+import { requireAdmin } from "@/lib/server-auth";
 
 export async function GET(request: Request) {
   try {
     await requireAdmin(request);
 
-    const snapshot = await adminDb
-      .ref('settings/adminAvailability')
-      .get();
+    const snapshot = await adminDb.ref("settings/adminAvailability").get();
 
     const value = snapshot.exists()
       ? snapshot.val()
@@ -24,19 +22,16 @@ export async function GET(request: Request) {
       updatedBy: value?.updatedBy || null,
     });
   } catch (error) {
-    console.error(
-      'Admin availability GET failed:',
-      error
-    );
+    console.error("Admin availability GET failed:", error);
 
     return NextResponse.json(
       {
         error:
           error instanceof Error
             ? userFacingError(error)
-            : 'Unable to load admin availability.',
+            : "Unable to load admin availability.",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -46,36 +41,42 @@ export async function POST(request: Request) {
     const admin = await requireAdmin(request);
 
     const body = await request.json();
-    const online = Boolean(body.online);
+    const previous = (
+      await adminDb.ref("settings/adminAvailability").get()
+    ).val();
+    if (body.heartbeat === true && previous?.online !== true)
+      return NextResponse.json({ success: true, online: false });
+    if (body.heartbeat !== true && typeof body.online !== "boolean")
+      return NextResponse.json(
+        { error: "Choose online or offline." },
+        { status: 400 },
+      );
+    const online = body.heartbeat === true ? true : body.online;
 
     const record = {
       online,
+      onlineUntil: online ? Date.now() + 5 * 60_000 : 0,
       updatedAt: Date.now(),
       updatedBy: admin.uid,
     };
 
-    await adminDb
-      .ref('settings/adminAvailability')
-      .set(record);
+    await adminDb.ref("settings/adminAvailability").set(record);
 
     return NextResponse.json({
       success: true,
       ...record,
     });
   } catch (error) {
-    console.error(
-      'Admin availability POST failed:',
-      error
-    );
+    console.error("Admin availability POST failed:", error);
 
     return NextResponse.json(
       {
         error:
           error instanceof Error
             ? userFacingError(error)
-            : 'Unable to update admin availability.',
+            : "Unable to update admin availability.",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
