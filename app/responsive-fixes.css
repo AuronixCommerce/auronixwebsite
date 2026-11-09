@@ -119,3 +119,8 @@
 .ac-support-room .ac-chat-messages{gap:14px}
 .ac-support-room .ac-message{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;margin-block:10px}
 .ac-support-room .ac-message-content{line-height:1.65}
+.ac-support-transfer{display:flex;align-items:center;justify-content:center;gap:9px;border-block:1px solid hsl(var(--border));padding:13px 10px;margin:14px 0;font-size:12px;line-height:1.6;color:hsl(var(--foreground-muted));text-align:center}
+.ac-support-transfer svg{flex-shrink:0;color:hsl(var(--accent))}
+.ac-support-room .ac-chat-thinking{line-height:1.6;overflow-wrap:anywhere}
+.ac-support-room .ac-assistant-identity>div{min-width:0}
+.ac-support-room .ac-assistant-identity>div>span{text-transform:capitalize;white-space:normal}

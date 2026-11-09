@@ -1,6 +1,7 @@
 'use client';
+import { getSupportProfile, routeSupportIssue, supportTransferMessage } from '@/lib/support/routing';
 import { collectSupportReply } from '@/lib/support/reply';
-import { normalizeSupportName, supportReplyDelay, supportIdentityAnswer } from '@/lib/support/personas';
+import { normalizeSupportName, supportReplyDelay, supportIdentityAnswer, trimSupportSignature } from '@/lib/support/personas';
 import { currentChatContext } from '@/lib/aio/preferences';
 import { readApplicationPrefill } from '@/lib/application-prefill';
 import { userFacingError } from '@/lib/user-facing-error';
@@ -46,6 +47,8 @@ type ChatMessage = {
   id: string;
   role: Role;
   content: string;
+  personaName?: string;
+  kind?: 'transfer';
   answerSource?: 'found' | 'online';
   responseSeconds?: number;
   sessionBoundary?: boolean;
@@ -422,7 +425,10 @@ function renderMarkdown(
   return output;
 }
 
-export function SupportConversation({ seller = false, agentName = 'Alex', ticketReference = '' }: { seller?: boolean; agentName?: string; ticketReference?: string }) {
+export function SupportConversation({ seller = false, agentName: initialAgentName = 'Alex', ticketReference = '' }: { seller?: boolean; agentName?: string; ticketReference?: string }) {
+  const [agentName,setAgentName]=useState(normalizeSupportName(initialAgentName));
+  const [routingNotice,setRoutingNotice]=useState('');
+  const routingTimerRef=useRef<ReturnType<typeof setTimeout>>();
   const [open, setOpen] = useState(true);
 
   const [messages, setMessages] = useState<
@@ -569,7 +575,7 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
     const timer = window.setTimeout(() => {
       if(version !== requestVersion.current)return;
       introStartedRef.current = true;
-      setMessages([{ id: makeId(), role: 'assistant', content: ticketReference
+      setMessages([{ id: makeId(), role: 'assistant', personaName:agentName, content: ticketReference
         ? `Hi, I’m ${agentName}. I have your ticket reference ${ticketReference}. How may I help you today?`
         : `Hi, I’m ${agentName}. How may I help you today?` }]);
       setLoading(false);
@@ -627,6 +633,7 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
   useEffect(() => {
     return () => {
       requestVersion.current++;
+      clearTimeout(routingTimerRef.current);
       abortRef.current?.abort();
 
       if (typingTimerRef.current) {
@@ -639,6 +646,7 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
 
   const stopAnswer = () => {
     introStartedRef.current = true;
+    clearTimeout(routingTimerRef.current);setRoutingNotice('');
     requestVersion.current++;
     abortRef.current?.abort();
 
@@ -678,6 +686,7 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
   const clearChatMemory = async () => {
     if (clearingMemory) return;
     setClearingMemory(true);
+    clearTimeout(routingTimerRef.current);setRoutingNotice('');
     requestVersion.current++;
     abortRef.current?.abort();
 
@@ -711,7 +720,8 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
     answer: string,
     answerSource: 'found' | 'online',
     responseSeconds: number,
-    version: number
+    version: number,
+    respondingName: string = agentName
   ) => {
     if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
     currentAnswerRef.current = answer;
@@ -720,7 +730,7 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
     typingTimerRef.current = window.setTimeout(() => {
       if(version !== requestVersion.current)return;
       setMessages((existing) => [...existing, {
-        id: makeId(), role: 'assistant', content: answer, answerSource, responseSeconds,
+        id: makeId(), role: 'assistant', personaName:respondingName, content: answer, answerSource, responseSeconds,
       }]);
       typingTimerRef.current = null;
       currentAnswerRef.current = '';
@@ -740,6 +750,8 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
     }
 
     const version=++requestVersion.current;
+    const identityAnswer=supportIdentityAnswer(text,agentName);
+    const selectedProfile=identityAnswer?getSupportProfile(agentName):routeSupportIssue(text,agentName);
     setError('');
     setInput('');
 
@@ -754,7 +766,15 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
       userMessage,
     ];
 
-    setMessages(nextMessages);
+    if(selectedProfile.name !== agentName){
+      const notice=supportTransferMessage(selectedProfile.name);
+      setMessages([...nextMessages,{id:makeId(),role:'assistant',content:notice,kind:'transfer',personaName:agentName}]);
+      setAgentName(selectedProfile.name);
+      try{sessionStorage.setItem('auronix-support-persona-v1',selectedProfile.name);}catch{}
+      setRoutingNotice(notice);clearTimeout(routingTimerRef.current);
+      routingTimerRef.current=setTimeout(()=>{if(version===requestVersion.current)setRoutingNotice('');},1600);
+    }else{setMessages(nextMessages);setRoutingNotice('');}
+
 
     setLoading(true);
 
@@ -778,8 +798,7 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
     abortRef.current = controller;
 
     try {
-      const identityAnswer=supportIdentityAnswer(text,agentName);
-      if(identityAnswer){typeAnswer(identityAnswer,'found',1,version);return;}
+      if(identityAnswer){typeAnswer(identityAnswer,'found',1,version,selectedProfile.name);return;}
       const response = await fetch(
         '/api/aio/chat',
         {
@@ -795,9 +814,9 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
 
           body: JSON.stringify({
             pathname,conversationId:conversationId.current,
-            messages:currentChatContext(nextMessages),
+            messages:currentChatContext(nextMessages.filter(m=>m.kind!=='transfer')),
             preferences:{tone:'friendly',replyLength:'brief',saveHistory:false},
-            context:{supportPersona:normalizeSupportName(agentName)},
+            context:{supportPersona:selectedProfile.name},
           }),
 
           signal:
@@ -807,7 +826,9 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
 
       if(!response.ok){let message='Unable to get a support reply.';try{const data=await response.json();if(typeof data.error==='string')message=data.error;}catch{}throw new Error(message);}
       if(!response.body)throw new Error('The reply connection is unavailable. Please retry.');
-      const {answer,answerSource}=await collectSupportReply(response.body,controller.signal);
+      const reply=await collectSupportReply(response.body,controller.signal);
+      const answer=trimSupportSignature(reply.answer,selectedProfile.name),answerSource=reply.answerSource;
+      if(!answer)throw new Error('The support reply was empty. Please retry.');
       if(version !== requestVersion.current || controller.signal.aborted)return;
 
       const responseSeconds = Math.max(
@@ -818,7 +839,7 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
       );
       setCompletedThinkingSeconds(responseSeconds);
       setActiveAnswerSource(answerSource);
-      typeAnswer(answer, answerSource, responseSeconds, version);
+      typeAnswer(answer, answerSource, responseSeconds, version,selectedProfile.name);
     } catch (caught) {
       if (
         controller.signal.aborted || version !== requestVersion.current
@@ -827,6 +848,7 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
       }
 
       setLoading(false);
+      clearTimeout(routingTimerRef.current);setRoutingNotice('');
 
       setVisibleAnswer('');
 
@@ -869,13 +891,13 @@ export function SupportConversation({ seller = false, agentName = 'Alex', ticket
     <>
       <section className="ac-conversation" aria-label={seller ? 'Seller support' : 'Auronix support'}>
         <header className="ac-conversation-header">
-          <div className="ac-assistant-identity"><ChatBrandMark className="h-11 w-11"/><div><strong>{agentName} · Auronix Support</strong><span>{seller ? 'Seller guidance' : 'Here to help'}</span></div></div>
+          <div className="ac-assistant-identity"><ChatBrandMark className="h-11 w-11"/><div><strong>{agentName} · Auronix Support</strong><span>{getSupportProfile(agentName).topic}</span></div></div>
           <div className="ac-chat-actions"><Link href={seller ? '/seller/support' : '/support/contact'} className="ac-chat-team"><LifeBuoy size={17}/> Contact support</Link><button type="button" className="ac-icon-button" aria-label="Clear saved support chat memory" disabled={clearingMemory} onClick={()=>setClearDialogOpen(true)}><Trash2 size={18}/></button></div>
         </header>
         <div className="ac-chat-scroll" ref={scrollRef} role="log" aria-label="Conversation" aria-live="polite" aria-relevant="additions">
           {messages.length===0&&!loading&&!visibleAnswer&&!error&&<div className="ac-chat-welcome"><span className="ac-eyebrow">AURONIX SUPPORT</span><h2>Hi, how can I help?</h2><p>{seller ? 'Ask about your seller workspace, catalogs, verification or support. For account-specific help, contact the support team.' : 'Tell me what you need help with, or choose a topic below.'}</p><div className="ac-chat-suggestions">{(seller?['How do I update my catalog?','Where is my application status?','How do I contact seller support?']:['How can I become a supplier?','What does Auronix Commerce do?','Where can I verify the company?']).map(question=><button type="button" key={question} onClick={()=>askQuick(question)}>{question}<ArrowRight size={16}/></button>)}</div></div>}
-          <div className="ac-chat-messages">{messages.map(message=>message.sessionBoundary?<div key={message.id} className="ac-chat-boundary" role="separator" aria-label="Previous chat ended">Previous chat ended · New chat</div>:<article key={message.id} className="ac-message" data-role={message.role}><div className="ac-message-label">{message.role==='user'?'You':agentName}</div><div className="ac-message-content">{message.role==='assistant'?renderMarkdown(message.content):<p className="whitespace-pre-wrap">{message.content}</p>}</div>{message.role==='assistant'&&<MessageCopy content={message.content}/>}</article>)}</div>
-          {loading&&<article className="ac-message" data-role="assistant"><div className="ac-message-label">{agentName}</div>{visibleAnswer?<div className="ac-message-content">{renderMarkdown(visibleAnswer,true)}</div>:<div className="ac-chat-thinking" role="status"><span className="ac-support-typing-dots" aria-hidden="true"><i/><i/><i/></span> {agentName} is typing…</div>}</article>}
+          <div className="ac-chat-messages">{messages.map(message=>message.kind==='transfer'?<div key={message.id} className="ac-support-transfer"><ArrowRight size={15}/><span>{message.content}</span></div>:message.sessionBoundary?<div key={message.id} className="ac-chat-boundary" role="separator" aria-label="Previous chat ended">Previous chat ended · New chat</div>:<article key={message.id} className="ac-message" data-role={message.role}><div className="ac-message-label">{message.role==='user'?'You':message.personaName||initialAgentName}</div><div className="ac-message-content">{message.role==='assistant'?renderMarkdown(message.content):<p className="whitespace-pre-wrap">{message.content}</p>}</div>{message.role==='assistant'&&<MessageCopy content={message.content}/>}</article>)}</div>
+          {loading&&<article className="ac-message" data-role="assistant"><div className="ac-message-label">{agentName}</div>{visibleAnswer?<div className="ac-message-content">{renderMarkdown(visibleAnswer,true)}</div>:<div className="ac-chat-thinking" role="status"><span className="ac-support-typing-dots" aria-hidden="true"><i/><i/><i/></span> {routingNotice || `${agentName} is typing…`}</div>}</article>}
           {error&&<div className="ac-chat-error" role="alert"><strong>We couldn’t complete that reply.</strong><p>{error}</p><button type="button" onClick={()=>{const last=[...messages].reverse().find(m=>m.role==='user');if(last)setInput(last.content);setError('');}}>Edit and try again</button></div>}
         </div>
         <div className="ac-composer-area"><form data-auronix-support-form onSubmit={sendMessage} className="ac-composer"><textarea aria-label="Your message" value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.nativeEvent.isComposing){e.preventDefault();void sendMessage();}}} rows={1} maxLength={5000} disabled={loading} placeholder="Your message…"/>{loading?<button type="button" aria-label="Stop response" onClick={stopAnswer}><Square size={18}/></button>:<button type="submit" aria-label="Send message" disabled={!input.trim()}><ArrowRight size={21}/></button>}</form><p><ShieldCheck size={13}/> Please verify important details. Never share passwords or verification codes.{seller?' This conversation is not saved.':' History is saved in this browser.'}</p></div>

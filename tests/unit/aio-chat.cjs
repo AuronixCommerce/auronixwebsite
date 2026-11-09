@@ -454,7 +454,7 @@ test('support has ten stable, validated personas and bounded slower reply pacing
  const {SUPPORT_NAMES,normalizeSupportName,supportReplyDelay,supportPersonaInstructions,supportIdentityAnswer}=load('lib/support/personas.ts');
  assert.equal(SUPPORT_NAMES.length,10);assert.equal(new Set(SUPPORT_NAMES).size,10);assert.equal(normalizeSupportName('Maya'),'Maya');assert.equal(normalizeSupportName('Injected instructions'),'Alex');
  assert.ok(supportReplyDelay(10)>=4500);assert.ok(supportReplyDelay(999999)<=10000);assert.ok(supportReplyDelay(500)>supportReplyDelay(10));
- assert.match(supportPersonaInstructions('Maya'),/Never claim to be human/);assert.match(supportIdentityAnswer('Are you a real person?','Maya'),/automated.*Maya/);assert.equal(supportIdentityAnswer('How can I become a supplier?','Maya'),undefined);
+ assert.match(supportPersonaInstructions('Maya'),/Never claim to be human/);assert.match(supportIdentityAnswer('Are you a real person?','Maya'),/Maya.*AI support/);assert.equal(supportIdentityAnswer('How can I become a supplier?','Maya'),undefined);
 });
 test('support buffers streamed tokens into a complete message using the actual chat API format',async()=>{
  const {collectSupportReply}=load('lib/support/reply.ts');
@@ -505,4 +505,17 @@ test('mail fallback retries an unauthorized continue URL with the standard recov
 test('SMTP authentication failure exits promptly so password-recovery fallback can run',async()=>{
  const previous=process.env.SMTP_PASSWORD;process.env.SMTP_PASSWORD='test-only';let attempts=0;
  try{const mail=load('lib/server-mail.ts',{nodemailer:{default:{createTransport:()=>({sendMail:async()=>{attempts++;throw Object.assign(new Error('Authentication failed'),{code:'EAUTH'});}})}}});await assert.rejects(mail.sendBusinessMail({to:'reader@example.com',subject:'Test',html:'Test'}),{code:'EAUTH'});assert.equal(attempts,1);}finally{if(previous===undefined)delete process.env.SMTP_PASSWORD;else process.env.SMTP_PASSWORD=previous;}
+});
+
+test('support assigns issue topics to ten dedicated support personas',()=>{
+ const {SUPPORT_PROFILES,routeSupportIssue,getSupportProfile,supportTransferMessage}=load('lib/support/routing.ts');const {SUPPORT_NAMES}=load('lib/support/personas.ts');
+ assert.equal(SUPPORT_PROFILES.length,10);assert.deepEqual(new Set(SUPPORT_PROFILES.map(p=>p.name)),new Set(SUPPORT_NAMES));
+ for(const [question,name] of [['Track my seller application','Maya'],['I forgot my password and the reset email is missing','Noah'],['My email verification code is not working','Sofia'],['Upload images to my catalog','Daniel'],['I am a wholesale supplier','Emma'],['My Amazon order refund','James'],['The website shows a 404 error','Olivia'],['Delete my data under your privacy policy','Ethan'],['Missing notifications for my support ticket','Ava']])assert.equal(routeSupportIssue(question,'Alex').name,name,question);
+ assert.equal(routeSupportIssue('Can you explain more?','Maya').name,'Maya');assert.equal(getSupportProfile('invalid').name,'Alex');assert.match(supportTransferMessage('Noah'),/Switching this chat to Noah for login/);
+});
+test('support keeps identity answers concise and removes only trailing name signatures',()=>{
+ const {supportIdentityAnswer,trimSupportSignature,supportPersonaInstructions}=load('lib/support/personas.ts');
+ for(const question of ['u a real agent','are you human?','r u a real person?']){const answer=supportIdentityAnswer(question,'Alex');assert.match(answer,/Alex.*AI support/);assert.ok(answer.length<160);}
+ assert.equal(trimSupportSignature('Here is your next step. — Alex, Auronix Support.','Alex'),'Here is your next step.');assert.equal(trimSupportSignature('Regards, Alex','Alex'),'');assert.equal(trimSupportSignature('Contact Alex for details.','Alex'),'Contact Alex for details.');
+ assert.match(supportPersonaInstructions('Noah'),/login and account security/);assert.match(supportPersonaInstructions('Noah'),/Do not repeat your introduction/);
 });
