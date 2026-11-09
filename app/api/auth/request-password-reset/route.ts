@@ -107,6 +107,59 @@ export async function POST(request: Request) {
           providerMessageId: String(result?.messageId || "").slice(0, 500),
           updatedAt: Date.now(),
         });
+        if (
+          result?.queued &&
+          /^[\w-]{1,160}$/.test(String(result.queueId || ""))
+        ) {
+          const queueRef = adminDb.ref(`emailQueue/${result.queueId}`);
+          const held = await queueRef.transaction((job) => {
+            if (!job) return job;
+            if (job.status !== "queued") return;
+            return {
+              ...job,
+              status: "processing",
+              leaseUntil: Date.now() + 120000,
+              deliveryChannel: "account-recovery-pending",
+              updatedAt: Date.now(),
+            };
+          });
+          if (
+            held.committed &&
+            held.snapshot.val()?.deliveryChannel === "account-recovery-pending"
+          ) {
+            try {
+              const fallback: any = await sendPasswordResetFallback({
+                email: accountEmail,
+                continueUrl: `${baseUrl}/seller/login`,
+              });
+              await queueRef.update({
+                status: "sent",
+                deliveryChannel: "account-recovery",
+                payload: null,
+                leaseUntil: 0,
+                providerMessageId: String(fallback?.messageId || ""),
+                updatedAt: Date.now(),
+              });
+              await adminDb.ref(`emailAlerts/${result.queueId}`).remove();
+              await updateDelivery({
+                status: "sent",
+                deliveryChannel: "account-recovery",
+                providerMessageId: String(fallback?.messageId || "").slice(
+                  0,
+                  500,
+                ),
+                updatedAt: Date.now(),
+              });
+            } catch {
+              await queueRef.update({
+                status: "queued",
+                deliveryChannel: "smtp",
+                leaseUntil: 0,
+                updatedAt: Date.now(),
+              });
+            }
+          }
+        }
       } catch (primaryError) {
         console.error(
           "Auronix password reset primary delivery failed:",
