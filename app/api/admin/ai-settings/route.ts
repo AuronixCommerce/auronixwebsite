@@ -25,6 +25,7 @@ const settingsSchema = z
     aioTemperature: z.number().min(0).max(1),
     aioModel: model,
     aioFastModel: model,
+    aioOneModel: model,
     aioFallbackModel: model,
   })
   .partial();

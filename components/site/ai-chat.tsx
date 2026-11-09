@@ -8,6 +8,7 @@ import {
   currentChatContext,
   type ChatPreferences,
 } from "@/lib/aio/preferences";
+import { paceAioEvents } from "@/lib/aio/pace";
 import { readAioStream } from "@/lib/aio/stream";
 import { userFacingError } from "@/lib/user-facing-error";
 import { Spinner } from "@/components/design/primitives";
@@ -772,7 +773,7 @@ export function AIChat({
         }
       };
 
-      for await (const event of readAioStream(response.body)) {
+      for await (const event of paceAioEvents(readAioStream(response.body), preferences.model, controller.signal)) {
         if (!isCurrent()) return;
         handleEvent(event);
         if (event.type === "message_complete") break;
@@ -1018,10 +1019,24 @@ export function AIChat({
               <div className="aio-identity">
                 <AuronixMark />
                 <div>
-                  <strong>
-                    Auronix Intelligence One<span>AIO</span>
-                  </strong>
-                  <small>Your Auronix assistant</small>
+              <label className="aio-model-picker aio-header-model-picker">
+                <span className="sr-only">AIO model</span>
+                <select
+                  aria-label="AIO model"
+                  value={preferences.model}
+                  disabled={loading}
+                  onChange={(event) =>
+                    preference("model", normalizeAioModelId(event.target.value))
+                  }
+                >
+                  {AIO_MODELS.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+                  <small>{AIO_MODELS.find(model => model.id === preferences.model)?.label}</small>
                 </div>
               </div>
               <div className="aio-header-tools">
@@ -1055,23 +1070,7 @@ export function AIChat({
               </div>
             </header>
             <div className="aio-toolbar">
-              <label className="aio-model-picker">
-                <span className="sr-only">AIO model</span>
-                <select
-                  aria-label="AIO model"
-                  value={preferences.model}
-                  disabled={loading}
-                  onChange={(event) =>
-                    preference("model", normalizeAioModelId(event.target.value))
-                  }
-                >
-                  {AIO_MODELS.map((model) => (
-                    <option key={model.id} value={model.id}>
-                      {model.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+
               <button
                 type="button"
                 onClick={() => {

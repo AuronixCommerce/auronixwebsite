@@ -44,7 +44,7 @@ export default function AioPage() {
         <div className="ax-section-heading">
           <div>
             <span className="ax-kicker">YOUR QUESTION. YOUR CHOICE.</span>
-            <h2>Meet the AIO 2 lineup.</h2>
+            <h2>Choose your AIO.</h2>
           </div>
           <p>Choose a mode from the selector inside chat.</p>
         </div>

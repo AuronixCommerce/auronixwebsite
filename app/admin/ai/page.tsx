@@ -32,6 +32,7 @@ export default function AdminAIPage() {
     aioTemperature: 0.25,
     aioModel: "",
     aioFastModel: "openai/gpt-oss-20b",
+  aioOneModel: "openai/gpt-oss-20b",
     aioFallbackModel: "",
   });
   const [enabled, setEnabled] = useState(true);
@@ -390,6 +391,7 @@ export default function AdminAIPage() {
                       }
                     />
                   </label>
+                  <label className="grid gap-2">AIO One model<input className="px-3 py-2" value={replySettings.aioOneModel} onChange={e=>setReplySettings(v=>({...v,aioOneModel:e.target.value}))}/></label>
                   <p className="sm:col-span-2 text-xs leading-6 text-foreground-muted">
                     Use valid IDs supported by the configured provider. Leave
                     blank to inherit hosting settings. Fallback is tried before

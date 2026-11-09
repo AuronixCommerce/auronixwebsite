@@ -381,3 +381,14 @@ html body {background-color:hsl(var(--background));color:hsl(var(--foreground))}
 html.light .ac-selection-ask .aio-inline-mark {filter:invert(1)}
 html.dark .ac-selection-ask .aio-inline-mark {filter:none}
 @media(max-width:380px){.ac-selection-actions button{padding-inline:9px;font-size:11px}}
+
+/* Model selection is the primary chat header control. */
+.aio-header .aio-identity {flex:1;min-width:0}
+.aio-header .aio-identity > div {min-width:0;flex:1}
+.aio-header .aio-header-model-picker {display:block}
+.aio-header .aio-header-model-picker select {max-width:100%;width:160px;min-height:32px!important;padding:4px 23px 4px 8px;border:1px solid hsl(var(--border));background:hsl(var(--card))!important;color:hsl(var(--foreground));font-size:14px;font-weight:650;border-radius:9px!important}
+.aio-header .aio-identity small {padding-left:8px;font-size:10px;line-height:1.4}
+.aio-header-tools {flex:none}
+@media(max-width:380px){.aio-header{padding-inline:13px;gap:6px}.aio-header .aio-identity{gap:7px}.aio-header .aio-header-model-picker select{width:133px;font-size:12px}.aio-header .aio-identity small{font-size:9px}.aio-header-tools>button{width:27px}}
+
+@media(min-width:901px){.aio-model-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}

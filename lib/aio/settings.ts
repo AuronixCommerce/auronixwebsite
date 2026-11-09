@@ -14,5 +14,6 @@ export const DEFAULT_AIO_SETTINGS = {
   aioTemperature: 0.25,
   aioModel: "",
   aioFastModel: "openai/gpt-oss-20b",
+  aioOneModel: "openai/gpt-oss-20b",
   aioFallbackModel: "",
 };

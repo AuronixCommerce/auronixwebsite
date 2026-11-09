@@ -228,12 +228,13 @@ test("chat endpoint applies settings, streams truncation metadata, and honors hi
       ai: {
         aioMaxResponseTokens: 2100,
         aioTemperature: 0.35,
+        aioOneModel: "configured-classic",
         customInstructions: "Give practical examples.",
         aioTone: "direct",
       },
     },
   });
-  let providerRequest,
+  let providerRequest, providerConfig,
     saves = 0;
   const route = load("app/api/aio/chat/route.ts", {
     "@/lib/firebase-admin": {
@@ -257,7 +258,7 @@ test("chat endpoint applies settings, streams truncation metadata, and honors hi
     "@/lib/aio/provider": {
       isAioConfigured: () => true,
       AioProviderError: class extends Error {},
-      createAioProvider: () => ({
+      createAioProvider: (options) => (providerConfig=options, {
         name: "test",
         async *stream(request) {
           providerRequest = request;
@@ -285,6 +286,7 @@ test("chat endpoint applies settings, streams truncation metadata, and honors hi
         conversationId: "test-conversation",
         messages: [user("Explain a general concept")],
         preferences: {
+          model: "aio-one",
           replyLength: "detailed",
           tone: "friendly",
           saveHistory: false,
@@ -296,6 +298,7 @@ test("chat endpoint applies settings, streams truncation metadata, and honors hi
   assert.match(response.headers.get("content-type"), /text\/event-stream/);
   const text = await response.text();
   assert.match(text, /"truncated":true/);
+  assert.equal(providerConfig.model, "configured-classic");
   assert.equal(providerRequest.maxTokens, 2100);
   assert.equal(providerRequest.temperature, 0.35);
   assert.match(providerRequest.messages[0].content, /thorough, organized/);
@@ -402,4 +405,18 @@ test('admin composer validates recipients and returns explicit success after SMT
   const call=async body=>{const r=await route.POST(new Request('http://localhost/api/admin/email/send',{method:'POST',body:JSON.stringify(body)}));return {status:r.status,body:await r.json()};};
   assert.equal((await call({to:'invalid',subject:'Hello',body:'Test'})).status,400);
   const result=await call({to:'customer@example.com',subject:'Hello',body:'Test'});assert.equal(result.status,200);assert.equal(result.body.success,true);assert.equal(result.body.messageId,'accepted-mail');
+});
+
+test('AIO One is selectable and uses its own configured provider mapping',()=>{const {resolveAioModel,normalizeAioModelId}=load('lib/aio/models.ts');assert.equal(normalizeAioModelId('aio-one'),'aio-one');assert.equal(normalizeChatPreferences({model:'aio-one'}).model,'aio-one');assert.equal(resolveAioModel('aio-one',{}),'openai/gpt-oss-20b');assert.equal(resolveAioModel('aio-one',{aioOneModel:'classic-provider'}),'classic-provider');});
+test('classic reply pacing preserves Unicode, event order and completion without slowing other modes',async()=>{
+ const {paceAioEvents}=load('lib/aio/pace.ts'); const text='A🌍'.repeat(30);const original=[{type:'status',label:'Working'},{type:'token',token:text},{type:'message_complete',requestId:'test',answerSource:'general'}];
+ async function* events(){yield* original;}
+ let waits=0;const result=[];for await(const e of paceAioEvents(events(),'aio-one',new AbortController().signal,async()=>{waits++;}))result.push(e);
+ assert.ok(waits>1);assert.equal(result.filter(e=>e.type==='token').map(e=>e.token).join(''),text);assert.equal(result[0].type,'status');assert.equal(result.at(-1).type,'message_complete');
+ for await(const e of paceAioEvents(events(),'aio-2',new AbortController().signal,async()=>{assert.fail('modern mode must not wait');}))void e;
+});
+test('stopping a paced reply cancels promptly and closes its upstream stream',async()=>{
+ const {paceAioEvents}=load('lib/aio/pace.ts');const controller=new AbortController();let closed=false;
+ async function* events(){try{yield {type:'token',token:'delayed'};}finally{closed=true;}}
+ const stream=paceAioEvents(events(),'aio-one',controller.signal);const next=stream.next();controller.abort();await assert.rejects(next,{name:'AbortError'});assert.equal(closed,true);
 });
