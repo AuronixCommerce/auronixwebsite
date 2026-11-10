@@ -21,6 +21,7 @@ export type SitePageDefinition = {
 };
 
 export const SITE_PAGES: SitePageDefinition[] = [
+  { id: 'video-guide', path: '/guide', title: 'Meet Auronix — Video Guide', category: 'Support', section: 'support' },
   {
     id: 'home',
     path: '/',

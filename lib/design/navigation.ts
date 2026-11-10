@@ -26,6 +26,7 @@ export const NAV_GROUPS = [
     title: "Resources",
     note: "Answers, guidance, and company policies.",
     paths: [
+      "/guide",
       "/aio",
       "/aio/chat",
       "/support",

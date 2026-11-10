@@ -1,4 +1,4 @@
-﻿export type SiteKnowledgeEntry = {
+export type SiteKnowledgeEntry = {
   path: string;
   title: string;
   visibility: 'public' | 'private';
@@ -9,6 +9,7 @@
 };
 
 export const AURONIX_SITE_KNOWLEDGE: SiteKnowledgeEntry[] = [
+  { path:'/guide',title:'Meet Auronix — Video Guide',visibility:'public',summary:'A two-minute video overview of Auronix Commerce and AIO, with English captions, clickable chapters, a readable transcript and a downloadable PDF guide. Covers AIO modes, customer actions, email verification, saved conversations, company sources, support, applications, emails and service status. Includes links for getting started.',topics:['video','watch','overview','tutorial','guide','getting started','AIO','captions','transcript','chapters'],actions:['watch the video overview','jump to a chapter','read the transcript','download the guide','open AIO chat'],related:['/aio','/aio/chat','/help','/supplier','/seller/apply','/status'] },
   {
     path: '/',
     title: 'Auronix Commerce LLC Homepage',
