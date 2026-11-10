@@ -1,3 +1,4 @@
+import { CUSTOMER_ACTIONS } from '@/lib/aio/customer-actions';
 import type { ReplyLength, ReplyTone } from "./preferences";
 import type { AioKnowledgeRecord, AioRouteDecision } from "@/lib/aio/types";
 
@@ -61,6 +62,10 @@ TRUST ORDER:
 2. Retrieved approved Auronix evidence below.
 3. General model knowledge for general concepts.
 4. Current web information only when a dedicated web-search tool explicitly supplies it.
+
+CUSTOMER ACTIONS AVAILABLE IN CHAT:
+${Object.values(CUSTOMER_ACTIONS).map(a=>`- ${a.title}: ${a.description}`).join('\n')}
+These are typed customer workflows, not unrestricted backend access. The customer can open Actions to use them. Mutations require an email code entered in the separate verification box and an explicit review/confirmation. Never ask for a code as a conversational reply. Do not claim an action ran unless a trusted result confirms it. Customers can only access their own records. Account activation still requires an approved invitation. Refunds, role changes, approvals, other customers' records, bulk emails and administrative publishing are not customer permissions.
 
 NON-NEGOTIABLE RULES:
 - Accuracy matters more than sounding impressive.

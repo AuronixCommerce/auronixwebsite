@@ -1,3 +1,4 @@
+import { CUSTOMER_ACTIONS,suggestCustomerAction,type CustomerActionKind } from '@/lib/aio/customer-actions';
 import {
   SUPPORT_NAMES,
   supportPersonaInstructions,
@@ -354,6 +355,27 @@ export async function POST(request: Request) {
         requestId,
         answerSource: "auronix",
       });
+    });
+  }
+
+  const customerKind = parsed.data.context?.supportPersona ? null : suggestCustomerAction(latestUserMessage);
+  const customerEnabled = settings.customerActionsEnabled !== false && customerKind &&
+    (!customerKind.startsWith('newsletter_') || settings.customerNewsletterEnabled !== false) &&
+    (!['supplier_apply','seller_apply','application_track'].includes(customerKind) || settings.customerApplicationsEnabled !== false) &&
+    (!['email_me','support_create'].includes(customerKind) || settings.customerEmailEnabled !== false);
+  if(customerKind && customerEnabled) {
+    const action=CUSTOMER_ACTIONS[customerKind];
+    const seed:Record<string,string>={};
+    const email=latestUserMessage.match(/[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0];
+    if(email && ['email_me','supplier_apply','newsletter_subscribe','newsletter_unsubscribe','newsletter_preferences','support_create','application_track'].includes(customerKind))seed.email=email;
+    if(customerKind==='email_me'){seed.subject='Your requested Auronix information';seed.message=([...messages].reverse().find(m=>m.role==='assistant')?.content || latestUserMessage).slice(0,6000);}
+    if(customerKind==='support_create'){seed.subject='Support request from AIO chat';seed.message=latestUserMessage;}
+    const reply=`Let’s ${action.title.toLowerCase()}. ${action.mode==='read'?'Your account access will be checked before showing any records.':'Complete the details, verify your email in the code box, and review the action before confirming.'}`;
+    return streamResponse(async(send)=>{
+      send({type:'message_start',requestId});send({type:'token',token:reply});
+      send({type:'customer_action',kind:customerKind,seed});
+      send({type:'message_complete',requestId,answerSource:'auronix'});
+      if(identity && parsed.data.preferences?.saveHistory !== false) await saveAuthenticatedAioTurn({uid:identity.uid,conversationId:parsed.data.conversationId,requestId,userContent:latestUserMessage,assistantContent:reply,sourceIds:[],model:'customer-action-router'}).catch(()=>undefined);
     });
   }
 

@@ -35,6 +35,7 @@ export default function AdminAIPage() {
   aioOneModel: "openai/gpt-oss-20b",
     aioFallbackModel: "",
   });
+  const [customerSettings,setCustomerSettings]=useState({customerActionsEnabled:true,customerEmailEnabled:true,customerApplicationsEnabled:true,customerNewsletterEnabled:true});
   const [enabled, setEnabled] = useState(true);
   const [autoReplyWhenOffline, setAutoReplyWhenOffline] = useState(true);
   const [continueTicketConversations, setContinueTicketConversations] =
@@ -71,6 +72,7 @@ export default function AdminAIPage() {
         if (cancelled) return;
 
         setPublicChatEnabled(data.publicChatEnabled !== false);
+        setCustomerSettings(current=>Object.fromEntries(Object.keys(current).map(key=>[key,data[key]!==false])) as typeof current);
         setReplySettings(
           (current) =>
             Object.fromEntries(
@@ -130,6 +132,7 @@ export default function AdminAIPage() {
           enabled,
           publicChatEnabled,
           ...replySettings,
+          ...customerSettings,
           autoReplyWhenOffline,
           continueTicketConversations,
           knowledgeEnabled,
@@ -188,7 +191,7 @@ export default function AdminAIPage() {
                 {loadError}
               </div>
             )}
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-2 gap-4">{([{key:'customerActionsEnabled',title:'Customer actions in chat',description:'Allow typed self-service workflows with account checks, email verification and confirmation.'},{key:'customerEmailEnabled',title:'Customer email & support',description:'Let customers send reviewed messages to their own email and the support team.'},{key:'customerApplicationsEnabled',title:'Applications & tracking',description:'Offer supplier and seller application steps and email-verified tracking in chat.'},{key:'customerNewsletterEnabled',title:'Newsletter self-service',description:'Offer email-verified subscribe, unsubscribe and preference updates.'}] as const).map(item=><ToggleCard key={item.key} icon={<Bot className="w-5 h-5"/>} title={item.title} description={item.description} value={customerSettings[item.key]} onChange={value=>setCustomerSettings(current=>({...current,[item.key]:value}))}/>)}
               <ToggleCard
                 icon={<MessageSquare className="w-5 h-5" />}
                 title="Public AIO chat"

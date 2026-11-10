@@ -13,6 +13,10 @@ const settingsSchema = z
   .object({
     enabled: z.boolean(),
     publicChatEnabled: z.boolean(),
+    customerActionsEnabled:z.boolean(),
+    customerEmailEnabled:z.boolean(),
+    customerApplicationsEnabled:z.boolean(),
+    customerNewsletterEnabled:z.boolean(),
     autoReplyWhenOffline: z.boolean(),
     continueTicketConversations: z.boolean(),
     knowledgeEnabled: z.boolean(),

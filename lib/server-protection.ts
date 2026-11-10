@@ -5,6 +5,9 @@ export class PublicRequestError extends Error {
   constructor(message: string, public status = 400, public code = 'REQUEST_REJECTED', public retryAfter?: number) { super(message); }
 }
 
+const verifiedRequests=new WeakSet<Request>();
+export function inheritPublicRequestVerification(parent:Request,child:Request) {if(verifiedRequests.has(parent))verifiedRequests.add(child);return child;}
+
 const cleanKey = (value: string) => value.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80);
 const requestIp = (request: Request) => (request.headers.get('cf-connecting-ip') || request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown').trim();
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
@@ -26,13 +29,14 @@ export async function protectPublicRequest(request: Request, scope: string, body
   }
 
   const secret = process.env.TURNSTILE_SECRET_KEY?.trim();
-  if (secret && process.env.TURNSTILE_ENFORCE === 'true') {
+  if (secret && process.env.TURNSTILE_ENFORCE === 'true' && !verifiedRequests.has(request)) {
     const token = String(body?.turnstileToken || '').trim();
     if (!token) throw new PublicRequestError('Please complete the security check.', 400, 'BOT_CHECK_REQUIRED');
     const form = new URLSearchParams({ secret, response: token, remoteip: requestIp(request) });
     const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', { method: 'POST', body: form, cache: 'no-store' });
     const verification = await response.json() as { success?: boolean };
     if (!verification.success) throw new PublicRequestError('The security check failed. Please retry.', 400, 'BOT_CHECK_FAILED');
+    verifiedRequests.add(request);
   }
 }
 

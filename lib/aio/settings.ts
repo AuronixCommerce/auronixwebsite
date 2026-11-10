@@ -2,6 +2,10 @@ export const DEFAULT_AI_INSTRUCTIONS = `Be professional, clear, calm, and helpfu
 export const DEFAULT_AIO_SETTINGS = {
   enabled: true,
   publicChatEnabled: true,
+  customerActionsEnabled:true,
+  customerEmailEnabled:true,
+  customerApplicationsEnabled:true,
+  customerNewsletterEnabled:true,
   autoReplyWhenOffline: true,
   continueTicketConversations: true,
   knowledgeEnabled: true,

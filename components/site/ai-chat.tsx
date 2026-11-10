@@ -1,4 +1,6 @@
 "use client";
+import { CustomerActionPanel,type CustomerActionSelection } from './customer-action-panel';
+import { isCustomerActionKind,type CustomerActionKind,CUSTOMER_ACTIONS } from '@/lib/aio/customer-actions';
 import { AIO_MODELS, normalizeAioModelId } from "@/lib/aio/models";
 import { AIMessageContent } from "./ai-message-content";
 import {
@@ -74,6 +76,7 @@ type ChatMessage = {
   sessionBoundary?: boolean;
   endedAt?: number;
   pinned?: boolean;
+  customerAction?:CustomerActionKind;
 };
 
 type TicketStep =
@@ -147,6 +150,7 @@ export function AIChat({
   const [transcriptBusy, setTranscriptBusy] = useState(false);
   const [transcriptNotice, setTranscriptNotice] = useState("");
   const [transcriptSent, setTranscriptSent] = useState(false);
+  const [customerAction,setCustomerAction]=useState<CustomerActionSelection|null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [preferences, setPreferences] = useState<ChatPreferences>(
@@ -423,6 +427,7 @@ export function AIChat({
 
   useEffect(() => {
     if (!savedConversation) return;
+    setCustomerAction(null);
     requestVersion.current += 1;
     abortRef.current?.abort();
     conversationIdRef.current = savedConversation.id;
@@ -518,16 +523,10 @@ export function AIChat({
   });
 
   const beginTicketFlow = (baseMessages = messages) => {
-    if (loading) return;
-    setError("");
-    setTicketDraft(EMPTY_TICKET);
-    setTicketStep("name");
-    setMessages([
-      ...baseMessages,
-      ticketPrompt(
-        "I can create a support ticket for you. What is your full name?",
-      ),
-    ]);
+    if(loading)return;
+    setError('');setTicketStep('idle');setSettingsOpen(false);setTranscriptOpen(false);
+    setMessages([...baseMessages,ticketPrompt('Complete your support request below. Verify your email in the code box, then review and confirm before it is sent.')]);
+    setCustomerAction({kind:'support_create',key:makeId()});
   };
 
   const continueTicketFlow = async (
@@ -723,6 +722,7 @@ export function AIChat({
     const isCurrent = () =>
       requestVersion.current === version && !controller.signal.aborted;
 
+    let streamedCustomerAction:CustomerActionKind|undefined;
     let streamedAnswer = "";
     let streamedSources: AioSource[] = [];
     let streamedActions: AioAction[] = [];
@@ -831,6 +831,12 @@ export function AIChat({
           return;
         }
 
+        if(event.type==='customer_action') {
+          streamedCustomerAction=event.kind;
+          setCustomerAction({kind:event.kind,seed:event.seed,key:makeId()});
+          setSettingsOpen(false);setTranscriptOpen(false);
+          return;
+        }
         if (event.type === "error") {
           throw new Error(event.message);
         }
@@ -861,6 +867,7 @@ export function AIChat({
           role: "assistant",
           content: streamedAnswer.trim(),
           truncated,
+          customerAction:streamedCustomerAction,
           answerSource: streamedAnswerSource,
           sources: streamedSources,
           actions: streamedActions,
@@ -923,6 +930,7 @@ export function AIChat({
   };
 
   const startNewChat = () => {
+    setCustomerAction(null);
     if (loading) return;
     abortRef.current?.abort();
     conversationIdRef.current = makeId();
@@ -1213,6 +1221,7 @@ export function AIChat({
               </div>
             </header>
             <div className="aio-toolbar">
+              <button type="button" onClick={()=>{setCustomerAction({kind:null,key:makeId()});setSettingsOpen(false);setTranscriptOpen(false);}} aria-label="Open customer actions"><ShieldCheck size={14}/><span>Actions</span></button>
               <button
                 type="button"
                 onClick={() => {
@@ -1276,7 +1285,7 @@ export function AIChat({
                 <Trash2 size={14} />
               </button>
             </div>
-            {transcriptOpen && (
+            {!customerAction && transcriptOpen && (
               <form
                 className="aio-transcript-form"
                 onSubmit={emailTranscript}
@@ -1385,7 +1394,7 @@ export function AIChat({
                 </div>
               </form>
             )}
-            {transcriptOpen ? null : settingsOpen ? (
+            {customerAction ? <CustomerActionPanel key={customerAction.key} selection={customerAction} conversationId={conversationIdRef.current} saveHistory={preferences.rememberHistory} onClose={()=>setCustomerAction(null)} onReceipt={result=>{setMessages(previous=>[...previous,{id:makeId(),role:'assistant',content:result.summary+(result.reference?`\nReference: ${result.reference}`:''),answerSource:'auronix'}]);window.dispatchEvent(new Event('aio-workspace-updated'));}}/> : transcriptOpen ? null : settingsOpen ? (
               <section className="aio-settings" aria-label="Chat preferences">
                 <div className="aio-settings-heading">
                   <span>MAKE IT WORK FOR YOU</span>
@@ -1640,6 +1649,7 @@ export function AIChat({
                                   actions={message.actions || []}
                                   onNavigate={(href) => router.push(href)}
                                 />
+                                {message.customerAction && isCustomerActionKind(message.customerAction) && <button className="aio-customer-action-link" type="button" onClick={()=>setCustomerAction({kind:message.customerAction!,key:makeId()})}>{CUSTOMER_ACTIONS[message.customerAction].title}<ArrowRight size={14}/></button>}
                                 <div className="aio-message-tools">
                                   <MessageUtilityButton
                                     label={

@@ -1,3 +1,4 @@
+import type { CustomerActionKind } from '@/lib/aio/customer-actions';
 export type AioRole = "user" | "assistant";
 
 export type AioIntent =
@@ -89,6 +90,7 @@ export type AioProviderInfo = {
 };
 
 export type AioStreamEvent =
+  | {type:"customer_action";kind:CustomerActionKind;seed?:Record<string,string>}
   | { type: "message_start"; requestId: string }
   | { type: "status"; label: string }
   | { type: "source"; source: AioSource }
