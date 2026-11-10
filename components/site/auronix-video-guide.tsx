@@ -1,39 +1,161 @@
 "use client";
-import { useRef, useState } from "react";
-import { ArrowUpRight, Clapperboard, Play } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import type { CSSProperties, KeyboardEvent } from "react";
+import {
+  ArrowUpRight,
+  Captions,
+  Clapperboard,
+  Maximize,
+  Minimize,
+  Pause,
+  Play,
+  RotateCcw,
+  SkipBack,
+  SkipForward,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import {
   AURONIX_OVERVIEW_VIDEO,
   OVERVIEW_CHAPTERS,
   videoTimestamp,
 } from "@/lib/auronix-video-guide";
+
+type MobileVideo = HTMLVideoElement & { webkitEnterFullscreen?: () => void };
 export function AuronixVideoGuide() {
-  const video = useRef<HTMLVideoElement>(null),
+  const video = useRef<MobileVideo>(null),
+    screen = useRef<HTMLDivElement>(null),
     pendingSeek = useRef<number | null>(null);
-  const [active, setActive] = useState(-1),
-    [error, setError] = useState(""),
-    [playing, setPlaying] = useState(false);
-  function jump(seconds: number) {
+  const [enhanced, setEnhanced] = useState(false),
+    [active, setActive] = useState(-1),
+    [error, setError] = useState("");
+  const [playing, setPlaying] = useState(false),
+    [waiting, setWaiting] = useState(false),
+    [ended, setEnded] = useState(false);
+  const [time, setTime] = useState(0),
+    [duration, setDuration] = useState(120),
+    [buffered, setBuffered] = useState(0);
+  const [volume, setVolume] = useState(1),
+    [muted, setMuted] = useState(false),
+    [captions, setCaptions] = useState(true),
+    [rate, setRate] = useState(1);
+  const [fullscreen, setFullscreen] = useState(false),
+    [canFullscreen, setCanFullscreen] = useState(false);
+  useEffect(() => {
+    setEnhanced(true);
+    setCanFullscreen(
+      Boolean(
+        document.fullscreenEnabled || video.current?.webkitEnterFullscreen,
+      ),
+    );
+    const sync = () =>
+      setFullscreen(document.fullscreenElement === screen.current);
+    const begin = () => setFullscreen(true),
+      end = () => setFullscreen(false);
+    const player = video.current;
+    document.addEventListener("fullscreenchange", sync);
+    player?.addEventListener("webkitbeginfullscreen", begin);
+    player?.addEventListener("webkitendfullscreen", end);
+    return () => {
+      document.removeEventListener("fullscreenchange", sync);
+      player?.removeEventListener("webkitbeginfullscreen", begin);
+      player?.removeEventListener("webkitendfullscreen", end);
+    };
+  }, []);
+  function markChapter() {
+    const current = video.current?.currentTime || 0;
+    setTime(current);
+    setActive(
+      OVERVIEW_CHAPTERS.reduce(
+        (index, chapter, i) => (current >= chapter.start ? i : index),
+        0,
+      ),
+    );
+  }
+  function syncBuffer() {
+    const player = video.current;
+    if (!player || !player.duration || !player.buffered.length) return;
+    let end = 0;
+    for (let i = 0; i < player.buffered.length; i++)
+      if (player.buffered.start(i) <= player.currentTime)
+        end = player.buffered.end(i);
+    setBuffered(Math.min(100, (end / player.duration) * 100));
+  }
+  function syncCaptions(enabled: boolean) {
+    const tracks = video.current?.textTracks;
+    if (tracks)
+      for (let i = 0; i < tracks.length; i++)
+        if (tracks[i].kind === "captions")
+          tracks[i].mode = enabled ? "showing" : "disabled";
+  }
+  function seek(seconds: number) {
+    const player = video.current;
+    if (!player) return;
+    const next = Math.max(0, Math.min(duration, seconds));
+    setTime(next);
+    setEnded(false);
+    if (player.readyState < 1) {
+      pendingSeek.current = next;
+      player.load();
+    } else {
+      player.currentTime = next;
+      markChapter();
+    }
+  }
+  async function play() {
     const player = video.current;
     if (!player) return;
     setError("");
-    if (player.readyState < 1) {
-      pendingSeek.current = seconds;
-      player.load();
-    } else player.currentTime = seconds;
-    void player
-      .play()
-      .catch(() =>
-        setError("Press play to continue, or open the video directly below."),
+    try {
+      await player.play();
+    } catch {
+      setWaiting(false);
+      setError("Press play to continue, or open the video directly below.");
+    }
+  }
+  function togglePlayback() {
+    const player = video.current;
+    if (!player) return;
+    if (player.paused) {
+      if (player.ended) seek(0);
+      void play();
+    } else player.pause();
+  }
+  function jump(seconds: number) {
+    seek(seconds);
+    void play();
+  }
+  async function toggleFullscreen() {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else if (screen.current?.requestFullscreen && document.fullscreenEnabled)
+        await screen.current.requestFullscreen();
+      else video.current?.webkitEnterFullscreen?.();
+    } catch {
+      setError(
+        "Fullscreen is unavailable here. You can open the video directly below.",
       );
+    }
   }
-  function markChapter() {
-    const time = video.current?.currentTime || 0;
-    const index = OVERVIEW_CHAPTERS.reduce(
-      (current, chapter, i) => (time >= chapter.start ? i : current),
-      0,
-    );
-    setActive(index);
+  function shortcuts(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.target !== event.currentTarget && event.target !== video.current)
+      return;
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    const key = event.key.toLowerCase();
+    if ([" ", "k", "arrowleft", "arrowright", "m", "c", "f"].includes(key))
+      event.preventDefault();
+    if (key === " " || key === "k") togglePlayback();
+    if (key === "arrowleft") seek(time - 10);
+    if (key === "arrowright") seek(time + 10);
+    if (key === "m" && video.current)
+      video.current.muted = !video.current.muted;
+    if (key === "c") {
+      syncCaptions(!captions);
+      setCaptions(!captions);
+    }
+    if (key === "f" && canFullscreen) void toggleFullscreen();
   }
+  const progress = Math.min(100, (time / duration) * 100);
   return (
     <section
       className="av-guide-player"
@@ -49,57 +171,297 @@ export function AuronixVideoGuide() {
         </span>
       </div>
       <div className="av-guide-player-grid">
-        <div className="av-guide-screen">
-          <video
-            ref={video}
-            controls
-            playsInline
-            preload="metadata"
-            poster="/guides/auronix-overview.jpg"
-            aria-label="Auronix Commerce and AIO video overview"
-            aria-describedby="overview-video-description"
-            onPlay={() => {
-              setPlaying(true);
-              setError("");
-              markChapter();
-            }}
-            onPause={() => setPlaying(false)}
-            onEnded={() => setPlaying(false)}
-            onTimeUpdate={markChapter}
-            onError={() =>
-              setError(
-                "The video could not load. You can open it directly or read the transcript below.",
-              )
-            }
-            onLoadedMetadata={() => {
-              if (pendingSeek.current !== null && video.current) {
-                video.current.currentTime = pendingSeek.current;
-                pendingSeek.current = null;
+        <div
+          className="av-guide-screen"
+          ref={screen}
+          tabIndex={0}
+          onKeyDown={shortcuts}
+          aria-label="Video player. Space to play, arrows to seek, M to mute, C for captions, F for fullscreen."
+        >
+          <div className="av-video-stage">
+            <video
+              ref={video}
+              controls={!enhanced}
+              playsInline
+              preload="metadata"
+              poster="/guides/auronix-overview.jpg"
+              aria-label="Auronix Commerce and AIO video overview"
+              aria-describedby="overview-video-description"
+              onClick={enhanced ? togglePlayback : undefined}
+              onPlay={() => {
+                setPlaying(true);
+                setEnded(false);
+                setError("");
                 markChapter();
-              }
-            }}
-          >
-            <source src={AURONIX_OVERVIEW_VIDEO} type="video/mp4" />
-            <track
-              kind="captions"
-              src="/guides/auronix-overview.en.vtt"
-              srcLang="en"
-              label="English"
-              default
-            />
-            <track
-              kind="chapters"
-              src="/guides/auronix-overview.chapters.vtt"
-              srcLang="en"
-              label="Chapters"
-            />
-            Your browser cannot play this video. Use the direct video link
-            below.
-          </video>
+              }}
+              onPlaying={() => setWaiting(false)}
+              onWaiting={() => setWaiting(true)}
+              onSeeking={() => setWaiting(true)}
+              onSeeked={() => {
+                setWaiting(false);
+                markChapter();
+                syncBuffer();
+              }}
+              onPause={() => {
+                setPlaying(false);
+                setWaiting(false);
+              }}
+              onEnded={() => {
+                setPlaying(false);
+                setWaiting(false);
+                setEnded(true);
+              }}
+              onTimeUpdate={() => {
+                markChapter();
+                syncBuffer();
+              }}
+              onProgress={syncBuffer}
+              onVolumeChange={() => {
+                if (video.current) {
+                  setVolume(video.current.volume);
+                  setMuted(video.current.muted);
+                }
+              }}
+              onRateChange={() => setRate(video.current?.playbackRate || 1)}
+              onError={() => {
+                setWaiting(false);
+                setError(
+                  "The video could not load. You can open it directly or read the transcript below.",
+                );
+              }}
+              onLoadedMetadata={() => {
+                const player = video.current;
+                if (!player) return;
+                if (Number.isFinite(player.duration) && player.duration > 0)
+                  setDuration(player.duration);
+                syncCaptions(captions);
+                if (pendingSeek.current !== null) {
+                  player.currentTime = pendingSeek.current;
+                  pendingSeek.current = null;
+                  markChapter();
+                }
+              }}
+            >
+              <source src={AURONIX_OVERVIEW_VIDEO} type="video/mp4" />
+              <track
+                kind="captions"
+                src="/guides/auronix-overview.en.vtt"
+                srcLang="en"
+                label="English"
+                default
+                onLoad={() => syncCaptions(captions)}
+              />
+              <track
+                kind="chapters"
+                src="/guides/auronix-overview.chapters.vtt"
+                srcLang="en"
+                label="Chapters"
+              />
+              Your browser cannot play this video. Use the direct video link
+              below.
+            </video>
+            {enhanced && !playing && !waiting && (
+              <button
+                type="button"
+                className="av-video-big-play"
+                onClick={togglePlayback}
+                aria-label={ended ? "Replay video" : "Play video"}
+              >
+                {ended ? (
+                  <RotateCcw size={26} />
+                ) : (
+                  <Play size={28} fill="currentColor" />
+                )}
+                <span>
+                  {ended
+                    ? "Watch again"
+                    : time > 0
+                      ? "Continue watching"
+                      : "Watch the film"}
+                </span>
+              </button>
+            )}
+            {enhanced && waiting && (
+              <div className="av-video-buffering" role="status">
+                <span />
+                Loading video
+              </div>
+            )}
+          </div>
+          {enhanced && (
+            <div
+              className="av-video-controls"
+              role="group"
+              aria-label="Video controls"
+            >
+              <div
+                className="av-video-timeline"
+                style={
+                  {
+                    "--av-played": `${progress}%`,
+                    "--av-buffered": `${buffered}%`,
+                  } as CSSProperties
+                }
+              >
+                <div className="av-video-rail" aria-hidden="true">
+                  <span />
+                  <i />
+                  {OVERVIEW_CHAPTERS.slice(1).map((chapter) => (
+                    <b
+                      key={chapter.start}
+                      style={{ left: `${(chapter.start / duration) * 100}%` }}
+                    />
+                  ))}
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max={duration}
+                  step="0.1"
+                  value={time}
+                  aria-label="Seek video"
+                  aria-valuetext={`${videoTimestamp(time)} of ${videoTimestamp(duration)}`}
+                  onChange={(event) => seek(Number(event.target.value))}
+                />
+              </div>
+              <div className="av-video-toolbar">
+                <div className="av-video-control-group">
+                  <button
+                    type="button"
+                    className="av-video-play-toggle"
+                    onClick={togglePlayback}
+                    aria-label={
+                      playing
+                        ? "Pause video"
+                        : ended
+                          ? "Replay video"
+                          : "Play video"
+                    }
+                    title="Play / pause (Space)"
+                  >
+                    {playing ? (
+                      <Pause size={18} fill="currentColor" />
+                    ) : ended ? (
+                      <RotateCcw size={18} />
+                    ) : (
+                      <Play size={18} fill="currentColor" />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className="av-video-skip"
+                    onClick={() => seek(time - 10)}
+                    aria-label="Back 10 seconds"
+                    title="Back 10 seconds"
+                  >
+                    <SkipBack size={16} />
+                    <small>10</small>
+                  </button>
+                  <button
+                    type="button"
+                    className="av-video-skip"
+                    onClick={() => seek(time + 10)}
+                    aria-label="Forward 10 seconds"
+                    title="Forward 10 seconds"
+                  >
+                    <SkipForward size={16} />
+                    <small>10</small>
+                  </button>
+                  <span className="av-video-time">
+                    {videoTimestamp(time)}
+                    <span>/ {videoTimestamp(duration)}</span>
+                  </span>
+                </div>
+                <div className="av-video-control-group av-video-options">
+                  <div className="av-video-volume">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (video.current) video.current.muted = !muted;
+                      }}
+                      aria-label={
+                        muted || volume === 0 ? "Unmute video" : "Mute video"
+                      }
+                      title="Mute (M)"
+                    >
+                      {muted || volume === 0 ? (
+                        <VolumeX size={18} />
+                      ) : (
+                        <Volume2 size={18} />
+                      )}
+                    </button>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={muted ? 0 : volume}
+                      aria-label="Volume"
+                      aria-valuetext={`${Math.round((muted ? 0 : volume) * 100)} percent`}
+                      onChange={(event) => {
+                        if (video.current) {
+                          video.current.volume = Number(event.target.value);
+                          video.current.muted = false;
+                        }
+                      }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className={captions ? "is-active" : ""}
+                    onClick={() => {
+                      syncCaptions(!captions);
+                      setCaptions(!captions);
+                    }}
+                    aria-label="English captions"
+                    aria-pressed={captions}
+                    title="Captions (C)"
+                  >
+                    <Captions size={19} />
+                  </button>
+                  <label className="av-video-speed">
+                    <span className="sr-only">Playback speed</span>
+                    <select
+                      aria-label="Playback speed"
+                      value={rate}
+                      onChange={(event) => {
+                        if (video.current)
+                          video.current.playbackRate = Number(
+                            event.target.value,
+                          );
+                      }}
+                    >
+                      {[0.75, 1, 1.25, 1.5, 2].map((speed) => (
+                        <option key={speed} value={speed}>
+                          {speed}×
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {canFullscreen && (
+                    <button
+                      type="button"
+                      onClick={() => void toggleFullscreen()}
+                      aria-label={
+                        fullscreen ? "Exit fullscreen" : "Enter fullscreen"
+                      }
+                      title="Fullscreen (F)"
+                    >
+                      {fullscreen ? (
+                        <Minimize size={18} />
+                      ) : (
+                        <Maximize size={18} />
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
           <div className="av-guide-playing" aria-live="polite">
             <span className={playing ? "is-playing" : ""} />
             {active >= 0
-              ? `${playing ? "Playing" : "Paused"} · ${OVERVIEW_CHAPTERS[active].title}`
+              ? `${ended ? "Finished" : playing ? "Playing" : "Paused"} · ${OVERVIEW_CHAPTERS[active].title}`
               : "A quick introduction to commerce, AIO, and your next step."}
           </div>
         </div>
@@ -130,8 +492,8 @@ export function AuronixVideoGuide() {
       </div>
       <div className="av-guide-player-footer">
         <p id="overview-video-description">
-          Use the player controls for captions, volume, and fullscreen. Some
-          views in the overview are illustrative.
+          Use the player controls for captions, speed, volume, and fullscreen.
+          Some views in the overview are illustrative.
         </p>
         <a
           href={AURONIX_OVERVIEW_VIDEO}
