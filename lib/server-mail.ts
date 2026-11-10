@@ -1,4 +1,4 @@
-import { cleanupCustomerActionSessions } from '@/lib/aio/customer-session-cleanup';
+import { cleanupCustomerActionSessions } from "@/lib/aio/customer-session-cleanup";
 import nodemailer from "nodemailer";
 import {
   enqueueMail,
@@ -177,6 +177,9 @@ async function deliverQueued(mail: QueuedMail, id: string) {
 }
 async function sendWithSender(sender: string, options: MailOptions) {
   const id = await enqueueMail({ sender, options });
+  return processMailJob(id, deliverQueued);
+}
+export async function retryQueuedEmail(id: string) {
   return processMailJob(id, deliverQueued);
 }
 export async function processEmailQueue() {

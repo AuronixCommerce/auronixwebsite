@@ -23,7 +23,7 @@ import {
   emailActionReceipt,
 } from "@/lib/aio/customer-execute";
 import { inspectCustomerAction } from "@/lib/aio/customer-read";
-import { sendProfessionalEmail } from "@/lib/server-mail";
+import { sendProfessionalEmail, retryQueuedEmail } from "@/lib/server-mail";
 import { normalizeVerificationCode } from "@/lib/aio/verification-code";
 import { writeAuditLog } from "@/lib/server-audit";
 import {
@@ -100,7 +100,7 @@ async function loadFlow(body: any, identity: CustomerIdentity | null) {
   if (
     !flow ||
     !equalHash(flow.tokenHash, digest(token)) ||
-    flow.uid !== (identity?.uid || null)
+    String(flow.uid || "") !== String(identity?.uid || "")
   )
     throw new CustomerActionError(
       "This action does not belong to the current session.",
@@ -168,7 +168,7 @@ export async function customerWorkflowRequest(
     const previous = (await ref.get()).val();
     if (previous) {
       if (
-        previous.uid !== (identity?.uid || null) ||
+        String(previous.uid || "") !== String(identity?.uid || "") ||
         previous.fingerprint !== fingerprint ||
         previous.expiresAt <= Date.now()
       )
@@ -210,7 +210,7 @@ export async function customerWorkflowRequest(
       creationId: randomUUID(),
       id,
       kind,
-      uid: identity?.uid || null,
+      uid: identity?.uid || "",
       email,
       input,
       context,
@@ -239,6 +239,39 @@ export async function customerWorkflowRequest(
     return { success: true, token, ...view(sent) };
   }
   const { ref, flow } = await loadFlow(body, identity);
+  if (mode === "delivery-status") {
+    if (flow.phase !== "verify" || !flow.otpQueueId)
+      return { success: true, ...view(flow) };
+    const jobRef = adminDb.ref(`emailQueue/${flow.otpQueueId}`);
+    let job = (await jobRef.get()).val();
+    if (!job || String(job.recipient || "").toLowerCase() !== flow.email)
+      throw new CustomerActionError(
+        "This email job does not belong to your verification session.",
+        403,
+      );
+    if (
+      ["queued", "processing"].includes(job.status) &&
+      Number(job.nextAttemptAt) <= Date.now() &&
+      Number(job.leaseUntil || 0) <= Date.now()
+    ) {
+      await retryQueuedEmail(flow.otpQueueId).catch(() => undefined);
+      job = (await jobRef.get()).val();
+    }
+    const emailStatus = ["sent", "delivered", "opened", "clicked"].includes(
+      job?.status,
+    )
+      ? "sent"
+      : ["queued", "processing"].includes(job?.status)
+        ? "queued"
+        : "failed";
+    const changed = await ref.transaction((current) => {
+      if (!current) return current;
+      if (current.phase !== "verify" || current.otpQueueId !== flow.otpQueueId)
+        return;
+      return { ...current, emailStatus };
+    });
+    return { success: true, ...view(changed.snapshot.val() || flow) };
+  }
   if (mode === "resend") {
     if (flow.phase !== "verify")
       throw new CustomerActionError("Verification is already complete.");

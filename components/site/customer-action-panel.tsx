@@ -176,7 +176,7 @@ export function CustomerActionPanel({
   }
   async function run(mode: string) {
     if (busy || !kind || !securityReady) return;
-    const actorUid=auth.currentUser?.uid || "";
+    const actorUid = auth.currentUser?.uid || "";
     setBusy(true);
     setError("");
     try {
@@ -212,7 +212,10 @@ export function CustomerActionPanel({
         );
       }
       if (!alive.current) return;
-      if((auth.currentUser?.uid || "")!==actorUid){onClose();return;}
+      if ((auth.currentUser?.uid || "") !== actorUid) {
+        onClose();
+        return;
+      }
       if (mode === "inspect") {
         setFlow({ result: data.result });
         setPhase("complete");
@@ -239,6 +242,21 @@ export function CustomerActionPanel({
       if (alive.current) setBusy(false);
     }
   }
+  useEffect(() => {
+    if (
+      phase !== "verify" ||
+      flow?.emailStatus !== "queued" ||
+      Date.now() >= Number(flow?.otpExpiresAt || 0) ||
+      !securityReady ||
+      busy
+    )
+      return;
+    const timer = window.setTimeout(() => {
+      if (Date.now() >= Number(flow?.otpExpiresAt || 0)) return;
+      void run("delivery-status");
+    }, 30000);
+    return () => window.clearTimeout(timer);
+  }, [phase, flow?.id, flow?.emailStatus, securityReady, busy, token]);
   function advance(e: React.FormEvent) {
     e.preventDefault();
     if (!kind) return;
@@ -262,6 +280,7 @@ export function CustomerActionPanel({
     steps = kind ? customerActionSteps(kind) : [],
     fields = steps[step]?.fields || [],
     accountBlocked = action?.account && !signedIn,
+    codeExpired = phase === "verify" && now >= Number(flow?.otpExpiresAt || 0),
     resendSeconds = Math.max(
       0,
       Math.ceil(((flow?.resendAt || 0) - now) / 1000),
@@ -564,8 +583,8 @@ export function CustomerActionPanel({
                   )}
                   <InputOTP
                     maxLength={6}
-                        pasteTransformer={normalizeVerificationCode}
-                        autoFocus
+                    pasteTransformer={normalizeVerificationCode}
+                    autoFocus
                     value={code}
                     onChange={(v) => setCode(normalizeVerificationCode(v))}
                     inputMode="numeric"
@@ -758,7 +777,8 @@ export function CustomerActionPanel({
                     type="submit"
                     disabled={
                       busy ||
-                      (phase === "verify" && code.length !== 6) ||
+                      (phase === "verify" &&
+                        (code.length !== 6 || codeExpired)) ||
                       ((phase !== "form" || step === steps.length - 1) &&
                         !securityReady)
                     }

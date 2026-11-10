@@ -2,7 +2,9 @@
 
 ## Deployment
 
-This repository uses Next.js and Netlify. `netlify/functions/operations-tick.mjs` runs every minute on published Netlify deploys and calls the protected email queue and offline support workers. Set **CRON_SECRET** to a strong random value in the production hosting environment (Functions scope). The scheduler uses Netlify's `URL`, or `NEXT_PUBLIC_SITE_URL` as a fallback. On another host, schedule authenticated GET requests to `/api/cron/email-queue` and `/api/cron/offline-support` every minute with `Authorization: Bearer <CRON_SECRET>`.
+This Next.js repository includes both Vercel and Netlify deployment configurations. Vercel reports production deployments through the repository's commit status. The Netlify-only function `netlify/functions/operations-tick.mjs` runs every minute on published Netlify deployments; it does **not** execute on Vercel.
+
+Queued chat OTPs now retry while the customer keeps the verification panel open. The panel checks only its own verification job every 30 seconds, and the server enforces retry backoff, ownership and expiry. This works on Vercel without a Netlify timer. Closed-browser email retries and unattended offline-support processing still require a scheduler calling `/api/cron/email-queue` and `/api/cron/offline-support` with `Authorization: Bearer <CRON_SECRET>`. Set **CRON_SECRET** in the hosting environment and use a schedule supported by the host or an external authenticated scheduler. The existing Vercel configuration schedules health and security maintenance only; it is not a minute-by-minute email/support scheduler.
 
 Existing Firebase Admin credentials, Firebase Auth configuration, SMTP credentials and GROQ_API_KEY remain required. SMTP settings: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` (or `SMTP_PASS`), `MAIL_FROM`, and optionally `MAIL_NOTIFICATION_EMAIL` and `MAIL_SUPPORT_EMAIL`. Admin → Email delivery → Test connection validates the deployed SMTP connection without sending a customer message.
 

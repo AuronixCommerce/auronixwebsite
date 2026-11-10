@@ -56,10 +56,18 @@ export async function GET(request: Request) {
       },
       { headers },
     );
-  } catch {
+  } catch (error) {
     return NextResponse.json(
-      { error: "Unable to load customer actions. Sign in again if needed." },
-      { status: 401, headers },
+      {
+        error:
+          error instanceof CustomerActionError
+            ? error.message
+            : "Customer actions are temporarily unavailable. Please try again.",
+      },
+      {
+        status: error instanceof CustomerActionError ? error.status : 503,
+        headers,
+      },
     );
   }
 }
@@ -81,6 +89,24 @@ export async function POST(request: Request) {
         )
       : await request.json();
     if (files && body.confirmed === "true") body.confirmed = true;
+    if (
+      !body ||
+      typeof body !== "object" ||
+      Array.isArray(body) ||
+      ![
+        "inspect",
+        "prepare",
+        "verify",
+        "resend",
+        "delivery-status",
+        "confirm",
+        "cancel",
+      ].includes(body.mode)
+    )
+      return NextResponse.json(
+        { success: false, error: "Choose a valid customer action." },
+        { status: 400, headers },
+      );
     await protectPublicRequest(request, "aio-customer-actions", body, {
       limit: 60,
       windowMs: 15 * 60_000,
@@ -90,6 +116,11 @@ export async function POST(request: Request) {
       { headers },
     );
   } catch (error) {
+    if (error instanceof SyntaxError)
+      return NextResponse.json(
+        { success: false, error: "Send a valid action request." },
+        { status: 400, headers },
+      );
     const blocked = publicRequestErrorResponse(error);
     if (blocked)
       return NextResponse.json(blocked.body, {

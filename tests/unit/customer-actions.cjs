@@ -620,3 +620,103 @@ test("a guest can email a reviewed message only to the mailbox verified in that 
     "guest@example.test",
   );
 });
+
+test("guest OTP verification and preparation retries survive Firebase removing null owner fields", async () => {
+  const h = setup(),
+    requestKey = crypto.randomUUID(),
+    body = {
+      mode: "prepare",
+      kind: "newsletter_subscribe",
+      input: subscribe,
+      requestKey,
+    };
+  const first = await h.action(body);
+  assert.equal(first.status, 200);
+  // RTDB omits null properties on reads, including records written by the earlier release.
+  delete h.data.aioCustomerWorkflows[first.body.id].uid;
+  const retried = await h.action(body);
+  assert.equal(retried.status, 200);
+  assert.equal(retried.body.token, first.body.token);
+  assert.equal((await h.verify(first.body)).body.phase, "review");
+  assert.equal((await h.confirm(first.body)).status, 200);
+});
+test("an active guest workflow can retry only its own queued OTP when the backoff is due", async () => {
+  const h = setup();
+  h.mocks["@/lib/server-mail"].sendProfessionalEmail = async (value) => {
+    h.mails.push(value);
+    return { queued: true, queueId: "otp-job" };
+  };
+  const p = (await h.prepare("newsletter_subscribe", subscribe)).body;
+  h.data.emailQueue = {
+    "otp-job": {
+      recipient: subscribe.email,
+      status: "queued",
+      nextAttemptAt: Date.now() + 60000,
+      leaseUntil: 0,
+    },
+    "other-job": {
+      recipient: "other@example.test",
+      status: "queued",
+      nextAttemptAt: 0,
+      leaseUntil: 0,
+    },
+  };
+  let retried = [];
+  h.mocks["@/lib/server-mail"].retryQueuedEmail = async (id) => {
+    retried.push(id);
+    h.data.emailQueue[id].status = "sent";
+  };
+  const query = {
+    mode: "delivery-status",
+    id: p.id,
+    token: p.token,
+    queueId: "other-job",
+  };
+  assert.equal((await h.action(query)).body.emailStatus, "queued");
+  assert.equal(retried.length, 0);
+  h.data.emailQueue["otp-job"].nextAttemptAt = 0;
+  assert.equal((await h.action(query)).body.emailStatus, "sent");
+  assert.deepEqual(retried, ["otp-job"]);
+  assert.equal(
+    (await h.action({ ...query, token: "b".repeat(64) })).status,
+    403,
+  );
+  assert.equal((await h.verify(p)).body.phase, "review");
+});
+test("a queued mail for another address cannot be processed through a workflow", async () => {
+  const h = setup(),
+    p = (await h.prepare("newsletter_subscribe", subscribe)).body;
+  h.data.aioCustomerWorkflows[p.id].otpQueueId = "other-job";
+  h.data.emailQueue = {
+    "other-job": {
+      recipient: "other@example.test",
+      status: "queued",
+      nextAttemptAt: 0,
+    },
+  };
+  let calls = 0;
+  h.mocks["@/lib/server-mail"].retryQueuedEmail = async () => {
+    calls++;
+  };
+  assert.equal(
+    (await h.action({ mode: "delivery-status", id: p.id, token: p.token }))
+      .status,
+    403,
+  );
+  assert.equal(calls, 0);
+});
+test("malformed action requests return a validation error, not a server failure", async () => {
+  const h = setup();
+  for (const body of ["{", "null", "[]", "{}"]) {
+    const r = await h
+      .load(route)
+      .POST(
+        new Request("https://example.test/api/aio/customer-actions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+        }),
+      );
+    assert.equal(r.status, 400);
+  }
+});
