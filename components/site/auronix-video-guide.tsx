@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { CSSProperties, KeyboardEvent } from "react";
 import {
   ArrowUpRight,
@@ -22,7 +22,14 @@ import {
 } from "@/lib/auronix-video-guide";
 
 type MobileVideo = HTMLVideoElement & { webkitEnterFullscreen?: () => void };
-export function AuronixVideoGuide() {
+import "./video-guide.css";
+type VideoGuideProps = {
+  src?: string; title?: string; poster?: string; initialDuration?: number;
+  chapters?: ReadonlyArray<{start: number; title: string}>;
+  captionSrc?: string | null; chapterTrackSrc?: string | null; note?: string;
+};
+export function AuronixVideoGuide({src = AURONIX_OVERVIEW_VIDEO, title = "The Auronix overview", poster = "/guides/auronix-overview.jpg", initialDuration = 120, chapters = OVERVIEW_CHAPTERS, captionSrc = "/guides/auronix-overview.en.vtt", chapterTrackSrc = "/guides/auronix-overview.chapters.vtt", note = "Some views in the overview are illustrative."}: VideoGuideProps) {
+  const id = useId();
   const video = useRef<MobileVideo>(null),
     screen = useRef<HTMLDivElement>(null),
     pendingSeek = useRef<number | null>(null);
@@ -33,11 +40,11 @@ export function AuronixVideoGuide() {
     [waiting, setWaiting] = useState(false),
     [ended, setEnded] = useState(false);
   const [time, setTime] = useState(0),
-    [duration, setDuration] = useState(120),
+    [duration, setDuration] = useState(initialDuration),
     [buffered, setBuffered] = useState(0);
   const [volume, setVolume] = useState(1),
     [muted, setMuted] = useState(false),
-    [captions, setCaptions] = useState(true),
+    [captions, setCaptions] = useState(Boolean(captionSrc)),
     [rate, setRate] = useState(1);
   const [fullscreen, setFullscreen] = useState(false),
     [canFullscreen, setCanFullscreen] = useState(false);
@@ -66,7 +73,7 @@ export function AuronixVideoGuide() {
     const current = video.current?.currentTime || 0;
     setTime(current);
     setActive(
-      OVERVIEW_CHAPTERS.reduce(
+      chapters.reduce(
         (index, chapter, i) => (current >= chapter.start ? i : index),
         0,
       ),
@@ -149,7 +156,7 @@ export function AuronixVideoGuide() {
     if (key === "arrowright") seek(time + 10);
     if (key === "m" && video.current)
       video.current.muted = !video.current.muted;
-    if (key === "c") {
+    if (key === "c" && captionSrc) {
       syncCaptions(!captions);
       setCaptions(!captions);
     }
@@ -159,24 +166,24 @@ export function AuronixVideoGuide() {
   return (
     <section
       className="av-guide-player"
-      aria-labelledby="overview-player-title"
+      aria-labelledby={`${id}-title`}
     >
       <div className="av-guide-player-heading">
         <div>
           <Clapperboard size={17} />
-          <h2 id="overview-player-title">The Auronix overview</h2>
+          <h2 id={`${id}-title`}>{title}</h2>
         </div>
         <span>
-          02:00 <i /> English captions
+          {videoTimestamp(initialDuration)} <i /> {captionSrc ? "English captions" : "Captions included"}
         </span>
       </div>
-      <div className="av-guide-player-grid">
+      <div className={`av-guide-player-grid${chapters.length ? "" : " av-guide-player-solo"}`}>
         <div
           className="av-guide-screen"
           ref={screen}
           tabIndex={0}
           onKeyDown={shortcuts}
-          aria-label="Video player. Space to play, arrows to seek, M to mute, C for captions, F for fullscreen."
+          aria-label="Video player. Space to play, arrows to seek, M to mute, F for fullscreen."
         >
           <div className="av-video-stage">
             <video
@@ -184,9 +191,9 @@ export function AuronixVideoGuide() {
               controls={!enhanced}
               playsInline
               preload="metadata"
-              poster="/guides/auronix-overview.jpg"
-              aria-label="Auronix Commerce and AIO video overview"
-              aria-describedby="overview-video-description"
+              poster={poster}
+              aria-label={title}
+              aria-describedby={`${id}-description`}
               onClick={enhanced ? togglePlayback : undefined}
               onPlay={() => {
                 setPlaying(true);
@@ -242,51 +249,12 @@ export function AuronixVideoGuide() {
                 }
               }}
             >
-              <source src={AURONIX_OVERVIEW_VIDEO} type="video/mp4" />
-              <track
-                kind="captions"
-                src="/guides/auronix-overview.en.vtt"
-                srcLang="en"
-                label="English"
-                default
-                onLoad={() => syncCaptions(captions)}
-              />
-              <track
-                kind="chapters"
-                src="/guides/auronix-overview.chapters.vtt"
-                srcLang="en"
-                label="Chapters"
-              />
+              <source src={src} />
+              {captionSrc && <track kind="captions" src={captionSrc} srcLang="en" label="English" default onLoad={() => syncCaptions(captions)} />}
+              {chapterTrackSrc && <track kind="chapters" src={chapterTrackSrc} srcLang="en" label="Chapters" />}
               Your browser cannot play this video. Use the direct video link
               below.
             </video>
-            {enhanced && !playing && !waiting && (
-              <button
-                type="button"
-                className="av-video-big-play"
-                onClick={togglePlayback}
-                aria-label={ended ? "Replay video" : "Play video"}
-              >
-                {ended ? (
-                  <RotateCcw size={26} />
-                ) : (
-                  <Play size={28} fill="currentColor" />
-                )}
-                <span>
-                  {ended
-                    ? "Watch again"
-                    : time > 0
-                      ? "Continue watching"
-                      : "Watch the film"}
-                </span>
-              </button>
-            )}
-            {enhanced && waiting && (
-              <div className="av-video-buffering" role="status">
-                <span />
-                Loading video
-              </div>
-            )}
           </div>
           {enhanced && (
             <div
@@ -306,7 +274,7 @@ export function AuronixVideoGuide() {
                 <div className="av-video-rail" aria-hidden="true">
                   <span />
                   <i />
-                  {OVERVIEW_CHAPTERS.slice(1).map((chapter) => (
+                  {chapters.slice(1).map((chapter) => (
                     <b
                       key={chapter.start}
                       style={{ left: `${(chapter.start / duration) * 100}%` }}
@@ -406,7 +374,7 @@ export function AuronixVideoGuide() {
                       }}
                     />
                   </div>
-                  <button
+                  {captionSrc && <button
                     type="button"
                     className={captions ? "is-active" : ""}
                     onClick={() => {
@@ -418,7 +386,7 @@ export function AuronixVideoGuide() {
                     title="Captions (C)"
                   >
                     <Captions size={19} />
-                  </button>
+                  </button>}
                   <label className="av-video-speed">
                     <span className="sr-only">Playback speed</span>
                     <select
@@ -460,18 +428,18 @@ export function AuronixVideoGuide() {
           )}
           <div className="av-guide-playing" aria-live="polite">
             <span className={playing ? "is-playing" : ""} />
-            {active >= 0
-              ? `${ended ? "Finished" : playing ? "Playing" : "Paused"} · ${OVERVIEW_CHAPTERS[active].title}`
-              : "A quick introduction to commerce, AIO, and your next step."}
+            {waiting ? "Loading video…" : active >= 0 && chapters[active]
+              ? `${ended ? "Finished" : playing ? "Playing" : "Paused"} · ${chapters[active].title}`
+              : `${playing ? "Playing" : "Press play to watch"} · ${title}`}
           </div>
         </div>
-        <nav className="av-guide-chapters" aria-label="Video chapters">
+        {chapters.length > 0 && <nav className="av-guide-chapters" aria-label="Video chapters">
           <div>
             <span>IN THIS VIDEO</span>
             <p>Jump to what matters.</p>
           </div>
           <ol>
-            {OVERVIEW_CHAPTERS.map((chapter, index) => (
+            {chapters.map((chapter, index) => (
               <li key={chapter.start}>
                 <button
                   type="button"
@@ -488,15 +456,12 @@ export function AuronixVideoGuide() {
               </li>
             ))}
           </ol>
-        </nav>
+        </nav>}
       </div>
       <div className="av-guide-player-footer">
-        <p id="overview-video-description">
-          Use the player controls for captions, speed, volume, and fullscreen.
-          Some views in the overview are illustrative.
-        </p>
+        <p id={`${id}-description`}>{note}</p>
         <a
-          href={AURONIX_OVERVIEW_VIDEO}
+          href={src}
           target="_blank"
           rel="noopener noreferrer"
         >

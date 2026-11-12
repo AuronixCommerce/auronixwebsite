@@ -1,4 +1,5 @@
 'use client';
+import { SupplierVideoGuide } from '@/components/site/supplier-video-guide';
 import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
@@ -162,6 +163,7 @@ export default function BecomeSupplierPage() {
       />
 
       <Section className="border-t border-border">
+        <SupplierVideoGuide />
         <div className="ac-form-layout ac-supplier-form-layout"><aside className="ac-supplier-guide"><span className="ac-eyebrow">Supplier partnership</span><SupplierJourney current={1}/></aside>
           <Reveal>
             <form onSubmit={handleSubmit} className="ac-form-panel space-y-6"><ProgressIndicator value={[form.companyName,form.contactName,form.email,form.phone,form.categories,form.consent].filter(Boolean).length/6*100} label="Required information"/>
