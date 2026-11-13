@@ -473,3 +473,23 @@ test("AIO omits conversation context when the customer has not consented", async
     undefined,
   );
 });
+test("XLSX catalogs load real workbook data and missing fields remain detectable", async () => {
+  const excelModule = await import("exceljs"),
+    ExcelJS = excelModule.default || excelModule;
+  const source = new ExcelJS.Workbook(),
+    sheet = source.addWorksheet("Products");
+  sheet.addRow(["SKU", "Name", "Price"]);
+  sheet.addRow(["001", "Example home product", 12.5]);
+  sheet.addRow(["", "Missing identifier", null]);
+  const loaded = new ExcelJS.Workbook();
+  await loaded.xlsx.load(await source.xlsx.writeBuffer());
+  const rows = [];
+  loaded
+    .getWorksheet("Products")
+    .eachRow((row) => rows.push([1, 2, 3].map((i) => row.getCell(i).text)));
+  assert.equal(rows[1][0], "001");
+  assert.equal(rows[1][2], "12.5");
+  const model = setup().load("lib/partner/model.ts");
+  assert.equal(model.catalogIssues(rows[0], rows[1]).length, 0);
+  assert.equal(model.catalogIssues(rows[0], rows[2]).length, 2);
+});

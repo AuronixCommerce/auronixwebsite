@@ -50,7 +50,8 @@ export function CatalogPreview({
             },
           ];
         else {
-          const ExcelJS = await import("exceljs");
+          const excelModule = await import("exceljs");
+          const ExcelJS = excelModule.default || excelModule;
           const workbook = new ExcelJS.Workbook();
           await workbook.xlsx.load(await file.arrayBuffer());
           sources = workbook.worksheets.map((ws) => {
