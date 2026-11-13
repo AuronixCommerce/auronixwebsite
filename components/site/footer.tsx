@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { onValue, ref } from "firebase/database";
 import { db } from "@/lib/firebase";
-import { SHOP_URL } from "@/lib/constants";
+import { SHOP_URL, AMAZON_STORE_URL } from "@/lib/constants";
 
 type PublicCompanySettings = {
   companyName?: string;
@@ -307,13 +307,13 @@ export function Footer() {
 
             <nav className="mt-4 space-y-3 text-sm text-foreground-muted">
               <a
-                href={SHOP_URL}
+                href={AMAZON_STORE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 font-semibold text-accent hover:text-accent/80"
               >
                 <ShoppingBag className="h-4 w-4" />
-                Amazon Product Shop
+                AuronixDirect on Amazon
                 <ArrowUpRight className="h-3.5 w-3.5" />
               </a>
 

@@ -1,6 +1,7 @@
 "use client";
 import { AuronixMark } from "@/components/site/auronix-mark";
 import Link from "next/link";
+import { AMAZON_STORE_URL } from "@/lib/constants";
 import {
   Dialog,
   DialogClose,
@@ -38,7 +39,7 @@ export function MobileMenu({
             <Link href="/" onClick={onClose}>Home <ArrowRight size={18} /></Link>
             <Link href="/aio" onClick={onClose}>AIO 2 <ArrowRight size={18}/></Link>
             <Link href="/solutions" onClick={onClose}>Solutions <ArrowRight size={18} /></Link>
-            <a href="https://shop.auronixcommerce.com/" onClick={onClose}>Affiliate Shop <ArrowRight size={18} /></a>
+            <a href={AMAZON_STORE_URL} onClick={onClose} target="_blank" rel="noopener noreferrer" className="ax-amazon-store">AuronixDirect on Amazon <ArrowRight size={18} /></a>
             <Link href="/our-process" onClick={onClose}>Our process <ArrowRight size={18} /></Link>
             <Link href="/contact" onClick={onClose}>Contact <ArrowRight size={18} /></Link>
           </div>

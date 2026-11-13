@@ -1,3 +1,4 @@
+export const AMAZON_STORE_URL = "https://amazon.com/shops/AuronixDirect";
 export const SHOP_URL = "https://shop.auronixcommerce.com";
 
 export const NAV_LINKS = [
