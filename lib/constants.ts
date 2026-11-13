@@ -381,6 +381,7 @@ export const SELLER_STATUSES = [
 ] as const;
 
 export const ADMIN_NAV = [
+  { label: "AIO API Developers", href: "/admin/developers", icon: "KeyRound" },
   { label: "Partner Operations", href: "/admin/operations", icon: "BriefcaseBusiness" },
   { label: "Overview", href: "/admin", icon: "LayoutDashboard" },
   { label: "Deal Rooms", href: "/admin/deal-room", icon: "BriefcaseBusiness" },

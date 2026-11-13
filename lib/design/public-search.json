@@ -30,5 +30,6 @@
   "/guides": "Guide Library: video tutorials and written guides for suppliers, accounts, applications and AIO.",
   "/supplier/track": "Supplier Workspace: verify email, resume saved drafts, track review status, requested documents, notifications, replies and calls.",
   "/partnership-call": "Book a Partnership Call: choose published available times, verify email, confirm and manage your booking.",
-  "/notifications": "Notification Center: application updates, document requests, partnership calls and support replies for your verified email."
+  "/notifications": "Notification Center: application updates, document requests, partnership calls and support replies for your verified email.",
+  "/aio/developers": "AIO API for developers. Create a developer account, verify your email, apply for admin-reviewed access, create API keys, request prepaid credits, and track token usage. API reference, cURL, JavaScript, Python, models, pricing, billing and developer console."
 }

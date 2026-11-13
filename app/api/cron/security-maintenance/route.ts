@@ -30,6 +30,10 @@ export async function GET(request: Request) {
     const [customerFlows,customerRates]=await Promise.all([adminDb.ref('aioCustomerWorkflows').get(),adminDb.ref('aioActionEmailRates').get()]);
     for(const [id,flow] of Object.entries(object(customerFlows.val())))if(Number(flow.expiresAt || 0)<now){updates[`aioCustomerWorkflows/${id}`]=null;removed.customerActionSessions=(removed.customerActionSessions || 0)+1;}
     for(const [id,rate] of Object.entries(object(customerRates.val())))if(Number(rate.expiresAt || 0)<now)updates[`aioActionEmailRates/${id}`]=null;
+    // Per-record transactions protect a renewed claim from a cleanup race.
+    const developerClaims = (await adminDb.ref('aioDeveloperRequestClaims').orderByChild('expiresAt').endAt(now).limitToFirst(500).get()).val() || {};
+    const claimRemovals = await Promise.all(Object.keys(developerClaims).map(id => adminDb.ref(`aioDeveloperRequestClaims/${id}`).transaction(v => v && v.expiresAt <= now ? null : undefined)));
+    removed.developerRequestClaims = claimRemovals.filter(r => r.committed).length;
     if (Object.keys(updates).length) await adminDb.ref().update(updates);
 
     const backupNodes = ['newsletterSubscribers', 'newsletterCampaigns', 'sellerApplications', 'supplierApplications', 'users', 'site', 'legal', 'faqs', 'blogPosts', 'careers'];

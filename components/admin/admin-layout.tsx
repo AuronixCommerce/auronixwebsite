@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { ADMIN_NAV } from "@/lib/constants";
 import { AuronixMark } from "@/components/site/auronix-mark";
 import {
+  KeyRound,
   LayoutDashboard,
   UserCheck,
   Package,
@@ -42,6 +43,7 @@ import {
 } from "lucide-react";
 
 const ICON_MAP: Record<string, any> = {
+  KeyRound,
   LayoutDashboard,
   UserCheck,
   Package,

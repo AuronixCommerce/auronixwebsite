@@ -1,6 +1,7 @@
 import { MaintenanceRefresh } from '@/components/site/maintenance-refresh';
 import './globals.css';
 import './partner-platform.css';
+import './developer-platform.css';
 import './mobile-responsive.css';
 import './interface.css';
 import './support-interface.css';

@@ -239,6 +239,7 @@ export function Footer() {
 
             <nav className="mt-4 space-y-3 text-sm text-foreground-muted">
               <Link href="/aio">Introducing AIO 2</Link>
+              <Link href="/aio/developers">AIO API for Developers</Link>
               <Link href="/about" className="block hover:text-foreground">
                 About
               </Link>

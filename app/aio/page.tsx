@@ -33,6 +33,7 @@ export default function AioPage() {
         <div>
           <Link href="/aio/chat" className="ax-btn">Open full-page chat <ArrowRight size={16}/></Link>
           <AioTryButton>Open popup</AioTryButton>
+          <Link href="/aio/developers" className="ax-btn ax-btn-secondary">Build with the AIO API <ArrowRight size={16}/></Link>
           <Link href="/guide" className="ax-text-link">Watch the video guide <ArrowRight size={16}/></Link>
           <a href="#aio-modes" className="ax-text-link">
             Explore the modes <ArrowRight size={16} />
