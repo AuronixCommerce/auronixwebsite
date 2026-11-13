@@ -1,16 +1,53 @@
 {
   "rules": {
-    "aioDeveloperAccounts": { ".read": false, ".write": false },
-    "aioDeveloperBilling": { ".read": false, ".write": false },
-    "aioDeveloperKeys": { ".read": false, ".write": false },
-    "aioDeveloperKeyIndex": { ".read": false, ".write": false },
-    "aioDeveloperUsage": { ".read": false, ".write": false },
-    "aioDeveloperInvoices": { ".read": false, ".write": false },
-    "aioDeveloperInvoiceQueue": { ".read": false, ".write": false },
-    "aioDeveloperRateLimits": { ".read": false, ".write": false },
-    "aioDeveloperRequestClaims": { ".read": false, ".write": false, ".indexOn": ["expiresAt"] },
+    "aioDeveloperAccounts": {
+      ".read": false,
+      ".write": false
+    },
+    "aioDeveloperBilling": {
+      ".read": false,
+      ".write": false
+    },
+    "aioDeveloperKeys": {
+      ".read": false,
+      ".write": false
+    },
+    "aioDeveloperKeyIndex": {
+      ".read": false,
+      ".write": false
+    },
+    "aioDeveloperUsage": {
+      ".read": false,
+      ".write": false
+    },
+    "aioDeveloperInvoices": {
+      ".read": false,
+      ".write": false
+    },
+    "aioDeveloperInvoiceQueue": {
+      ".read": false,
+      ".write": false
+    },
+    "aioDeveloperRateLimits": {
+      ".read": false,
+      ".write": false
+    },
+    "aioDeveloperRequestClaims": {
+      ".read": false,
+      ".write": false,
+      ".indexOn": [
+        "expiresAt"
+      ]
+    },
     "settings": {
-      "aioDeveloperApi": { ".read": false, ".write": false }
+      "aioDeveloperApi": {
+        ".read": false,
+        ".write": false
+      }
+    },
+    "aioDeveloperPaymentReferences": {
+      ".read": false,
+      ".write": false
     }
   }
 }

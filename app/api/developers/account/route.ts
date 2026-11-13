@@ -15,7 +15,16 @@ import {
   wallet,
 } from "@/lib/developers/server";
 import { protectPublicRequest } from "@/lib/server-protection";
-import { pricingReady } from "@/lib/developers/model";
+import {
+  submitPayment,
+  cancelInvoice,
+  notifyPaymentReview,
+} from "@/lib/developers/payments";
+import {
+  API_TERMS_VERSION,
+  MIN_TOPUP_CREDITS,
+  pricingReady,
+} from "@/lib/developers/model";
 export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   try {
@@ -106,6 +115,22 @@ export async function POST(request: Request) {
       });
     }
     await identity(request);
+    if (b.action === "accept-terms") {
+      await account(u.uid);
+      if (b.accepted !== true)
+        throw new DeveloperError("Accept the API Terms to continue.");
+      await adminDb.ref(`aioDeveloperAccounts/${u.uid}`).update({
+        termsVersion: API_TERMS_VERSION,
+        termsAcceptedAt: Date.now(),
+      });
+      return json({ message: "Current API Terms accepted." });
+    }
+    if (b.action === "submit-payment")
+      return json(await submitPayment(u.uid, b.invoiceId, b));
+    if (b.action === "cancel-invoice") {
+      await cancelInvoice(u.uid, b.invoiceId);
+      return json({ message: "Unpaid request cancelled." });
+    }
     if (b.action === "apply") {
       try {
         await protectPublicRequest(request, "developer-application", b, {
@@ -151,7 +176,7 @@ export async function POST(request: Request) {
                 status: "pending",
                 createdAt: Date.now(),
                 termsAcceptedAt: Date.now(),
-                termsVersion: "2026-11-13",
+                termsVersion: API_TERMS_VERSION,
               },
         );
       if (!result.committed)
@@ -175,12 +200,20 @@ export async function POST(request: Request) {
         );
       if (
         !Number.isSafeInteger(b.credits) ||
-        b.credits < 1 ||
+        b.credits < MIN_TOPUP_CREDITS ||
         b.credits > 100_000
       )
         throw new DeveloperError(
-          "Request between 1 and 100,000 whole credits.",
+          "Request between 5 and 100,000 whole credits.",
         );
+      if (b.termsAccepted !== true)
+        throw new DeveloperError(
+          "Accept the API billing terms before requesting credits.",
+        );
+      await adminDb.ref(`aioDeveloperAccounts/${u.uid}`).update({
+        termsVersion: API_TERMS_VERSION,
+        termsAcceptedAt: Date.now(),
+      });
       const invoice = adminDb.ref(`aioDeveloperInvoices/${u.uid}`).push(),
         now = Date.now();
       const value = {
@@ -191,6 +224,9 @@ export async function POST(request: Request) {
         usdCents: b.credits * p.usdCentsPerCredit,
         pricePerCredit: p.usdCentsPerCredit,
         status: "requested",
+        version: 1,
+        termsVersion: API_TERMS_VERSION,
+        termsAcceptedAt: now,
         createdAt: now,
       };
       // Owner copy and admin queue are one atomic write.
@@ -198,6 +234,7 @@ export async function POST(request: Request) {
         [`aioDeveloperInvoices/${u.uid}/${invoice.key}`]: value,
         [`aioDeveloperInvoiceQueue/${invoice.key}`]: value,
       });
+      await notifyPaymentReview(value, "New credit purchase request");
       return json({
         message:
           "Invoice requested. The team will arrange payment; credits are added only after payment is verified.",

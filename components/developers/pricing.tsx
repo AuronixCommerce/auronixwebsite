@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   credits,
+  CREDIT_UNITS,
   DEVELOPER_MODELS,
   pricingReady,
   type ApiPricing,
@@ -38,20 +40,41 @@ export function DeveloperPricing() {
             {ready ? (
               <div className="dev-rate">
                 <span>
-                  {credits(pricing.rates[m.id].input)} credits{" "}
-                  <small>/ 1K input tokens</small>
+                  <strong>
+                    $
+                    {(
+                      ((pricing.rates[m.id].input / CREDIT_UNITS) *
+                        1000 *
+                        pricing.usdCentsPerCredit) /
+                      100
+                    ).toFixed(2)}
+                  </strong>{" "}
+                  <small>/ 1M input tokens</small>
                 </span>
                 <span>
-                  {credits(pricing.rates[m.id].output)} credits{" "}
-                  <small>/ 1K output tokens</small>
+                  <strong>
+                    $
+                    {(
+                      ((pricing.rates[m.id].output / CREDIT_UNITS) *
+                        1000 *
+                        pricing.usdCentsPerCredit) /
+                      100
+                    ).toFixed(2)}
+                  </strong>{" "}
+                  <small>/ 1M output tokens</small>
                 </span>
+                <small>
+                  {credits(pricing.rates[m.id].input)} /{" "}
+                  {credits(pricing.rates[m.id].output)} credits per 1K input /
+                  output tokens.
+                </small>
               </div>
             ) : (
               <span className="dev-badge">
                 {error
                   ? "Rates unavailable"
                   : pricing
-                    ? "Rates awaiting publication"
+                    ? "API temporarily paused"
                     : "Loading rates…"}
               </span>
             )}
@@ -61,9 +84,12 @@ export function DeveloperPricing() {
       <p className="dev-muted">
         {error ||
           (ready
-            ? `1 credit = $${(pricing.usdCentsPerCredit / 100).toFixed(2)} USD. Prepaid credits, shared across your keys. Invoice payments are verified by the team before credits are added.`
-            : "Applications can be reviewed before launch. API requests and credit purchases remain paused until the team publishes pricing.")}
+            ? `1 credit = $${(pricing.usdCentsPerCredit / 100).toFixed(2)} USD. Minimum top-up: 5 credits. All keys and playground tests share your prepaid wallet. Payment instructions, transfer reference submission, and admin approval are handled in Billing.`
+            : "The team controls availability and prices. Existing balances remain in your wallet during a pause.")}
       </p>
+      <Link className="dev-text-link" href="/aio/developers/terms">
+        Read API Terms, payments &amp; refund policy
+      </Link>
     </>
   );
 }

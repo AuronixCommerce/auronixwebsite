@@ -10,7 +10,9 @@ import {
   credits,
   DEVELOPER_MODELS,
 } from "@/lib/developers/model";
-import { developerFetch, UsageTable } from "./console";
+import { UsageTable } from "./console";
+import { developerFetch } from "./client";
+import { AdminInvoiceReview } from "./invoice-payments";
 const date = (n: number) => new Date(n).toLocaleString();
 export function AdminDevelopers() {
   const [data, setData] = useState<any>(null),
@@ -327,6 +329,22 @@ export function AdminDevelopers() {
                           </button>
                         </div>
                       )}
+                      {invoice && (
+                        <AdminInvoiceReview
+                          key={invoice.id + invoice.version}
+                          invoice={invoice}
+                          uid={selected.account.uid}
+                          busy={busy}
+                          onReview={(body) =>
+                            run(async () => {
+                              const d = await developerFetch("", body, true);
+                              await open(selected.account.uid, d.invoice);
+                              await load();
+                              setNotice(d.message);
+                            })
+                          }
+                        />
+                      )}
                       <form
                         className="dev-form"
                         key={selected.account.uid + (invoice?.id || "")}
@@ -346,6 +364,11 @@ export function AdminDevelopers() {
                                 reason: f.get("reason"),
                                 paymentVerified: f.get("verified") === "on",
                                 invoiceId: invoice?.id || "",
+                                receivedUsdCents: invoice
+                                  ? Math.round(
+                                      Number(f.get("receivedUsd")) * 100,
+                                    )
+                                  : undefined,
                               },
                               true,
                             );
@@ -376,10 +399,36 @@ export function AdminDevelopers() {
                               name="reference"
                               maxLength={160}
                               required
-                              placeholder="Invoice or payment receipt ID"
+                              placeholder="Verified bank / payment receipt ID"
+                              defaultValue={invoice?.approval?.reference || ""}
                             />
                           </label>
                         </div>
+                        {invoice && (
+                          <label>
+                            Actual USD received
+                            <input
+                              name="receivedUsd"
+                              type="number"
+                              min={0.01}
+                              step={0.01}
+                              required
+                              placeholder={(invoice.usdCents / 100).toFixed(2)}
+                              defaultValue={
+                                invoice.approval
+                                  ? (
+                                      invoice.approval.receivedUsdCents / 100
+                                    ).toFixed(2)
+                                  : ""
+                              }
+                            />
+                            <span className="dev-fine">
+                              Independently verify the payment. The server
+                              requires ${(invoice.usdCents / 100).toFixed(2)}{" "}
+                              USD to approve this quote.
+                            </span>
+                          </label>
+                        )}
                         <label>
                           Reason / verification record
                           <textarea
@@ -401,10 +450,17 @@ export function AdminDevelopers() {
                         <button
                           className="dev-primary"
                           disabled={
-                            busy || selected.account.status !== "approved"
+                            busy ||
+                            selected.account.status !== "approved" ||
+                            (invoice &&
+                              !["payment_submitted", "approving"].includes(
+                                invoice.status,
+                              ))
                           }
                         >
-                          Record verified credit grant
+                          {invoice
+                            ? "Approve payment & add credits"
+                            : "Record verified credit grant"}
                         </button>
                       </form>
                       <h3>Recent credit additions</h3>
@@ -435,9 +491,9 @@ export function AdminDevelopers() {
               <section className="dev-card">
                 <h2>Credit purchase requests</h2>
                 <p>
-                  Manual invoice billing is active. Card checkout is not
-                  connected. Contact the developer to arrange payment, then
-                  verify the received amount before granting credits.
+                  Send actual payment instructions, review the customer’s
+                  transfer reference, then verify the received amount and
+                  approve credits. A customer claim alone never funds a wallet.
                 </p>
                 <div className="dev-table-wrap">
                   <table>
@@ -504,7 +560,7 @@ export function AdminDevelopers() {
             )}
             {tab === "pricing" && (
               <section className="dev-card">
-                <span className="dev-kicker">PUBLISH BEFORE ENABLING</span>
+                <span className="dev-kicker">MANAGE LAUNCH RATES</span>
                 <h2>Pricing &amp; request limits</h2>
                 <p>
                   Set your selling rates in credits per 1,000 provider tokens.

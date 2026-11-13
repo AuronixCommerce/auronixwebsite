@@ -1,4 +1,5 @@
 'use client';
+import { API_PRIVACY_SUMMARY } from "@/lib/developers/terms";
 
 import { DownloadPdfButton } from '@/components/documents/download-pdf-button';
 import { useEffect, useState } from 'react';
@@ -53,7 +54,24 @@ export function LegalPage({ slug, title, eyebrow, description }: LegalPageProps)
     };
   }, [mobileMenuOpen]);
 
-  const sections = content?.sections || [];
+  const sections = [
+    ...(content?.sections || []),
+    ...(["terms", "privacy"].includes(slug)
+      ? [
+          {
+            heading:
+              slug === "privacy"
+                ? "AIO developer accounts, API and payment records"
+                : "AIO API, prepaid credits and manual payment approval",
+            body:
+              slug === "privacy"
+                ? API_PRIVACY_SUMMARY +
+                  "\n\nFull API privacy details: https://auronixcommerce.com/aio/developers/terms"
+                : "AIO API use is subject to the service-specific API Terms: https://auronixcommerce.com/aio/developers/terms. Developer access requires email verification and admin approval. Credits are prepaid; customers request a quote, receive payment instructions, submit a transfer reference, and wait for independent admin payment approval before credits are added. Live playground tests are charged at published API rates. The API Terms describe pricing, billing, refunds, availability, key security and privacy.",
+          },
+        ]
+      : []),
+  ];
   const lastUpdated = content?.lastUpdated ? new Date(content.lastUpdated).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : null;
 
   const openSection = (index: number) => {

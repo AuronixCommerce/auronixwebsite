@@ -27,6 +27,7 @@ export default function Page() {
           <div>
             <a href="#models">Models &amp; pricing</a>
             <a href="#api-reference">API reference</a>
+            <Link href="/aio/developers/terms">API Terms</Link>
             <Link href="/aio/developers/console">
               Console <ArrowUpRight size={15} />
             </Link>
@@ -49,6 +50,12 @@ export default function Page() {
             <div className="dev-actions">
               <Link className="dev-primary" href="/aio/developers/console">
                 Apply for API access <ArrowRight size={17} />
+              </Link>
+              <Link
+                className="dev-secondary"
+                href="/aio/developers/console?tab=playground"
+              >
+                Test text API <ArrowUpRight size={16} />
               </Link>
               <a href="#api-reference" className="dev-secondary">
                 Read the docs <ArrowUpRight size={16} />

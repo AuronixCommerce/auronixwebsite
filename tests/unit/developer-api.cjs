@@ -9,6 +9,7 @@ function setup(extra = {}) {
         name: "Alice",
         email: "alice@example.test",
         status: "approved",
+        termsVersion: "2026-11-13-manual-v1",
       },
       bob: { uid: "bob", status: "pending" },
     },
@@ -381,6 +382,7 @@ test("invoice requests lock the server quote and cannot grant credits from a cus
   const h = setup();
   const r = await h.call(ACCOUNT, {
     action: "invoice",
+    termsAccepted: true,
     credits: 10,
     usdCents: 1,
     status: "credited",
@@ -396,7 +398,11 @@ test("invoice requests lock the server quote and cannot grant credits from a cus
 });
 test("verified invoice grants are idempotent and require explicit admin verification", async () => {
   const h = setup(),
-    requested = await h.call(ACCOUNT, { action: "invoice", credits: 10 }),
+    requested = await h.call(ACCOUNT, {
+      action: "invoice",
+      credits: 10,
+      termsAccepted: true,
+    }),
     id = requested.body.invoice.id;
   const grant = {
     action: "credit",
@@ -405,7 +411,25 @@ test("verified invoice grants are idempotent and require explicit admin verifica
     invoiceId: id,
     reference: "receipt10",
     reason: "Payment verified",
+    receivedUsdCents: 1000,
   };
+  await h.call(ADMIN, {
+    action: "invoice-review",
+    uid: "alice",
+    invoiceId: id,
+    reviewAction: "send-instructions",
+    instructions:
+      "Verified test destination for USD transfer. Include request ID.",
+    note: "Use these payment instructions.",
+  });
+  await h.call(ACCOUNT, {
+    action: "submit-payment",
+    invoiceId: id,
+    reference: "receipt10",
+    method: "Test transfer",
+    confirmed: true,
+    termsAccepted: true,
+  });
   assert.equal((await h.call(ADMIN, grant)).status, 400);
   assert.equal(
     (await h.call(ADMIN, { ...grant, paymentVerified: true })).status,
@@ -501,4 +525,263 @@ test("settled history stays outside the hot wallet while duplicate protection re
     ).status,
     409,
   );
+});
+const PLAYGROUND = "app/api/developers/playground/route.ts";
+async function paymentReady(h, options = {}) {
+  const requested = await h.call(ACCOUNT, {
+    action: "invoice",
+    credits: 10,
+    termsAccepted: true,
+  });
+  assert.equal(requested.status, 200);
+  const id = requested.body.invoice.id;
+  const instructions = await h.call(ADMIN, {
+    action: "invoice-review",
+    uid: "alice",
+    invoiceId: id,
+    reviewAction: "send-instructions",
+    instructions:
+      "Send the exact quoted USD amount to this verified test destination.",
+    note: "Include your request ID and submit the reference afterward.",
+  });
+  assert.equal(instructions.status, 200);
+  if (!options.noSubmit)
+    assert.equal(
+      (
+        await h.call(ACCOUNT, {
+          action: "submit-payment",
+          invoiceId: id,
+          reference: "customer-reference",
+          method: "Bank transfer",
+          confirmed: true,
+          termsAccepted: true,
+        })
+      ).status,
+      200,
+    );
+  return id;
+}
+function approve(id, changes = {}) {
+  return {
+    action: "credit",
+    uid: "alice",
+    invoiceId: id,
+    credits: 10,
+    reference: "verified-receipt",
+    reason: "Verified the received transfer in the payment account.",
+    receivedUsdCents: 1000,
+    paymentVerified: true,
+    ...changes,
+  };
+}
+test("launch pricing is usable by default and explicit admin pauses remain respected", async () => {
+  const h = setup({ settings: {} }),
+    p = await h.mod.getPricing();
+  assert.equal(p.enabled, true);
+  assert.equal(p.usdCentsPerCredit, 100);
+  assert.equal(p.rates["aio-2"].input, 500);
+  assert.equal(p.rates["aio-2-fast"].output, 1000);
+  const paused = setup();
+  paused.data.settings.aioDeveloperApi.enabled = false;
+  assert.equal((await paused.mod.getPricing()).enabled, false);
+});
+test("manual payment instructions and submitted references never create credits without approval", async () => {
+  const h = setup(),
+    id = await paymentReady(h);
+  assert.equal(
+    h.data.aioDeveloperInvoices.alice[id].status,
+    "payment_submitted",
+  );
+  assert.equal(h.data.aioDeveloperBilling, undefined);
+  assert.ok(h.mails.some((m) => m.subject?.includes(id)));
+  assert.equal(h.data.aioDeveloperInvoiceQueue[id].status, "payment_submitted");
+  h.setAdmin(false);
+  assert.equal((await h.call(ADMIN, approve(id))).status, 403);
+  assert.equal(h.data.aioDeveloperBilling, undefined);
+});
+test("invoice approval requires submitted payment and the exact received USD quote", async () => {
+  const h = setup(),
+    id = await paymentReady(h, { noSubmit: true });
+  assert.equal((await h.call(ADMIN, approve(id))).status, 409);
+  await h.call(ACCOUNT, {
+    action: "submit-payment",
+    invoiceId: id,
+    reference: "claimed-reference",
+    method: "Bank transfer",
+    confirmed: true,
+    termsAccepted: true,
+  });
+  assert.equal(
+    (await h.call(ADMIN, approve(id, { receivedUsdCents: 999 }))).status,
+    409,
+  );
+  assert.equal(
+    h.data.aioDeveloperInvoices.alice[id].status,
+    "payment_submitted",
+  );
+  assert.equal(h.data.aioDeveloperBilling, undefined);
+});
+test("retrying a successful payment approval is idempotent and server-side credit quantity wins", async () => {
+  const h = setup(),
+    id = await paymentReady(h);
+  const r = await h.call(ADMIN, approve(id, { credits: 100000 }));
+  assert.equal(r.status, 200);
+  assert.equal(h.data.aioDeveloperBilling.alice.balance, 10000000);
+  assert.equal((await h.call(ADMIN, approve(id))).status, 200);
+  assert.equal(h.data.aioDeveloperBilling.alice.balance, 10000000);
+  assert.equal(h.data.aioDeveloperInvoices.alice[id].status, "credited");
+});
+test("approval resumes after credits were recorded but invoice finalization was interrupted", async () => {
+  const h = setup(),
+    id = await paymentReady(h),
+    pay = h.load("lib/developers/payments.ts"),
+    gid = h.mod.hash("invoice:" + id);
+  h.data.aioDeveloperInvoices.alice[id].status = "approving";
+  h.data.aioDeveloperInvoices.alice[id].approval = {
+    reference: "verified-receipt",
+    receivedUsdCents: 1000,
+  };
+  await pay.recordCredit(
+    "alice",
+    gid,
+    10000000,
+    "test-admin",
+    "verified-receipt",
+    "Payment verified",
+  );
+  assert.equal((await h.call(ADMIN, approve(id))).status, 200);
+  assert.equal(h.data.aioDeveloperBilling.alice.balance, 10000000);
+  assert.equal(h.data.aioDeveloperInvoices.alice[id].status, "credited");
+});
+test("receipt references cannot fund two accounts, and a conflict leaves the new invoice reviewable", async () => {
+  const h = setup(),
+    id = await paymentReady(h),
+    pay = h.load("lib/developers/payments.ts");
+  await pay.recordCredit(
+    "bob",
+    "another-grant",
+    10000000,
+    "test-admin",
+    "verified-receipt",
+    "Other account transfer",
+  );
+  assert.equal((await h.call(ADMIN, approve(id))).status, 409);
+  assert.equal(
+    h.data.aioDeveloperInvoices.alice[id].status,
+    "payment_submitted",
+  );
+  assert.equal(h.data.aioDeveloperBilling.alice, undefined);
+});
+test("a customer cannot submit or cancel another account’s payment request", async () => {
+  const h = setup(),
+    id = await paymentReady(h, { noSubmit: true });
+  h.data.aioDeveloperAccounts.bob.status = "approved";
+  assert.equal(
+    (
+      await h.call(
+        ACCOUNT,
+        {
+          action: "submit-payment",
+          invoiceId: id,
+          reference: "not-my-payment",
+          method: "Bank transfer",
+          confirmed: true,
+          termsAccepted: true,
+        },
+        { token: "bob" },
+      )
+    ).status,
+    404,
+  );
+  assert.equal(
+    (
+      await h.call(
+        ACCOUNT,
+        { action: "cancel-invoice", invoiceId: id },
+        { token: "bob" },
+      )
+    ).status,
+    404,
+  );
+  assert.equal(
+    h.data.aioDeveloperInvoices.alice[id].status,
+    "awaiting_payment",
+  );
+});
+test("unpaid cancellation closes the request, while submitted payments require staff review", async () => {
+  const h = setup(),
+    id = await paymentReady(h, { noSubmit: true });
+  assert.equal(
+    (await h.call(ACCOUNT, { action: "cancel-invoice", invoiceId: id })).status,
+    200,
+  );
+  assert.equal((await h.call(ADMIN, approve(id))).status, 409);
+  const h2 = setup(),
+    id2 = await paymentReady(h2);
+  assert.equal(
+    (await h2.call(ACCOUNT, { action: "cancel-invoice", invoiceId: id2 }))
+      .status,
+    409,
+  );
+});
+test("new payment terms require explicit acceptance and outdated API terms block generation", async () => {
+  const h = setup();
+  assert.equal(
+    (await h.call(ACCOUNT, { action: "invoice", credits: 10 })).status,
+    400,
+  );
+  const key = await funded(h);
+  h.data.aioDeveloperAccounts.alice.termsVersion = "old";
+  assert.equal((await h.call(CHAT, input, { token: key })).status, 403);
+  assert.equal(h.calls(), 0);
+  assert.equal(
+    (await h.call(ACCOUNT, { action: "accept-terms", accepted: true })).status,
+    200,
+  );
+  assert.equal((await h.call(CHAT, input, { token: key })).status, 200);
+});
+test("console playground uses the same metered engine without minting or exposing an API key", async () => {
+  const h = setup();
+  await h.mod.grant(
+    "alice",
+    "test-funds",
+    1000000,
+    "test-admin",
+    "demo-credit",
+    "Authorized test grant",
+  );
+  const r = await h.call(PLAYGROUND, input, {
+    headers: { "idempotency-key": "playground-request-001" },
+  });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.billing.charged_units, 8000);
+  assert.equal(h.calls(), 1);
+  assert.equal(h.data.aioDeveloperKeys, undefined);
+  assert.equal(
+    Object.values(h.data.aioDeveloperUsage.alice)[0].keyId,
+    "console-playground",
+  );
+  assert.equal(
+    (
+      await h.call(PLAYGROUND, input, {
+        headers: { "idempotency-key": "playground-request-001" },
+      })
+    ).status,
+    409,
+  );
+  assert.equal(h.calls(), 1);
+});
+test("playground cannot bypass approval, wallet funding, origin checks, or refunds", async () => {
+  const h = setup();
+  assert.equal((await h.call(PLAYGROUND, input)).status, 402);
+  assert.equal((await h.call(PLAYGROUND, input, { token: "bob" })).status, 403);
+  assert.equal(
+    (await h.call(PLAYGROUND, input, { origin: "https://evil.test" })).status,
+    403,
+  );
+  assert.equal(h.calls(), 0);
+  await funded(h);
+  h.failProvider();
+  assert.equal((await h.call(PLAYGROUND, input)).status, 502);
+  assert.equal(h.data.aioDeveloperBilling.alice.balance, 1000000);
 });

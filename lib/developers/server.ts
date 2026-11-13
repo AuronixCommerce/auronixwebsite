@@ -1,7 +1,12 @@
 import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
-import { DEFAULT_API_PRICING, CREDIT_UNITS, type ApiPricing } from "./model";
+import {
+  DEFAULT_API_PRICING,
+  CREDIT_UNITS,
+  API_TERMS_VERSION,
+  type ApiPricing,
+} from "./model";
 export class DeveloperError extends Error {
   constructor(
     message: string,
@@ -142,6 +147,11 @@ export async function rateLimit(
 }
 export async function getPricing(): Promise<ApiPricing> {
   const data = (await adminDb.ref("settings/aioDeveloperApi").get()).val();
+  const unpublished =
+    !data ||
+    (Number(data.usdCentsPerCredit || 0) === 0 &&
+      Object.values<any>(data.rates || {}).every((r) => !r.input && !r.output));
+  if (unpublished) return structuredClone(DEFAULT_API_PRICING);
   return {
     ...DEFAULT_API_PRICING,
     ...(data || {}),
@@ -191,7 +201,7 @@ export async function apiIdentity(request: Request) {
       401,
       "invalid_api_key",
     );
-  await account(value.uid, true);
+  requireApiTerms(await account(value.uid, true));
   // A suspended Firebase account cannot keep using previously issued API keys.
   const user = await adminAuth.getUser(value.uid).catch(() => null);
   if (!user || user.disabled || !user.emailVerified)
@@ -457,4 +467,13 @@ export async function page(path: string, cursor = "", limit = 50) {
     items: items.slice(0, limit),
     next: items.length > limit ? items[limit - 1].id : "",
   };
+}
+
+export function requireApiTerms(profile: any) {
+  if (profile.termsVersion !== API_TERMS_VERSION)
+    throw new DeveloperError(
+      "Accept the current API Terms in your developer console before making requests.",
+      403,
+      "api_terms_required",
+    );
 }

@@ -8,7 +8,6 @@ import {
   DeveloperError,
   fail,
   getPricing,
-  grant,
   hash,
   json,
   page,
@@ -17,6 +16,12 @@ import {
   validId,
   wallet,
 } from "@/lib/developers/server";
+import {
+  updateInvoice,
+  approvePayment,
+  recordCredit,
+  invoice as getInvoice,
+} from "@/lib/developers/payments";
 import { CREDIT_UNITS, parsePricing } from "@/lib/developers/model";
 export const dynamic = "force-dynamic";
 async function admin(request: Request) {
@@ -56,11 +61,24 @@ export async function GET(request: Request) {
           .slice(0, 50),
       });
     }
+    const invoices = async (next = "") => {
+      const list = await page("aioDeveloperInvoiceQueue", next);
+      const items = await Promise.all(
+        list.items.map(async (v: any) => {
+          try {
+            return await getInvoice(v.uid, v.id);
+          } catch {
+            return null;
+          }
+        }),
+      );
+      return { ...list, items: items.filter(Boolean) };
+    };
     if (url.searchParams.get("view") === "invoices")
-      return json(await page("aioDeveloperInvoiceQueue", cursor));
+      return json(await invoices(cursor));
     return json({
       accounts: await page("aioDeveloperAccounts", cursor),
-      invoices: await page("aioDeveloperInvoiceQueue"),
+      invoices: await invoices(),
       pricing: await getPricing(),
     });
   } catch (e) {
@@ -98,6 +116,19 @@ export async function POST(request: Request) {
       await adminDb.ref(`aioDeveloperAccounts/${b.uid}`).get()
     ).val();
     if (!profile) throw new DeveloperError("Developer account not found.", 404);
+    if (b.action === "invoice-review") {
+      await writeAuditLog({
+        actorUid: actor.uid,
+        action: "aio.api.invoice." + clean(b.reviewAction, 50),
+        targetType: "developer-invoice",
+        targetId: clean(b.invoiceId, 128),
+        summary: clean(b.note, 1000),
+        request,
+      });
+      return json(
+        await updateInvoice(b.uid, b.invoiceId, b.reviewAction, b, actor.uid),
+      );
+    }
     if (b.action === "status") {
       if (!["approved", "rejected", "suspended"].includes(b.status))
         throw new DeveloperError("Choose a valid status.");
@@ -153,29 +184,21 @@ export async function POST(request: Request) {
           "Verify payment or an authorized promotional grant, then enter its reference, amount, and reason.",
         );
       const invoiceId = clean(b.invoiceId, 128);
-      let invoice: any = null;
       if (invoiceId) {
-        if (!validId(invoiceId)) throw new DeveloperError("Invalid invoice.");
-        invoice = (
-          await adminDb.ref(`aioDeveloperInvoices/${b.uid}/${invoiceId}`).get()
-        ).val();
-        if (
-          !invoice ||
-          invoice.status === "credited" ||
-          invoice.credits !== b.credits
-        )
-          throw new DeveloperError(
-            "This invoice is missing, already credited, or has a different credit amount.",
-            409,
-          );
+        const result = await approvePayment(b.uid, invoiceId, b, actor.uid);
+        await writeAuditLog({
+          actorUid: actor.uid,
+          action: "aio.api.payment-approved",
+          targetType: "developer-invoice",
+          targetId: invoiceId,
+          summary: reason,
+          metadata: { reference, uid: b.uid },
+          request,
+        }).catch(() => undefined);
+        return json(result);
       }
-      // The immutable wallet grant is the authoritative audit trail, keyed by invoice or payment reference.
-      const id = hash(
-        invoiceId
-          ? `invoice:${invoiceId}`
-          : `payment:${reference.toLowerCase()}`,
-      );
-      const balance = await grant(
+      const id = hash(`payment:${reference.toLowerCase()}`);
+      const { balance } = await recordCredit(
         b.uid,
         id,
         units,
@@ -183,13 +206,6 @@ export async function POST(request: Request) {
         reference,
         reason,
       );
-      if (invoice)
-        await adminDb.ref().update({
-          [`aioDeveloperInvoices/${b.uid}/${invoiceId}/status`]: "credited",
-          [`aioDeveloperInvoices/${b.uid}/${invoiceId}/creditedAt`]: Date.now(),
-          [`aioDeveloperInvoiceQueue/${invoiceId}/status`]: "credited",
-          [`aioDeveloperInvoiceQueue/${invoiceId}/creditedAt`]: Date.now(),
-        });
       await writeAuditLog({
         actorUid: actor.uid,
         action: "aio.api.credit",

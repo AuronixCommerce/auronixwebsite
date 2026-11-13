@@ -1,4 +1,6 @@
 export const CREDIT_UNITS = 1_000_000;
+export const API_TERMS_VERSION = "2026-11-13-manual-v1";
+export const MIN_TOPUP_CREDITS = 5;
 export const DEVELOPER_MODELS = [
   {
     id: "aio-one",
@@ -24,13 +26,13 @@ export type ApiPricing = {
   rates: Record<DeveloperModel, { input: number; output: number }>;
 };
 export const DEFAULT_API_PRICING: ApiPricing = {
-  enabled: false,
-  usdCentsPerCredit: 0,
+  enabled: true,
+  usdCentsPerCredit: 100,
   requestsPerMinute: 30,
   rates: {
-    "aio-one": { input: 0, output: 0 },
-    "aio-2": { input: 0, output: 0 },
-    "aio-2-fast": { input: 0, output: 0 },
+    "aio-one": { input: 250, output: 1000 },
+    "aio-2": { input: 500, output: 2000 },
+    "aio-2-fast": { input: 250, output: 1000 },
   },
 };
 export function credits(units: number) {

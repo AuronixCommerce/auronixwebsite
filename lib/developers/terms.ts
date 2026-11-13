@@ -1,0 +1,40 @@
+export const API_TERMS_SECTIONS = [
+  {
+    title: "Service and eligibility",
+    body: "These API Terms supplement the Auronix Commerce LLC website Terms of Service and Privacy Policy for AIO developer accounts, API keys, the playground, and prepaid credits. Create an account, verify your email, describe your use case, and obtain admin approval before live use. You must be authorized to act for any organization you register. Approval may be declined, paused, or suspended for misuse, security concerns, nonpayment, or a breach of these terms. Contact business@auronixcommerce.com for account or billing questions.",
+  },
+  {
+    title: "Models, capabilities, and appropriate use",
+    body: "AIO One, AIO 2, and AIO 2 Fast are Auronix API modes that route requests to configured upstream model providers, currently Groq. They are not a claim that Auronix trained the underlying foundation model. API v1 generates text and does not grant access to company records, customer accounts, administrative tools, or other backend actions. Outputs can be inaccurate; review them before relying on or publishing them. Do not use the API for unlawful activity, fraud, impersonation, exploitation, or attempts to evade access, billing, or safety controls. You are responsible for the data you submit and for having the right to process it.",
+  },
+  {
+    title: "Published prices and credits",
+    body: "Current rates are shown on the API page and in your console. Launch pricing is 1 credit = US$1. AIO One and AIO 2 Fast cost US$0.25 per million input tokens and US$1 per million output tokens. AIO 2 costs US$0.50 per million input tokens and US$2 per million output tokens. These launch rates apply unless an admin has published different current rates. A minimum top-up is 5 whole credits. Credits are prepaid service usage balances, not cash deposits, interest-bearing funds, or transferable currency. Credits do not currently expire. Prices can change for future requests; the rate snapshot for an accepted request and the USD quote for an existing credit request remain locked. Review the current prices before each purchase and API request.",
+  },
+  {
+    title: "Manual payment and admin approval",
+    body: "Request a credit top-up in Billing. The server records the credit quantity and USD quote. Wait for payment instructions posted by Auronix in that request before paying. Send funds only to the destination confirmed there, include the request ID, and submit the transfer reference and payment method in Billing. A payment claim, screenshot, or successful form submission does not add credits. An admin independently verifies the actual received USD amount against the locked quote before approving the wallet addition. Pay the exact quoted USD amount; arrange currency conversion or transfer fees with the team in advance. No automatic renewal, recurring debit, card checkout, or automatic credit approval is used. Never send card credentials, passwords, or email verification codes through payment notes.",
+  },
+  {
+    title: "Usage charges and live playground tests",
+    body: "All API keys and console playground requests share your account wallet, rate limits, and concurrency limits. Live playground tests incur the same charges as API requests; they are not free sample responses. A request reserves a conservative maximum cost, then charges provider-reported input and output token usage for a successful response and releases the unused reservation. Provider-reported reasoning output is included when counted by the provider. One credit contains 1,000,000 internal units; input and output charges each round up separately to the nearest unit. Failed requests are not charged. Interrupted holds expire after two minutes and are recovered on the next wallet or API transaction. A completed, settled request remains billed if your connection closes before receiving the answer. Check Usage after a timeout; the same Idempotency-Key prevents duplicate processing for 24 hours but does not replay the answer.",
+  },
+  {
+    title: "Corrections, cancellation, and refunds",
+    body: "You can cancel an unpaid request that has no submitted payment. After payment has been sent, contact the team before cancelling or paying again. Report missing credits, duplicate charges, incorrect payment allocation, or other billing errors with the request ID and transfer reference. Auronix reviews the actual payment and usage ledger and corrects verified errors. Refunds of verified, unused paid credits may be requested through support and are reviewed manually against the original payment, remaining balance, and any mandatory rights. Consumed credits are ordinarily not refundable except for a verified billing error or where required by applicable law. Promotional credits have no cash refund value. No refund or credit reversal is automatic, and these terms do not limit rights that cannot lawfully be excluded.",
+  },
+  {
+    title: "API key and account security",
+    body: "Keep API keys on your server, never in public frontend code or shared repositories. Secrets are shown once, and Auronix stores a hash rather than the reusable secret. Revoke exposed keys promptly and contact support about suspected unauthorized activity. Multiple project keys are permitted without a lifetime key limit, but they share account-level limits; creating more keys does not bypass approval, balance, rate, or concurrency controls. You are responsible for protecting your account and reviewing its usage. Auronix can revoke access or pause requests to protect the service.",
+  },
+  {
+    title: "Privacy and records",
+    body: "Auronix uses Firebase for account authentication and developer records. The current upstream model provider processes the prompt and message context to generate a reply. Do not submit passwords, verification codes, payment-card data, or sensitive personal data through the API. The Auronix usage ledger stores request IDs, model aliases, key IDs, timestamps, rate snapshots, token counts, credit charges, and request status; it does not retain prompt or response text in that ledger. Application details, terms acceptance, payment instructions, transfer references, staff review notes, credit grants, and email delivery metadata are retained for operation, support, accounting, fraud prevention, and applicable record obligations. Authorized administrators can review these records. Provider processing is also subject to the provider’s policies. Contact business@auronixcommerce.com to ask about access, correction, account closure, or deletion; required payment and security records may need to be retained.",
+  },
+  {
+    title: "Availability, changes, and contact",
+    body: "Model availability and response times depend on provider service and Auronix configuration. The API can be paused for maintenance, incidents, security, or capacity limits; no specific uptime or response-time service level is promised. Existing prepaid balances are preserved during pauses. Material changes to these API Terms require acceptance in the console before continued API use when a new version is enforced. The general website Terms and Privacy Policy remain applicable alongside these service-specific terms. For questions, payment clarification, or billing disputes, use the support contact page or business@auronixcommerce.com.",
+  },
+];
+export const API_PRIVACY_SUMMARY =
+  "AIO API accounts use Firebase authentication. Prompts and message context are sent to the configured upstream model provider, currently Groq. The Auronix usage ledger keeps request metadata, model, token counts, prices, and charges, not prompt or answer text. Manual payment records include transfer references, methods, staff notes, and credit grants. Authorized admins use them for review, support, accounting, and fraud prevention. Never send passwords, OTPs, card details, or sensitive personal data in prompts or payment notes.";

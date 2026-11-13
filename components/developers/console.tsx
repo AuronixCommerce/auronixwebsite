@@ -25,32 +25,12 @@ import {
   credits,
   DEVELOPER_MODELS,
   pricingReady,
+  API_TERMS_VERSION,
 } from "@/lib/developers/model";
 import { DeveloperReference } from "./reference";
-export async function developerFetch(path: string, body?: any, admin = false) {
-  const token = await auth.currentUser?.getIdToken();
-  if (!token) throw Error("Sign in to continue.");
-  const r = await fetch(
-    admin ? "/api/admin/developers" + path : "/api/developers/" + path,
-    {
-      method: body ? "POST" : "GET",
-      cache: "no-store",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        ...(body ? { "Content-Type": "application/json" } : {}),
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    },
-  );
-  const data = await r.json();
-  if (!r.ok)
-    throw Error(
-      typeof data.error === "string"
-        ? data.error
-        : data.error?.message || "Please retry.",
-    );
-  return data;
-}
+import { developerFetch } from "./client";
+import { DeveloperPlayground } from "./playground";
+import { InvoicePayments } from "./invoice-payments";
 const date = (n: number) => (n ? new Date(n).toLocaleString() : "—");
 export function UsageTable({ rows }: { rows: any[] }) {
   return (
@@ -112,6 +92,16 @@ export function DeveloperConsole() {
     [copied, setCopied] = useState(false),
     [turnstile, setTurnstile] = useState(""),
     [resetKey, setResetKey] = useState(0);
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("tab");
+    if (
+      requested &&
+      ["overview", "keys", "usage", "billing", "docs", "playground"].includes(
+        requested,
+      )
+    )
+      setTab(requested);
+  }, []);
   const load = useCallback(async () => {
     const uid = auth.currentUser?.uid;
     const d = await developerFetch("account");
@@ -311,8 +301,9 @@ export function DeveloperConsole() {
                 Forgot your password?
               </Link>
               <p className="dev-fine">
-                By continuing, you agree to the <Link href="/terms">Terms</Link>{" "}
-                and <Link href="/privacy">Privacy Policy</Link>.
+                By continuing, you agree to the{" "}
+                <Link href="/aio/developers/terms">API Terms</Link> and{" "}
+                <Link href="/privacy">Privacy Policy</Link>.
               </p>
             </form>
           </div>
@@ -445,9 +436,10 @@ export function DeveloperConsole() {
                   <label className="dev-checkbox">
                     <input type="checkbox" name="accepted" required />
                     <span>
-                      I agree to the <Link href="/terms">Terms</Link> and API
-                      limits, and will keep API keys on my server. I understand
-                      that AIO uses an upstream model provider.
+                      I agree to the{" "}
+                      <Link href="/aio/developers/terms">API Terms</Link> and
+                      API limits, and will keep API keys on my server. I
+                      understand that AIO uses an upstream model provider.
                     </span>
                   </label>
                   <CustomerActionSecurity
@@ -461,6 +453,37 @@ export function DeveloperConsole() {
               </section>
             ) : (
               <>
+                {data.account.termsVersion !== API_TERMS_VERSION && (
+                  <div className="dev-alert">
+                    <strong>Updated API Terms</strong>
+                    <p>
+                      Review the{" "}
+                      <Link href="/aio/developers/terms" target="_blank">
+                        API Terms and manual payment policy
+                      </Link>{" "}
+                      before continuing. Your paid balance stays unchanged.
+                    </p>
+                    <button
+                      className="dev-primary"
+                      disabled={busy}
+                      onClick={() =>
+                        void run(async () => {
+                          setNotice(
+                            (
+                              await developerFetch("account", {
+                                action: "accept-terms",
+                                accepted: true,
+                              })
+                            ).message,
+                          );
+                          await load();
+                        })
+                      }
+                    >
+                      I accept the updated API Terms
+                    </button>
+                  </div>
+                )}
                 <div className="dev-status-line">
                   <span className="dev-badge">{data.account.status}</span>
                   <p>
@@ -481,7 +504,14 @@ export function DeveloperConsole() {
                   role="group"
                   aria-label="Workspace sections"
                 >
-                  {["overview", "keys", "usage", "billing", "docs"].map((t) => (
+                  {[
+                    "overview",
+                    "playground",
+                    "keys",
+                    "usage",
+                    "billing",
+                    "docs",
+                  ].map((t) => (
                     <button
                       key={t}
                       aria-pressed={tab === t}
@@ -765,9 +795,9 @@ export function DeveloperConsole() {
                       <h2>Add prepaid credits</h2>
                       <p>
                         Request an invoice. The Auronix team will arrange
-                        payment and verify it before adding credits. Online card
-                        checkout is not connected. No payment is taken by this
-                        form.
+                        payment and send instructions in Billing. Submit your
+                        transfer reference afterward; an admin verifies payment
+                        before credits are added. No card details are collected.
                       </p>
                       <form
                         className="dev-key-form"
@@ -780,6 +810,7 @@ export function DeveloperConsole() {
                                 await developerFetch("account", {
                                   action: "invoice",
                                   credits: Number(f.get("credits")),
+                                  termsAccepted: f.get("billingTerms") === "on",
                                 })
                               ).message,
                             );
@@ -792,12 +823,22 @@ export function DeveloperConsole() {
                           <input
                             name="credits"
                             type="number"
-                            min={1}
+                            min={5}
                             max={100000}
                             step={1}
                             defaultValue={10}
                             required
                           />
+                        </label>
+                        <label className="dev-checkbox dev-billing-accept">
+                          <input type="checkbox" name="billingTerms" required />
+                          <span>
+                            I accept the{" "}
+                            <Link href="/aio/developers/terms" target="_blank">
+                              API billing terms
+                            </Link>
+                            . Payment and credits require admin approval.
+                          </span>
                         </label>
                         <button
                           className="dev-primary"
@@ -814,31 +855,18 @@ export function DeveloperConsole() {
                           pricing is published and the API is enabled.
                         </p>
                       )}
-                      <div className="dev-table-wrap">
-                        <table>
-                          <thead>
-                            <tr>
-                              <th>Requested</th>
-                              <th>Credits</th>
-                              <th>Amount (USD)</th>
-                              <th>Status</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {data.invoices.items.map((i: any) => (
-                              <tr key={i.id}>
-                                <td>{date(i.createdAt)}</td>
-                                <td>{i.credits}</td>
-                                <td>${(i.usdCents / 100).toFixed(2)}</td>
-                                <td>{i.status}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        {!data.invoices.items.length && (
-                          <p className="dev-empty">No invoices requested.</p>
-                        )}
-                      </div>
+                      <InvoicePayments
+                        invoices={data.invoices.items}
+                        busy={busy}
+                        onAction={(body) =>
+                          run(async () => {
+                            setNotice(
+                              (await developerFetch("account", body)).message,
+                            );
+                            await load();
+                          })
+                        }
+                      />
                       {data.invoices.next && (
                         <button
                           className="dev-secondary"
@@ -910,6 +938,15 @@ export function DeveloperConsole() {
                       )}
                     </section>
                   </>
+                )}
+                {tab === "playground" && (
+                  <DeveloperPlayground
+                    account={data.account}
+                    pricing={data.pricing}
+                    balance={data.wallet.balance}
+                    onRefresh={load}
+                    onUsage={() => setTab("usage")}
+                  />
                 )}
                 {tab === "docs" && <DeveloperReference />}
               </>

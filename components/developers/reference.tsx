@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import { Copy, Check } from "lucide-react";
 const samples = {
   cURL: `curl https://auronixcommerce.com/api/aio/v1/chat/completions \\\n  -H "Authorization: Bearer $AIO_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -H "Idempotency-Key: order-summary-001" \\\n  -d '{
@@ -128,6 +129,15 @@ export function DeveloperReference({ compact = false }: { compact?: boolean }) {
             </table>
           </div>
           <h3>Predictable billing</h3>
+          <p>
+            Prepaid credits use manual payment approval: request credits, wait
+            for team payment instructions, submit your transfer reference, then
+            an admin verifies the actual received payment before adding credits.
+            Live console tests are metered at the same rates.{" "}
+            <Link href="/aio/developers/terms">
+              Read the API Terms and payment policy.
+            </Link>
+          </p>
           <p>
             1 credit = 1,000,000 internal units. Input and output tokens have
             separate published rates per 1,000 tokens. A request first reserves
