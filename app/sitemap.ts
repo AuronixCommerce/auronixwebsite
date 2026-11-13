@@ -23,6 +23,8 @@ const PUBLIC_ROUTES: Array<{
   changeFrequency: Frequency;
   priority: number;
 }> = [
+  {path:'/guides',changeFrequency:'monthly',priority:0.8},
+  {path:'/partnership-call',changeFrequency:'monthly',priority:0.7},
   {path:'/guide',changeFrequency:'monthly',priority:0.8},
   {path:'/aio/chat',changeFrequency:'monthly',priority:0.8},
   {path:'/aio',changeFrequency:'monthly',priority:0.8},

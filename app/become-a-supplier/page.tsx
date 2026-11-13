@@ -1,4 +1,7 @@
 'use client';
+import { SupplierDraftTools } from '@/components/partner/draft-tools';
+import { CatalogPreview } from '@/components/partner/catalog-preview';
+import { trackInsight } from '@/components/partner/site-tools';
 import { SupplierVideoGuide } from '@/components/site/supplier-video-guide';
 import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
@@ -106,6 +109,7 @@ export default function BecomeSupplierPage() {
       if (!response.ok) throw new Error(result.error || 'Unable to submit supplier information.');
       setSubmissionId(result.submissionId || '');
       setSuccess(true);
+      trackInsight('supplier_submit');
       toast({ title: 'Submission received', description: 'We will be in touch soon.' });
     } catch (err) {
       toast({
@@ -136,6 +140,7 @@ export default function BecomeSupplierPage() {
               Thank you for your interest in partnering with Auronix. We have received your
               information and will review it carefully. If there is a fit, we will be in touch soon.
             </p>
+            <Link className="op-primary mb-5" href="/supplier/track">Track this submission</Link>
             {submissionId && <div className="ac-content-panel mb-7 px-5 py-4 text-left"><span className="block text-xs font-semibold uppercase tracking-[0.14em] text-foreground-muted">Private reference</span><strong className="mt-1 block font-mono text-sm">{submissionId}</strong></div>}
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link href="/">
@@ -164,6 +169,7 @@ export default function BecomeSupplierPage() {
 
       <Section className="border-t border-border">
         <SupplierVideoGuide />
+        <SupplierDraftTools form={form} onRestore={value=>setForm(previous=>({...previous,...value}))} catalog={!!catalogFile} authorization={!!authorizationFile}/>
         <div className="ac-form-layout ac-supplier-form-layout"><aside className="ac-supplier-guide"><span className="ac-eyebrow">Supplier partnership</span><SupplierJourney current={1}/></aside>
           <Reveal>
             <form onSubmit={handleSubmit} className="ac-form-panel space-y-6"><ProgressIndicator value={[form.companyName,form.contactName,form.email,form.phone,form.categories,form.consent].filter(Boolean).length/6*100} label="Required information"/>
@@ -281,6 +287,7 @@ export default function BecomeSupplierPage() {
                 <p className="text-xs text-foreground-muted">PDF, JPG, PNG, WebP, CSV, XLS, or XLSX · 12 MB maximum per file</p>
               </div>
 
+              <CatalogPreview file={catalogFile} onUseFile={setCatalogFile}/>
               <div className="space-y-5">
                 <div><span className="ac-eyebrow">Commercial profile</span><h2 className="mt-2 text-xl font-semibold">Supply terms</h2></div>
                 <div className="grid sm:grid-cols-2 gap-5">

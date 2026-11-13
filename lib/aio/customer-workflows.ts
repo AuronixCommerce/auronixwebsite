@@ -1,3 +1,4 @@
+import { safeConversation,issueSummary } from '@/lib/partner/model';
 import { randomInt, randomUUID } from "crypto";
 import { adminDb } from "@/lib/firebase-admin";
 import {
@@ -160,11 +161,12 @@ export async function customerWorkflowRequest(
     requireCustomer(identity, kind);
     if (!/^[a-zA-Z0-9_-]{16,128}$/.test(String(body.requestKey || "")))
       throw new CustomerActionError("Start this action again.");
+    const handoffMessages=kind==='support_create'&&body.handoff?.consent===true?safeConversation(body.handoff.messages):[];
     const { input, email } = validateCustomerInput(kind, body.input, identity),
       id = digest(body.requestKey).slice(0, 32),
       token = otpHash(id, "workflow-token", body.requestKey),
       ref = adminDb.ref(`aioCustomerWorkflows/${id}`),
-      fingerprint = digest(JSON.stringify({ kind, input, email }));
+      fingerprint = digest(JSON.stringify({ kind, input, email, ...(handoffMessages.length?{handoffMessages}:{}) }));
     const previous = (await ref.get()).val();
     if (previous) {
       if (
@@ -179,6 +181,7 @@ export async function customerWorkflowRequest(
       return { success: true, token, ...view(previous) };
     }
     const context: Record<string, any> = {};
+    if(handoffMessages.length) context.handoff={messages:handoffMessages,summary:issueSummary(handoffMessages,input.message),consentedAt:Date.now()};
     if (kind === "profile_update") {
       const p = identity!.profile;
       context.profileVersion = digest(

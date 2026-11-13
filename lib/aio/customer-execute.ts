@@ -286,6 +286,7 @@ export async function executeCustomerAction(
           message: input.message,
           status: "open",
           source: "aio-action",
+          ...(workflow.context?.handoff?{handoff:workflow.context.handoff}:{}),
           ...(identity ? { uid: identity.uid, sellerUid: identity.uid } : {}),
           createdAt: now,
           updatedAt: now,
@@ -295,7 +296,7 @@ export async function executeCustomerAction(
       {
         to: SUPPORT_EMAIL,
         subject: `Customer support request: ${input.subject}`,
-        body: `Reference: ${ticketId}\nFrom: ${input.name}\nReply email: ${email}\nCategory: ${input.category}\n\n${input.message}`,
+        body: `Reference: ${ticketId}\nFrom: ${input.name}\nReply email: ${email}\nCategory: ${input.category}\n\n${input.message}${workflow.context?.handoff ? `\n\nCustomer-shared issue summary (unverified):\n${workflow.context.handoff.summary}\n\nCustomer-shared conversation:\n${workflow.context.handoff.messages.map((m:any)=>m.role+": "+m.content).join("\n\n")}` : ""}`,
         replyTo: email,
         idempotencyKey: `aio-support-team-${id}`,
       },

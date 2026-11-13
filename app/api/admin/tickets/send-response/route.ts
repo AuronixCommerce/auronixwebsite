@@ -1,3 +1,5 @@
+import { notify } from '@/lib/partner/server';
+import { validId } from '@/lib/partner/model';
 import { userFacingError } from '@/lib/user-facing-error';
 import { NextResponse } from 'next/server';
 
@@ -18,7 +20,7 @@ export async function POST(request: Request) {
     const response = text(body?.response);
     const aiGenerated = body?.aiGenerated === true;
 
-    if (!ticketId || !response) {
+    if (!validId(ticketId) || !response || response.length>10000) {
       return NextResponse.json({ error: 'Ticket ID and response are required.' }, { status: 400 });
     }
 
@@ -62,9 +64,10 @@ export async function POST(request: Request) {
       body: response,
       ticketId,
       aiGenerated,
-      automated: true,
+      automated: aiGenerated,
     });
 
+    await notify(customerEmail,'Support replied to your request',response,'support-reply',ticketId,false);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Ticket response send failed:', error);

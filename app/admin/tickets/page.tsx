@@ -1,4 +1,5 @@
 "use client";
+import { ReplyTemplatePicker } from '@/components/partner/reply-template-picker';
 import { userFacingError } from "@/lib/user-facing-error";
 import { Spinner } from "@/components/design/primitives";
 
@@ -39,6 +40,7 @@ type TicketRecord = SupportTicket & {
   lastResponse?: string;
   respondedAt?: number;
   messages?: Record<string, TicketMessage>;
+  handoff?: {summary:string;messages:Array<{role:string;content:string}>;consentedAt:number};
 };
 
 export default function AdminTicketsPage() {
@@ -530,6 +532,7 @@ export default function AdminTicketsPage() {
                   </button>
                 </div>
 
+                {selected.handoff&&<section className="op-card"><h3>AIO handoff summary</h3><p>{selected.handoff.summary}</p><small>Customer-shared conversation, not verified system data. Shared {new Date(selected.handoff.consentedAt).toLocaleString()}.</small><details><summary>Read shared conversation</summary>{selected.handoff.messages.map((m,i)=><div className="op-message" key={i}><strong>{m.role}</strong><p>{m.content}</p></div>)}</details></section>}
                 {/* Conversation */}
                 <div className="rounded-2xl border border-border overflow-hidden">
                   <div className="px-5 py-4 border-b border-border bg-secondary/40">
@@ -614,6 +617,7 @@ export default function AdminTicketsPage() {
                     </button>
                   </div>
 
+                  <ReplyTemplatePicker onSelect={setDraft}/>
                   <textarea
                     value={draft}
                     onChange={(event) => setDraft(event.target.value)}

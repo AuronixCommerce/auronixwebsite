@@ -1394,7 +1394,7 @@ export function AIChat({
                 </div>
               </form>
             )}
-            {customerAction ? <CustomerActionPanel key={customerAction.key} selection={customerAction} conversationId={conversationIdRef.current} saveHistory={preferences.rememberHistory} onClose={()=>setCustomerAction(null)} onReceipt={result=>{setMessages(previous=>[...previous,{id:makeId(),role:'assistant',content:result.summary+(result.reference?`\nReference: ${result.reference}`:''),answerSource:'auronix'}]);window.dispatchEvent(new Event('aio-workspace-updated'));}}/> : transcriptOpen ? null : settingsOpen ? (
+            {customerAction ? <CustomerActionPanel key={customerAction.key} selection={customerAction} conversation={messages.map(m=>({role:m.role,content:m.content}))} conversationId={conversationIdRef.current} saveHistory={preferences.rememberHistory} onClose={()=>setCustomerAction(null)} onReceipt={result=>{setMessages(previous=>[...previous,{id:makeId(),role:'assistant',content:result.summary+(result.reference?`\nReference: ${result.reference}`:''),answerSource:'auronix'}]);window.dispatchEvent(new Event('aio-workspace-updated'));}}/> : transcriptOpen ? null : settingsOpen ? (
               <section className="aio-settings" aria-label="Chat preferences">
                 <div className="aio-settings-heading">
                   <span>MAKE IT WORK FOR YOU</span>

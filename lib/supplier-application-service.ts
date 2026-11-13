@@ -1,3 +1,4 @@
+import { fingerprint,notify } from '@/lib/partner/server';
 import { userFacingError } from "@/lib/user-facing-error";
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
@@ -170,6 +171,8 @@ export async function submitSupplierApplication(
       updatedAt: now,
     };
     await ref.set({ id: submissionId, ...submission });
+    await notify(email,'Supplier submission received',`We received the supplier submission for ${companyName}. Reference: ${submissionId}`,'supplier-submitted',submissionId,false).catch(()=>undefined);
+    await adminDb.ref(`supplierDrafts/${fingerprint(email)}`).remove().catch(()=>undefined);
     const mailRef = adminDb.ref("emailDeliveryLogs").push();
     await mailRef.set({
       id: mailRef.key,

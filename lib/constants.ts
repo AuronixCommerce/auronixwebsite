@@ -380,6 +380,7 @@ export const SELLER_STATUSES = [
 ] as const;
 
 export const ADMIN_NAV = [
+  { label: "Partner Operations", href: "/admin/operations", icon: "BriefcaseBusiness" },
   { label: "Overview", href: "/admin", icon: "LayoutDashboard" },
   { label: "Deal Rooms", href: "/admin/deal-room", icon: "BriefcaseBusiness" },
   { label: "Seller Applications", href: "/admin/sellers", icon: "UserCheck" },

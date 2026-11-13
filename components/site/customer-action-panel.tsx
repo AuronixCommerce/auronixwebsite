@@ -1,4 +1,5 @@
 "use client";
+import { safeConversation } from '@/lib/partner/model';
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { onAuthStateChanged } from "firebase/auth";
@@ -36,17 +37,20 @@ export type CustomerActionSelection = {
 };
 export function CustomerActionPanel({
   selection,
+  conversation = [],
   conversationId,
   saveHistory,
   onClose,
   onReceipt,
 }: {
   selection: CustomerActionSelection;
+  conversation?: Array<{role:string;content:string}>;
   conversationId: string;
   saveHistory: boolean;
   onClose: () => void;
   onReceipt: (result: any) => void;
 }) {
+  const [shareConversation,setShareConversation]=useState(false);
   const [kind, setKind] = useState<CustomerActionKind | null>(selection.kind),
     [step, setStep] = useState(0),
     [input, setInput] = useState<Record<string, any>>({
@@ -189,6 +193,7 @@ export function CustomerActionPanel({
           requestKey: requestKey.current,
           conversationId,
           saveHistory,
+          handoff: kind==='support_create'&&shareConversation ? {consent:true,messages:safeConversation(conversation)} : undefined,
         });
       else if (mode === "inspect")
         data = await api({ mode, kind, conversationId, saveHistory });
@@ -499,6 +504,7 @@ export function CustomerActionPanel({
               ) : phase === "form" ? (
                 <>
                   <p className="aio-action-lead">{action?.description}</p>
+                  {kind==='support_create'&&conversation.length>0&&<label className="aio-action-checkbox"><input type="checkbox" checked={shareConversation} onChange={e=>setShareConversation(e.target.checked)}/><span>Share this conversation with the Auronix team, including an issue summary, so I do not have to repeat myself.</span></label>}
                   {action?.mode === "read" ? (
                     <p>
                       Your account permissions are checked before any records
@@ -623,6 +629,7 @@ export function CustomerActionPanel({
                     Review before confirming
                   </h3>
                   <p>{action?.description}</p>
+                  {kind==='support_create'&&shareConversation&&<p>The conversation and an issue summary will be attached to your support request.</p>}
                   <dl className="aio-action-review">
                     {customerActionSteps(kind)
                       .flatMap((s) => s.fields)

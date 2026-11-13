@@ -1,4 +1,5 @@
 ﻿'use client';
+import { SiteTools } from '@/components/partner/site-tools';
 
 import {
   usePathname,
@@ -63,6 +64,7 @@ export function PublicSiteChrome({
       </main>
 
       <Footer />
+      <SiteTools />
     </>
   );
 }

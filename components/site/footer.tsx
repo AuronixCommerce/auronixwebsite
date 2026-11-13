@@ -273,6 +273,10 @@ export function Footer() {
                 Frequently Asked Questions
               </Link>
 
+              <Link href="/guides" className="block hover:text-foreground">Guide library</Link>
+              <Link href="/supplier/track" className="block hover:text-foreground">Supplier workspace</Link>
+              <Link href="/partnership-call" className="block hover:text-foreground">Book a partnership call</Link>
+              <Link href="/notifications" className="block hover:text-foreground">Notifications</Link>
               <Link href="/guide" className="block hover:text-foreground">Meet Auronix · Video guide</Link>
               <Link href="/help" className="block hover:text-foreground">
                 Help & Troubleshooting

@@ -1,4 +1,5 @@
 "use client";
+import { trackInsight } from '@/components/partner/site-tools';
 import { useEffect, useId, useRef, useState } from "react";
 import type { CSSProperties, KeyboardEvent } from "react";
 import {
@@ -30,6 +31,8 @@ type VideoGuideProps = {
 };
 export function AuronixVideoGuide({src = AURONIX_OVERVIEW_VIDEO, title = "The Auronix overview", poster = "/guides/auronix-overview.jpg", initialDuration = 120, chapters = OVERVIEW_CHAPTERS, captionSrc = "/guides/auronix-overview.en.vtt", chapterTrackSrc = "/guides/auronix-overview.chapters.vtt", note = "Some views in the overview are illustrative."}: VideoGuideProps) {
   const id = useId();
+  const milestones=useRef(new Set<string>());
+  function measureVideo(){if(!window.__AURONIX_CONSENT__?.analytics)return;const p=video.current;if(!p||!p.duration)return;const percent=p.currentTime/p.duration;for(const [name,threshold] of [['video_25',.25],['video_50',.5],['video_75',.75],['video_complete',.95]] as const){if(percent>=threshold&&!milestones.current.has(name)){trackInsight(name,{video:src.includes('Supplier')?'supplier':'overview'});milestones.current.add(name);}}}
   const video = useRef<MobileVideo>(null),
     screen = useRef<HTMLDivElement>(null),
     pendingSeek = useRef<number | null>(null);
@@ -196,6 +199,7 @@ export function AuronixVideoGuide({src = AURONIX_OVERVIEW_VIDEO, title = "The Au
               aria-describedby={`${id}-description`}
               onClick={enhanced ? togglePlayback : undefined}
               onPlay={() => {
+                if(window.__AURONIX_CONSENT__?.analytics&&!milestones.current.has("video_start")){trackInsight("video_start",{video:src.includes("Supplier")?"supplier":"overview"});milestones.current.add("video_start");}
                 setPlaying(true);
                 setEnded(false);
                 setError("");
@@ -219,6 +223,7 @@ export function AuronixVideoGuide({src = AURONIX_OVERVIEW_VIDEO, title = "The Au
                 setEnded(true);
               }}
               onTimeUpdate={() => {
+                measureVideo();
                 markChapter();
                 syncBuffer();
               }}

@@ -26,6 +26,10 @@ export const NAV_GROUPS = [
     title: "Resources",
     note: "Answers, guidance, and company policies.",
     paths: [
+      "/guides",
+      "/supplier/track",
+      "/partnership-call",
+      "/notifications",
       "/guide",
       "/aio",
       "/aio/chat",
@@ -45,6 +49,10 @@ export const NAV_GROUPS = [
   },
 ];
 export const PUBLIC_PAGES = [
+ {id:'guides',path:'/guides',title:'Guide Library',category:'Resources'},
+ {id:'supplier-track',path:'/supplier/track',title:'Supplier Workspace',category:'Partners'},
+ {id:'partnership-call',path:'/partnership-call',title:'Book a Partnership Call',category:'Partners'},
+ {id:'notifications',path:'/notifications',title:'Notification Center',category:'Partners'},
   {
     id: "status",
     path: "/status",

@@ -1,19 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { requireAdmin } from '@/lib/server-auth';
-import { sendProfessionalEmail } from '@/lib/server-mail';
 import { writeAuditLog } from '@/lib/server-audit';
-import { userFacingError } from '@/lib/user-facing-error';
-
-const clean = (value: unknown, max = 2000) => String(value ?? '').trim().slice(0, max);
-export async function POST(request: Request) {
-  try {
-    const admin = await requireAdmin(request); const body = await request.json(); const supplierId = clean(body.supplierId, 160); const status = clean(body.status, 40); const previousStatus = clean(body.previousStatus, 40);
-    if (!supplierId || !['new', 'reviewing', 'contacted', 'approved', 'rejected', 'archived'].includes(status)) return NextResponse.json({ error: 'Choose a valid supplier status.' }, { status: 400 });
-    const snapshot = await adminDb.ref(`suppliers/${supplierId}`).get(); if (!snapshot.exists()) return NextResponse.json({ error: 'Supplier submission not found.' }, { status: 404 }); const supplier = snapshot.val(); const now = Date.now(); await adminDb.ref(`suppliers/${supplierId}`).update({ status, updatedAt: now });
-    const subject = `Your Auronix supplier submission is ${status.replace(/_/g, ' ')}`; const log = adminDb.ref('emailDeliveryLogs').push(); await log.set({ id: log.key, recipient: supplier.email, subject, event: 'supplier-status', status: 'queued', createdAt: now, updatedAt: now });
-    let emailSent = false; try { const info: any = await sendProfessionalEmail({ to: supplier.email, name: supplier.contactName, subject, body: `The status of ${supplier.companyName || 'your supplier submission'} changed from ${previousStatus || 'submitted'} to ${status.replace(/_/g, ' ')}.\n\nSupplier reference: ${supplierId}` }, 'notification'); await log.update({ status: 'sent', providerMessageId: clean(info?.messageId, 500), updatedAt: Date.now() }); emailSent = true; } catch (mailError) { await log.update({ status: 'failed', error: userFacingError(mailError, 'Delivery failed.'), updatedAt: Date.now() }); }
-    await writeAuditLog({ actorUid: admin.uid, actorEmail: admin.email, action: 'SUPPLIER_STATUS_CHANGED', targetType: 'supplier', targetId: supplierId, summary: `${previousStatus || 'submitted'} → ${status}`, request });
-    return NextResponse.json({ success: true, emailSent });
-  } catch (error) { return NextResponse.json({ error: userFacingError(error, 'Unable to update supplier status.') }, { status: 401 }); }
-}
+import { notify,timeline } from '@/lib/partner/server';
+import { text,validId } from '@/lib/partner/model';
+export async function POST(request:Request){try{const admin=await requireAdmin(request),body=await request.json(),supplierId=body.supplierId,status=text(body.status,40);if(!validId(supplierId)||!['new','reviewing','contacted','approved','rejected','archived'].includes(status))return NextResponse.json({error:'Choose a valid supplier and status.'},{status:400});const ref=adminDb.ref(`suppliers/${supplierId}`);let previousStatus='';const result=await ref.transaction(s=>{if(!s||s.status===status)return;previousStatus=s.status;return {...s,status,updatedAt:Date.now()};});if(!result.snapshot.exists())return NextResponse.json({error:'Supplier not found.'},{status:404});if(!result.committed)return NextResponse.json({success:true,unchanged:true});const supplier=result.snapshot.val();await timeline(supplierId,{type:'status',title:'Review status: '+status,message:`${previousStatus||'submitted'} → ${status}`,actor:'Auronix team'});const emailStatus=await notify(supplier.email,'Your Auronix supplier submission is '+status,`The review status for ${supplier.companyName} changed from ${previousStatus||'submitted'} to ${status}.\nSupplier reference: ${supplierId}`,'supplier-status',supplierId);await writeAuditLog({actorUid:admin.uid,actorEmail:admin.email,action:'SUPPLIER_STATUS_CHANGED',targetType:'supplier',targetId:supplierId,summary:`${previousStatus} → ${status}`,request});return NextResponse.json({success:true,emailSent:emailStatus==='sent',emailStatus});}catch{return NextResponse.json({error:'Unable to update supplier status. Check your admin session and retry.'},{status:401});}}

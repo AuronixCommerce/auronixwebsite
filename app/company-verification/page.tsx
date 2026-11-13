@@ -20,7 +20,8 @@ export default function CompanyVerificationPage() {
   useEffect(() => {
     getData<CompanySettings>('site/settings')
       .then((data) => {
-        setSettings(data);
+        const company=(data as any)?.company||{};
+        setSettings({...data,...company,contactEmail:company.contactEmail||company.email||data?.contactEmail,businessInfo:{...data?.businessInfo,legalName:company.legalName||company.companyName||data?.businessInfo?.legalName,entityType:company.entityType||data?.businessInfo?.entityType,state:company.state||data?.businessInfo?.state}} as CompanySettings);
         setLoading(false);
       })
       .catch(() => {
@@ -45,7 +46,7 @@ export default function CompanyVerificationPage() {
         {loading ? (
           <LoadingState />
         ) : error ? (
-          <ErrorState />
+          <div className="op-card"><h2>{COMPANY.name}</h2><p>Florida limited liability company · {COMPANY.website}</p><a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a><p>Additional registration details are available upon verified request. Live company settings are temporarily unavailable.</p></div>
         ) : (
           <StaggerGroup className="ac-verification-grid">
             {/* Company Information */}
@@ -94,7 +95,7 @@ export default function CompanyVerificationPage() {
                   </div>
                   <div>
                     <dt className="text-xs font-medium text-foreground-muted uppercase tracking-wider">State</dt>
-                    <dd className="text-sm text-foreground mt-1">{companyInfo?.state || 'United States'}</dd>
+                    <dd className="text-sm text-foreground mt-1">{companyInfo?.state || 'Florida, United States'}</dd>
                   </div>
                 </dl>
                 <p className="text-xs text-foreground-muted mt-6 leading-relaxed">

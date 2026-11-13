@@ -132,8 +132,10 @@ export function AdminCrudPage({
 
       if (editingId) {
         const previousStatus = records[editingId]?.status;
+        const fieldsToSave={...form};
+        if(path==='suppliers')delete fieldsToSave.status;
         await update(ref(db, `${path}/${editingId}`), {
-          ...form,
+          ...fieldsToSave,
           updatedAt: now,
         });
         if (path === 'suppliers' && form.status && form.status !== previousStatus) {
