@@ -1,0 +1,29 @@
+/* Shared email-code entry: fluid within a chat panel or a full page. */
+.ac-code-entry{width:100%;max-width:352px;min-width:0;text-align:left;margin:20px 0;color:hsl(var(--foreground))}
+.ac-code-entry-label{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;font-size:12px;font-weight:600}
+.ac-code-entry-label label{font:inherit!important;margin:0!important;display:block!important}
+.ac-code-entry-label>span{font-size:10px;font-weight:500;font-variant-numeric:tabular-nums;color:hsl(var(--foreground-muted));white-space:nowrap}
+.ac-code-entry-input{position:relative;display:block!important;width:100%;max-width:100%;min-width:0;isolation:isolate}
+.ac-code-entry-slots{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(5px,1.4vw,9px);width:100%;min-width:0;direction:ltr}
+.ac-code-entry-slot{position:relative;width:100%!important;min-width:0;height:clamp(46px,12vw,58px)!important;border:1px solid hsl(var(--border-strong))!important;border-radius:13px!important;background:hsl(var(--card))!important;font-size:22px!important;font-weight:600;line-height:1;font-variant-numeric:tabular-nums;color:hsl(var(--foreground))!important;box-shadow:0 2px 3px #00000003;transition:border-color .15s,box-shadow .15s,background .15s}
+.ac-code-entry-slot.is-filled{background:hsl(var(--secondary))!important;border-color:hsl(var(--foreground)/.3)!important}
+.ac-code-entry-slot.ring-2{z-index:1;border-color:hsl(var(--foreground))!important;box-shadow:0 0 0 3px hsl(var(--foreground)/.12)!important;--tw-ring-shadow:0 0 #0000}
+.ac-code-entry-hint{font-size:11px!important;line-height:1.65!important;color:hsl(var(--foreground-muted));margin:10px 0 0!important;overflow-wrap:anywhere}
+.ac-code-entry.is-invalid .ac-code-entry-slot{border-color:hsl(var(--destructive))!important}
+.ac-code-entry-input:has(input:disabled){opacity:.55}
+/* The library's transparent input overlays the cells. Broad form-input rules must not style it. */
+.ac-code-entry .ac-code-entry-input input[autocomplete="one-time-code"][data-input-otp]{padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;min-height:0!important;outline:0!important}
+.aio-action-verify{width:100%;max-width:420px;margin:0 auto;padding:10px 0 16px;text-align:left}
+.aio-action-verify .aio-action-verify-icon{width:50px;height:50px;border:1px solid hsl(var(--border));border-radius:16px;background:hsl(var(--card));box-shadow:0 3px 10px #00000004}
+.aio-action-verify h3{font-size:25px;line-height:1.2;letter-spacing:-.045em;margin-bottom:10px}
+.aio-action-verify>p{font-size:13px;line-height:1.7;overflow-wrap:anywhere}
+.aio-action-verify .ac-code-entry{max-width:100%;margin:24px 0 18px}
+.aio-action-verify strong{font-weight:600;color:hsl(var(--foreground))}
+.aio-action-verify .aio-action-text-button{min-height:44px;margin-top:8px;text-decoration:none;border:1px solid hsl(var(--border));padding:10px 14px;border-radius:12px;color:hsl(var(--foreground));font-weight:550;background:hsl(var(--card))}
+.aio-action-verify .aio-action-note{padding-top:15px;border-top:1px solid hsl(var(--border));margin-top:18px}
+.aio-customer-panel .aio-action-footer{gap:12px;flex-wrap:wrap;background:hsl(var(--card));padding-bottom:max(16px,env(safe-area-inset-bottom))}
+.aio-customer-panel .aio-action-footer>.ac-button{min-height:46px;font-size:12px;max-width:none;flex:1;min-width:0;justify-content:center;background:hsl(var(--primary));color:hsl(var(--primary-foreground));border:1px solid hsl(var(--primary));box-shadow:0 3px 8px #00000008}
+.aio-customer-panel .aio-action-back{min-height:44px}
+.aio-window .aio-transcript-form .ac-code-entry{max-width:352px;margin:18px 0 8px}
+@media(max-width:380px){.aio-customer-panel .aio-action-footer{display:grid;grid-template-columns:1fr;padding:12px}.aio-customer-panel .aio-action-footer>.ac-button{width:100%;grid-row:1}.aio-customer-panel .aio-action-back{justify-content:center}.aio-window .aio-transcript-form .aio-transcript-actions{grid-template-columns:1fr}.aio-action-verify h3{font-size:23px}}
+@media(prefers-reduced-motion:reduce){.ac-code-entry-slot{transition:none}.ac-code-entry-slot .animate-caret-blink{animation:none}}

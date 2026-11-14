@@ -1,3 +1,5 @@
+import { emailShell, emailButton as cta, emailCode, ensureBrandedEmail, emailLogoAttachment, professionalEmailBody } from "@/lib/email/design";
+export { emailShell } from "@/lib/email/design";
 import { cleanupCustomerActionSessions } from "@/lib/aio/customer-session-cleanup";
 import nodemailer from "nodemailer";
 import {
@@ -52,6 +54,8 @@ type MailOptions = {
     filename: string;
     content: Buffer;
     contentType?: string;
+    cid?: string;
+    contentDisposition?: "inline" | "attachment";
   }>;
 };
 const escapeHtml = (value: unknown) =>
@@ -72,19 +76,6 @@ function safeAbsoluteUrl(value: unknown, fallback: string) {
     return fallback;
   }
 }
-
-export function emailShell(input: {
-  preheader: string;
-  title: string;
-  body: string;
-  footerNote?: string;
-}) {
-  const support = escapeHtml(SUPPORT_EMAIL);
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>${escapeHtml(input.title)}</title></head><body style="margin:0;background:#f5f5f7;color:#1d1d1f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif"><div style="display:none;max-height:0;overflow:hidden;opacity:0">${escapeHtml(input.preheader)}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f5f7"><tr><td align="center" style="padding:32px 14px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#fff;border:1px solid #e5e5ea;border-radius:24px;overflow:hidden"><tr><td style="padding:24px 30px;border-bottom:1px solid #ececf0"><a href="${SITE_URL}" style="color:#111827;text-decoration:none;font-size:17px;font-weight:800;letter-spacing:.06em">AURONIX <span style="font-weight:500;color:#6b7280">COMMERCE LLC</span></a></td></tr><tr><td style="padding:34px 30px;font-size:15px;line-height:1.65">${input.body}</td></tr><tr><td style="padding:22px 30px;border-top:1px solid #ececf0;color:#6b7280;font-size:12px;line-height:1.6">${escapeHtml(input.footerNote || "This is a transactional message from Auronix Commerce LLC.")}<br>Questions? <a href="mailto:${support}" style="color:#2563eb">${support}</a><br><span style="color:#9ca3af">Auronix Commerce LLC · auronixcommerce.com</span></td></tr></table></td></tr></table></body></html>`;
-}
-
-const cta = (label: string, url: string) =>
-  `<table role="presentation" cellspacing="0" cellpadding="0" style="margin:26px 0"><tr><td style="border-radius:12px;background:#111827"><a href="${escapeHtml(url)}" style="display:inline-block;padding:13px 22px;color:#fff;text-decoration:none;font-weight:700">${escapeHtml(label)}</a></td></tr></table>`;
 
 function createMailTransport(port = SMTP_PORT, secure = SMTP_SECURE) {
   return nodemailer.createTransport({
@@ -136,12 +127,12 @@ async function sendDirect(sender: string, options: MailOptions) {
           },
           to: options.to,
           subject: options.subject,
-          html: options.html,
+          html: ensureBrandedEmail(options.html, options.subject),
           text: options.text,
           replyTo: options.replyTo || SUPPORT_EMAIL,
           inReplyTo: options.inReplyTo,
           references: options.references,
-          attachments: options.attachments,
+          attachments: [...(options.attachments || []).filter(a => a.cid !== "auronix-brand-o"), emailLogoAttachment()],
         });
         if (
           !Array.isArray(result.accepted) ||
@@ -205,7 +196,7 @@ export function sendProfessionalEmail(value: any, type = "") {
       : emailShell({
           preheader: value?.subject || "Auronix Commerce update",
           title: value?.subject || "Auronix Commerce",
-          body: `<p style="margin:0 0 18px">Hello${value?.name ? ` ${escapeHtml(value.name)}` : ""},</p><div style="white-space:pre-wrap">${escapeHtml(body)}</div>`,
+          body: professionalEmailBody(body, value?.subject || "An update from Auronix", value?.name),
         }));
   const systemTypes = [
     "notification",
@@ -347,7 +338,7 @@ export async function sendSellerEmailVerification(input: {
     title: "Verify your seller application email",
     footerNote:
       "Never share this verification code. Auronix representatives will not ask you for it.",
-    body: `<h1 style="margin:0 0 16px;font-size:27px;line-height:1.2">Verify your email</h1><p>Enter this six-digit code in the Auronix seller application:</p><div style="margin:24px 0;padding:18px;border-radius:14px;background:#f3f4f6;text-align:center;font-size:32px;font-weight:800;letter-spacing:.22em">${escapeHtml(input.code)}</div><p>The code expires at <strong>${escapeHtml(expiry)} UTC</strong>.</p>`,
+    body: `<h1 style="margin:0 0 16px;font-size:27px;line-height:1.2">Verify your email</h1><p>Enter this six-digit code in the Auronix seller application:</p>${emailCode(input.code)}<p>The code expires at <strong>${escapeHtml(expiry)} UTC</strong>.</p>`,
   });
   return sendNotificationMail({
     expiresAt: input.expiresAt,
@@ -399,7 +390,7 @@ export async function sendNewsletterUnsubscribeEmail(input: {
     title: "Confirm newsletter unsubscribe",
     footerNote:
       "This link and verification code expire soon. If you did not request this, no action is required.",
-    body: `<h1 style="margin:0 0 16px;font-size:27px;line-height:1.2">Unsubscribe from newsletters?</h1><p>We received a request to stop newsletter emails for <strong>${escapeHtml(input.email)}</strong>.</p>${cta("Review unsubscribe request", url)}<p>Or enter this six-digit confirmation code on the unsubscribe page:</p><div style="margin:22px 0;padding:17px;border-radius:14px;background:#f3f4f6;text-align:center;font-size:30px;font-weight:800;letter-spacing:.22em">${escapeHtml(input.code)}</div><p style="color:#6b7280;font-size:13px">The link and code expire at <strong>${escapeHtml(expiry)} UTC</strong>. You will remain subscribed until you confirm.</p>`,
+    body: `<h1 style="margin:0 0 16px;font-size:27px;line-height:1.2">Unsubscribe from newsletters?</h1><p>We received a request to stop newsletter emails for <strong>${escapeHtml(input.email)}</strong>.</p>${cta("Review unsubscribe request", url)}<p>Or enter this six-digit confirmation code on the unsubscribe page:</p>${emailCode(input.code)}<p style="color:#6b7280;font-size:13px">The link and code expire at <strong>${escapeHtml(expiry)} UTC</strong>. You will remain subscribed until you confirm.</p>`,
   });
   return sendNotificationMail({
     to: input.email,
@@ -455,7 +446,7 @@ export async function sendAdminMfaCodeEmail(input: {
     title: "Admin sign-in verification",
     footerNote:
       "This code protects administrative access. Never share it with anyone, including Auronix support.",
-    body: `<h1 style="margin:0 0 16px;font-size:27px;line-height:1.2">Verify admin sign-in</h1><p>Enter this one-time code to continue signing in${input.device ? ` from <strong>${escapeHtml(input.device)}</strong>` : ""}:</p><div style="margin:24px 0;padding:18px;border-radius:14px;background:#f3f4f6;text-align:center;font-size:32px;font-weight:800;letter-spacing:.22em">${escapeHtml(input.code)}</div><p>The code expires at <strong>${escapeHtml(expiry)} UTC</strong>.</p>`,
+    body: `<h1 style="margin:0 0 16px;font-size:27px;line-height:1.2">Verify admin sign-in</h1><p>Enter this one-time code to continue signing in${input.device ? ` from <strong>${escapeHtml(input.device)}</strong>` : ""}:</p>${emailCode(input.code)}<p>The code expires at <strong>${escapeHtml(expiry)} UTC</strong>.</p>`,
   });
   return sendNotificationMail({
     expiresAt: input.expiresAt,

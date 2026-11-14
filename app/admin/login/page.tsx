@@ -1,4 +1,5 @@
 'use client';
+import { VerificationCode } from '@/components/ui/verification-code';
 import { userFacingError } from '@/lib/user-facing-error';
 import { Spinner } from '@/components/design/primitives';
 
@@ -223,7 +224,7 @@ export default function AdminLoginPage() {
             />
           </div>}
 
-          {mfaRequired && <div><Label htmlFor="mfaCode" className="mb-2 block">Six-digit security code</Label><Input id="mfaCode" value={mfaCode} onChange={(event) => setMfaCode(event.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" placeholder="000000" className="text-center text-xl font-bold tracking-[0.28em]" required /></div>}
+          {mfaRequired && <VerificationCode id="mfaCode" value={mfaCode} onChange={setMfaCode} autoFocus label="Six-digit security code" hint="Enter the code from your admin sign-in email." />}
 
           <Button
             type="submit"

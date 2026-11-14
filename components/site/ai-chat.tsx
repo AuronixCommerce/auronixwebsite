@@ -1,4 +1,5 @@
 "use client";
+import { VerificationCode } from "@/components/ui/verification-code";
 import { CustomerActionSecurity } from "./customer-action-security";
 import { CustomerActionPanel,type CustomerActionSelection } from './customer-action-panel';
 import { isCustomerActionKind,type CustomerActionKind,CUSTOMER_ACTIONS } from '@/lib/aio/customer-actions';
@@ -1327,29 +1328,9 @@ export function AIChat({
                         />
                       </label>
                       {transcriptChallenge && (
-                        <label>
-                          Six-digit verification code
-                          <input
-                            autoFocus
-                            required
-                            type="text"
-                            inputMode="numeric"
-                            autoComplete="one-time-code"
-                            pattern="[0-9]{6}"
-                            maxLength={32}
-                            value={transcriptCode}
-                            disabled={transcriptBusy}
-                            onChange={(e) =>
-                              setTranscriptCode(
-                                normalizeVerificationCode(e.target.value).slice(
-                                  0,
-                                  6,
-                                ),
-                              )
-                            }
-                            placeholder="123456"
-                          />
-                        </label>
+                        <VerificationCode value={transcriptCode} onChange={setTranscriptCode}
+                          disabled={transcriptBusy} autoFocus label="Email verification code"
+                          hint="Use the latest transcript code. It expires after 10 minutes." />
                       )}
                       {transcriptChallenge && (
                         <p>
@@ -1383,7 +1364,7 @@ export function AIChat({
                     <button
                       className="ax-btn"
                       type="submit"
-                      disabled={transcriptBusy || (!!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !transcriptSecurityToken)}
+                      disabled={transcriptBusy || (!!transcriptChallenge && transcriptCode.length !== 6) || (!!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !transcriptSecurityToken)}
                     >
                       {transcriptBusy
                         ? "Please wait…"

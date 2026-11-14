@@ -23,11 +23,7 @@ import {
 } from "@/lib/aio/customer-actions";
 import { normalizeVerificationCode } from "@/lib/aio/verification-code";
 import { auth } from "@/lib/firebase";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
+import { VerificationCode } from "@/components/ui/verification-code";
 import { Spinner } from "@/components/design/primitives";
 import { AuronixMark } from "./auronix-mark";
 import { CustomerActionSecurity } from "./customer-action-security";
@@ -588,23 +584,9 @@ export function CustomerActionPanel({
                       code.
                     </p>
                   )}
-                  <InputOTP
-                    maxLength={6}
-                    pasteTransformer={normalizeVerificationCode}
-                    autoFocus
-                    value={code}
-                    onChange={(v) => setCode(normalizeVerificationCode(v))}
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    aria-label="Email verification code"
-                    containerClassName="aio-action-otp"
-                  >
-                    <InputOTPGroup>
-                      {Array.from({ length: 6 }, (_, i) => (
-                        <InputOTPSlot key={i} index={i} />
-                      ))}
-                    </InputOTPGroup>
-                  </InputOTP>
+                  <VerificationCode value={code} onChange={setCode} disabled={busy}
+                    autoFocus invalid={!!error} label="Email verification code"
+                    hint="You can paste the complete code. Use the newest email." />
                   <p className="aio-action-note">
                     Codes expire after 10 minutes. Enter codes here, never as a
                     chat message.

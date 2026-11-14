@@ -1,4 +1,5 @@
 "use client";
+import { VerificationCode } from "@/components/ui/verification-code";
 import { useState } from "react";
 import { Mail, ShieldCheck } from "lucide-react";
 import { CustomerActionSecurity } from "@/components/site/customer-action-security";
@@ -80,19 +81,8 @@ export function PartnerAccess({
         />
       </label>
       {challenge && (
-        <label>
-          Six-digit verification code
-          <input
-            className="op-code"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            pattern="[0-9]{6}"
-            maxLength={6}
-            required
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-          />
-        </label>
+        <VerificationCode value={code} onChange={setCode} disabled={busy} autoFocus
+          invalid={!!error} label="Email verification code" />
       )}
       <CustomerActionSecurity onToken={setSecurity} resetKey={reset} />
       {notice && <p role="status">{notice}</p>}
@@ -101,7 +91,7 @@ export function PartnerAccess({
           {error}
         </p>
       )}
-      <button className="op-primary" disabled={busy || (required && !security)}>
+      <button className="op-primary" disabled={busy || (!!challenge && code.length !== 6) || (required && !security)}>
         {busy
           ? "Please wait…"
           : challenge

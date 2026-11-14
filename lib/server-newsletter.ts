@@ -1,4 +1,5 @@
-﻿import nodemailer from 'nodemailer';
+import { emailShell, emailEscape, emailLogoAttachment } from "@/lib/email/design";
+import nodemailer from 'nodemailer';
 import crypto from 'crypto';
 
 import { adminDb } from '@/lib/firebase-admin';
@@ -259,53 +260,15 @@ function buildUnsubscribeUrl(
   )}`;
 }
 
-function ensureNewsletterHtml(
-  html: string,
-  unsubscribeUrl: string,
-  preferencesUrl: string
-): string {
-  return `
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Auronix Commerce</title>
-</head>
-<body style="margin:0;padding:0;background:#f5f5f7;color:#1d1d1f;font-family:Arial,Helvetica,sans-serif;">
-  <div style="max-width:680px;margin:0 auto;padding:32px 16px;">
-    <div style="background:#ffffff;border:1px solid #e5e5e7;border-radius:22px;overflow:hidden;">
-      <div style="padding:28px 30px;border-bottom:1px solid #eeeeef;">
-        <div style="font-size:18px;font-weight:700;">
-          Auronix Commerce LLC
-        </div>
-      </div>
-
-      <div style="padding:30px;">
-        ${html}
-      </div>
-
-      <div style="padding:24px 30px;border-top:1px solid #eeeeef;color:#6e6e73;font-size:12px;line-height:1.6;">
-        <p style="margin:0 0 10px;">
-          You are receiving this email because you subscribed to Auronix Commerce updates.
-        </p>
-
-        <p style="margin:0;">
-          <a href="${preferencesUrl}" style="color:#0071e3;text-decoration:none;">Manage preferences</a>
-          <span aria-hidden="true"> · </span>
-          <a
-            href="${unsubscribeUrl}"
-            style="color:#0071e3;text-decoration:none;"
-          >
-            Unsubscribe
-          </a>
-        </p>
-      </div>
-    </div>
-  </div>
-</body>
-</html>
-`;
+export function ensureNewsletterHtml(html: string, unsubscribeUrl: string, preferencesUrl: string, subject = "Auronix Journal") {
+  const content = html.match(/<body\b[^>]*>([\s\S]*?)<\/body>/i)?.[1] || html;
+  const styles = html.match(/<head\b[^>]*>[\s\S]*?<\/head>/i)?.[0].match(/<style\b[^>]*>[\s\S]*?<\/style>/gi)?.join("") || "";
+  return emailShell({
+    preheader: subject, title: subject, category: "AURONIX JOURNAL",
+    body: `${styles}${/<h1\b/i.test(content) ? "" : `<h1>${emailEscape(subject)}</h1>`}${content}`,
+    footerNote: "You are receiving this email because you subscribed to Auronix Commerce updates.",
+    footerHtml: `<p style="margin:0 0 14px"><a href="${emailEscape(preferencesUrl)}" style="color:#393e47;text-decoration:underline">Manage preferences</a> &nbsp;&middot;&nbsp; <a href="${emailEscape(unsubscribeUrl)}" style="color:#393e47;text-decoration:underline">Unsubscribe</a></p>`,
+  });
 }
 
 export async function sendNewsletterEmail(
@@ -341,7 +304,8 @@ export async function sendNewsletterEmail(
     ensureNewsletterHtml(
       personalizedHtml,
       unsubscribeUrl,
-      preferencesUrl
+      preferencesUrl,
+      subject
     );
 
   return transport.sendMail({
@@ -362,6 +326,8 @@ export async function sendNewsletterEmail(
 
     html:
       wrappedHtml,
+
+    attachments: [emailLogoAttachment()],
   });
 }
 
