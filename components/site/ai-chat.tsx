@@ -1,4 +1,5 @@
 "use client";
+import { CustomerActionSecurity } from "./customer-action-security";
 import { CustomerActionPanel,type CustomerActionSelection } from './customer-action-panel';
 import { isCustomerActionKind,type CustomerActionKind,CUSTOMER_ACTIONS } from '@/lib/aio/customer-actions';
 import { AIO_MODELS, normalizeAioModelId } from "@/lib/aio/models";
@@ -144,6 +145,8 @@ export function AIChat({
   const reducedMotion = useReducedMotion();
   const [selectedContext, setSelectedContext] = useState("");
   const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const [transcriptSecurityToken, setTranscriptSecurityToken] = useState("");
+  const [transcriptSecurityReset, setTranscriptSecurityReset] = useState(0);
   const [transcriptEmail, setTranscriptEmail] = useState("");
   const [transcriptCode, setTranscriptCode] = useState("");
   const [transcriptChallenge, setTranscriptChallenge] = useState("");
@@ -1024,6 +1027,7 @@ export function AIChat({
   const emailTranscript = async (event: FormEvent) => {
     event.preventDefault();
     if (transcriptBusy) return;
+    if (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !transcriptSecurityToken) { setTranscriptNotice("Please complete the security check before requesting or verifying a code."); return; }
     setTranscriptBusy(true);
     setTranscriptNotice("");
     setTranscriptSent(false);
@@ -1033,6 +1037,7 @@ export function AIChat({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: transcriptEmail,
+          turnstileToken: transcriptSecurityToken,
           challengeId: transcriptChallenge || undefined,
           code: transcriptChallenge
             ? normalizeVerificationCode(transcriptCode)
@@ -1070,6 +1075,8 @@ export function AIChat({
       );
     } finally {
       setTranscriptBusy(false);
+      setTranscriptSecurityToken("");
+      setTranscriptSecurityReset(v => v + 1);
     }
   };
   const exportChat = () => {
@@ -1366,6 +1373,7 @@ export function AIChat({
                       )}
                     </>
                   )}
+                  {!transcriptSent && <CustomerActionSecurity onToken={setTranscriptSecurityToken} resetKey={transcriptSecurityReset}/>}
                   <p role="status" aria-live="polite">
                     {transcriptNotice}
                   </p>
@@ -1375,7 +1383,7 @@ export function AIChat({
                     <button
                       className="ax-btn"
                       type="submit"
-                      disabled={transcriptBusy}
+                      disabled={transcriptBusy || (!!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !transcriptSecurityToken)}
                     >
                       {transcriptBusy
                         ? "Please wait…"

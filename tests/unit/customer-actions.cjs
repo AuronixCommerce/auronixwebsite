@@ -720,3 +720,34 @@ test("malformed action requests return a validation error, not a server failure"
     assert.equal(r.status, 400);
   }
 });
+
+test('chat form defaults reproduce the OTP failure; only the selected action fields are serialized', async () => {
+  const h = setup();
+  const { customerActionPayload } = h.load('lib/aio/customer-actions.ts');
+  const draft = { ...subscribe, preferredContact: 'business', emailType: 'business', displayName: 'Account Owner', businessName: 'Example Business', phone: '+12025550123', website: 'https://example.test' };
+  const broken = await h.prepare('newsletter_subscribe', draft);
+  assert.equal(broken.status, 400);
+  assert.match(broken.body.error, /Unrecognized key/);
+  assert.equal(h.mails.length, 0);
+  const fixed = await h.prepare('newsletter_subscribe', customerActionPayload('newsletter_subscribe', draft));
+  assert.equal(fixed.status, 200); assert.equal(fixed.body.phase, 'verify'); assert.ok(h.code());
+  const verify = await h.verify(fixed.body); assert.equal(verify.body.phase, 'review');
+});
+
+test('every writable AIO action can request an OTP with the shared chat defaults and signed-in profile fields', async () => {
+  const catalog = setup().load('lib/aio/customer-actions.ts');
+  const kinds = Object.keys(catalog.CUSTOMER_ACTIONS).filter(k => catalog.CUSTOMER_ACTIONS[k].mode === 'write');
+  assert.ok(kinds.length > 8);
+  for (const kind of kinds) {
+    const h = setup({ users: { [account.uid]: { role: 'seller', displayName: 'Account Owner' } }, tickets: { 'ticket-own': { sellerUid: account.uid, status: 'open' } } }, account);
+    const draft = { frequency: 'weekly', preferredContact: 'business', emailType: 'business', company: true, sourcing: true, sellers: true, suppliers: true, email: account.email, displayName: 'Account Owner', businessName: 'Example Business', phone: '+12025550123', website: 'https://example.test', unrelatedSeed: 'never sent' };
+    for (const step of catalog.customerActionSteps(kind)) for (const field of step.fields) {
+      draft[field.key] = field.type === 'checkbox' ? true : field.type === 'select' ? field.options[0] : field.type === 'email' ? account.email : field.type === 'tel' ? '+12025550123' : field.type === 'url' ? 'https://example.test' : field.type === 'number' ? '2' : field.key === 'ticketId' ? 'ticket-own' : field.key === 'trackingId' ? 'tracking-reference-123' : 'A complete example value for verification testing';
+    }
+    const payload = catalog.customerActionPayload(kind, draft);
+    const result = await h.prepare(kind, payload);
+    assert.equal(result.status, 200, `${kind}: ${JSON.stringify(result.body)}`);
+    assert.equal(result.body.phase, 'verify', kind); assert.ok(h.code(), kind);
+    assert.equal(Object.hasOwn(payload, 'unrelatedSeed'), false);
+  }
+});

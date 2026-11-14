@@ -567,3 +567,9 @@ export function suggestCustomerAction(text: string): CustomerActionKind | null {
     return "my_profile";
   return null;
 }
+
+/** Serialize only fields defined for this action; UI defaults may include other forms' values. */
+export function customerActionPayload(kind: CustomerActionKind, draft: Record<string, unknown>) {
+  const fields = customerActionSteps(kind).flatMap(step => step.fields.map(field => field.key));
+  return Object.fromEntries(fields.filter(key => Object.prototype.hasOwnProperty.call(draft, key)).map(key => [key, draft[key]]));
+}

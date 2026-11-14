@@ -17,6 +17,7 @@ import {
   CUSTOMER_ACTIONS,
   CUSTOMER_ACTION_KINDS,
   customerActionSteps,
+  customerActionPayload,
   type CustomerActionKind,
   type CustomerField,
 } from "@/lib/aio/customer-actions";
@@ -189,7 +190,7 @@ export function CustomerActionPanel({
         data = await api({
           mode,
           kind,
-          input,
+          input: customerActionPayload(kind, input),
           requestKey: requestKey.current,
           conversationId,
           saveHistory,
