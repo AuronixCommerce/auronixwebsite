@@ -1229,3 +1229,156 @@
     gap: 12px;
   }
 }
+.dev-permissions {
+  border: 1px solid var(--dev-line);
+  border-radius: 13px;
+  padding: 18px;
+  min-width: 0;
+  width: 100%;
+  flex: none;
+}
+.dev-permissions legend {
+  font-size: 12px;
+  padding: 0 8px;
+  font-weight: 550;
+}
+.dev-permissions small {
+  font-size: 10px;
+  color: var(--dev-muted);
+  line-height: 1.7;
+}
+.dev-key-models {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 13px;
+  margin: 10px 0 20px;
+}
+.dev-key-models .dev-checkbox {
+  display: flex;
+  flex-direction: row !important;
+  align-items: flex-start;
+  font-weight: 400;
+  font-size: 12px;
+  gap: 7px;
+  line-height: 1.7;
+}
+.dev-key-models input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  margin-top: 2px;
+  padding: 0;
+}
+.dev-key-form:has(.dev-permissions) {
+  flex-wrap: wrap;
+}
+.dev-select-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  min-width: 180px;
+}
+.dev-select-label select {
+  max-width: 450px;
+}
+.dev-chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+  margin-top: 25px;
+}
+.dev-chart-grid article {
+  min-width: 0;
+  border: 1px solid var(--dev-line);
+  border-radius: 15px;
+  padding: 17px;
+}
+.dev-chart-grid h3 {
+  font-size: 12px;
+  margin: 0 0 20px;
+}
+.dev-chart {
+  height: 220px;
+  width: 100%;
+  min-width: 0;
+}
+.dev-token-total {
+  font-size: 20px !important;
+  letter-spacing: -0.03em !important;
+}
+.dev-webhook-docs {
+  margin-top: 23px;
+  border-top: 1px solid var(--dev-line);
+  padding-top: 20px;
+}
+.dev-webhook-docs summary {
+  font-size: 12px;
+  font-weight: 550;
+  cursor: pointer;
+}
+.dev-webhook-docs p {
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--dev-muted);
+  margin-top: 15px;
+}
+.dev-webhook-docs code {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.dev-permissions .dev-form-grid {
+  margin-top: 15px;
+}
+.dev-invoice-list .dev-alert > .dev-secondary {
+  margin-top: 15px;
+}
+.dev-page #developer-video {
+  margin-bottom: 45px;
+}
+.dev-section .dev-stat-grid + .dev-form {
+  margin-top: 30px;
+}
+.dev-card .dev-model-grid > article {
+  padding-top: 12px;
+}
+.dev-card .dev-model-grid .dev-primary {
+  font-size: 11px !important;
+  padding: 12px 16px;
+}
+@media (max-width: 850px) {
+  .dev-chart-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .dev-chart {
+    height: 200px;
+  }
+  .dev-permissions {
+    padding: 15px;
+  }
+  .dev-permissions .dev-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .dev-key-models {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .dev-token-total {
+    font-size: 18px !important;
+  }
+  .dev-local-nav {
+    align-items: flex-start;
+  }
+  .dev-local-nav > div {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+  .dev-select-label {
+    min-width: 0;
+    width: 100%;
+  }
+  .dev-console-tabs {
+    scrollbar-width: thin;
+  }
+}

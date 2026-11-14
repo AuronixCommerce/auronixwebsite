@@ -1,3 +1,4 @@
+import { parseNotice } from "@/lib/developers/changelog";
 import { adminDb } from "@/lib/firebase-admin";
 import { requireAdmin } from "@/lib/server-auth";
 import { writeAuditLog } from "@/lib/server-audit";
@@ -74,6 +75,8 @@ export async function GET(request: Request) {
       );
       return { ...list, items: items.filter(Boolean) };
     };
+    if (url.searchParams.get("view") === "notices")
+      return json(await page("aioApiNotices", cursor));
     if (url.searchParams.get("view") === "invoices")
       return json(await invoices(cursor));
     return json({
@@ -109,6 +112,39 @@ export async function POST(request: Request) {
       });
       await adminDb.ref("settings/aioDeveloperApi").set(pricing);
       return json({ message: "API pricing saved." });
+    }
+    if (b.action === "notice") {
+      let value;
+      try {
+        value = parseNotice(b);
+      } catch (e) {
+        throw new DeveloperError((e as Error).message);
+      }
+      const id = b.id || adminDb.ref("aioApiNotices").push().key;
+      if (!validId(id)) throw new DeveloperError("Invalid notice ID.");
+      const prior = (await adminDb.ref(`aioApiNotices/${id}`).get()).val();
+      await writeAuditLog({
+        actorUid: actor.uid,
+        action: "aio.api.notice",
+        targetType: "api-notice",
+        targetId: id,
+        summary: value.title,
+        request,
+      });
+      await adminDb
+        .ref(`aioApiNotices/${id}`)
+        .set({
+          ...value,
+          id,
+          createdAt: prior?.createdAt || Date.now(),
+          updatedAt: Date.now(),
+          updatedBy: actor.uid,
+        });
+      return json({
+        message: value.published
+          ? "API notice published."
+          : "API notice saved as a draft.",
+      });
     }
     if (!validId(b.uid))
       throw new DeveloperError("Select a developer account.");

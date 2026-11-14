@@ -27,6 +27,7 @@ const PUBLIC_ROUTES: Array<{
   {path:'/partnership-call',changeFrequency:'monthly',priority:0.7},
   {path:'/guide',changeFrequency:'monthly',priority:0.8},
   {path:'/aio/chat',changeFrequency:'monthly',priority:0.8},
+  {path:'/aio/developers/changelog',changeFrequency:'weekly',priority:0.7},
   {path:'/aio/developers/terms',changeFrequency:'monthly',priority:0.6},
   {path:'/aio/developers',changeFrequency:'monthly',priority:0.8},
   {path:'/aio',changeFrequency:'monthly',priority:0.8},

@@ -1,5 +1,8 @@
 import Link from "next/link";
-import { API_PRIVACY_SUMMARY } from "@/lib/developers/terms";
+import {
+  API_PRIVACY_SUMMARY,
+  API_INTEGRATIONS_PRIVACY,
+} from "@/lib/developers/terms";
 export function DeveloperLegalNotice({
   privacy = false,
 }: {

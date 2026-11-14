@@ -51,6 +51,7 @@ function harness(initial = {}) {
         return { committed: value !== undefined, snapshot: snap(p) };
       },
       orderByChild: (field) => ({
+        limitToLast: (count) => ({ get: async () => ({ val: () => Object.fromEntries(Object.entries(read(p) || {}).sort(([, a], [, b]) => a[field] - b[field]).slice(-count)) }) }),
         endAt: (value) => ({
           limitToFirst: (count) => ({ get: async () => ({ val: () => Object.fromEntries(Object.entries(read(p) || {}).filter(([, v]) => v[field] <= value).sort(([, a], [, b]) => a[field] - b[field]).slice(0, count)) }) }),
         }),

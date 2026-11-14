@@ -177,7 +177,7 @@ export function AuronixVideoGuide({src = AURONIX_OVERVIEW_VIDEO, title = "The Au
           <h2 id={`${id}-title`}>{title}</h2>
         </div>
         <span>
-          {videoTimestamp(initialDuration)} <i /> {captionSrc ? "English captions" : "Captions included"}
+          {videoTimestamp(initialDuration)} <i /> {captionSrc ? "English captions" : "Video guide"}
         </span>
       </div>
       <div className={`av-guide-player-grid${chapters.length ? "" : " av-guide-player-solo"}`}>

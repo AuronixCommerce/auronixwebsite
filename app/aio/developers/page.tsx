@@ -1,3 +1,4 @@
+import { SdkDownloads } from "@/components/developers/sdk-downloads";
 import { DeveloperVideoGuide } from "@/components/developers/video-guide";
 import Link from "next/link";
 import {
@@ -29,6 +30,7 @@ export default function Page() {
             <a href="#models">Models &amp; pricing</a>
             <a href="#api-reference">API reference</a>
             <Link href="/aio/developers/terms">API Terms</Link>
+            <Link href="/aio/developers/changelog">Changelog</Link>
             <Link href="/aio/developers/console">
               Console <ArrowUpRight size={15} />
             </Link>
@@ -81,7 +83,7 @@ export default function Page() {
             </div>
           </div>
         </section>
-        <DeveloperVideoGuide/>
+        <DeveloperVideoGuide />
         <section className="dev-benefits" aria-label="Platform benefits">
           {[
             {
@@ -167,6 +169,7 @@ export default function Page() {
           </div>
           <DeveloperReference />
         </section>
+        <SdkDownloads />
         <section className="dev-bottom">
           <AuronixMark />
           <div>

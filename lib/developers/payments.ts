@@ -1,3 +1,4 @@
+import { scheduleAccountEvents, queueEvent } from "./events";
 import { COMPANY } from "@/lib/constants";
 import { adminDb } from "@/lib/firebase-admin";
 import { sendProfessionalEmail } from "@/lib/server-mail";
@@ -214,6 +215,7 @@ export async function recordCredit(
   actorUid: string,
   reference: string,
   reason: string,
+  event?: any,
 ) {
   await claimReceipt(uid, id, units, actorUid, reference);
   const previous = (
@@ -236,7 +238,7 @@ export async function recordCredit(
     };
   }
   return {
-    balance: await grant(uid, id, units, actorUid, reference, reason),
+    balance: await grant(uid, id, units, actorUid, reference, reason, event),
     duplicate: false,
   };
 }
@@ -327,6 +329,17 @@ export async function approvePayment(
       },
     };
   });
+  const paymentEvent = {
+    id: hash(uid + ":payment:" + id),
+    type: "payment.approved",
+    createdAt: Date.now(),
+    data: {
+      request_id: id,
+      credits: locked.credits,
+      amount_usd_cents: locked.usdCents,
+      currency: "USD",
+    },
+  };
   const credited = await recordCredit(
     uid,
     grantId,
@@ -334,12 +347,19 @@ export async function approvePayment(
     actorUid,
     reference,
     reason,
+    paymentEvent,
   );
   const result = await changeInvoice(uid, id, (v) => {
     if (v.status !== "approving")
       throw Error("Payment approval state changed. Refresh the request.");
     return { ...v, status: "credited", creditedAt: Date.now(), grantId };
   });
+  try {
+    await queueEvent(uid, paymentEvent);
+    await scheduleAccountEvents(uid);
+  } catch {
+    /* The wallet outbox persists until the next delivery attempt. */
+  }
   return {
     invoice: result,
     balance: credited.balance,

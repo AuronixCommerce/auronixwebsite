@@ -1,5 +1,36 @@
-import { AuronixVideoGuide } from '@/components/site/auronix-video-guide';
-export const AIO_DEVELOPER_VIDEO = 'https://pub-b16dcf377d0647a5b33af7da32570957.r2.dev/AIO_Developer_Guide_Review_1080p_Clean.mp4';
+import { AuronixVideoGuide } from "@/components/site/auronix-video-guide";
+export const AIO_DEVELOPER_VIDEO =
+  "https://pub-b16dcf377d0647a5b33af7da32570957.r2.dev/AIO_Developer_Guide_Review_1080p_Clean.mp4";
 export function DeveloperVideoGuide() {
-  return <section className="dev-section" id="developer-video" aria-labelledby="developer-video-heading"><div className="dev-section-title"><div><span className="dev-kicker">THE DEVELOPER WALKTHROUGH</span><h2 id="developer-video-heading">From your first account to your first API call.</h2><p className="dev-muted">A 4½-minute guide to access, pricing, manual payments, keys, and text API requests.</p></div><span className="dev-badge">Video guide · 4:30</span></div><AuronixVideoGuide src={AIO_DEVELOPER_VIDEO} title="AIO Developer Platform — Complete Guide" poster="/guides/aio-developers-cover.jpg" initialDuration={270} chapters={[]} captionSrc={null} chapterTrackSrc={null} note="Developer walkthrough recorded November 13, 2026. Check the console for current prices, availability, and interface updates."/></section>;
+  return (
+    <section
+      className="dev-section"
+      id="developer-video"
+      aria-labelledby="developer-video-heading"
+    >
+      <div className="dev-section-title">
+        <div>
+          <span className="dev-kicker">THE DEVELOPER WALKTHROUGH</span>
+          <h2 id="developer-video-heading">
+            From your first account to your first API call.
+          </h2>
+          <p className="dev-muted">
+            A 4½-minute guide to access, pricing, manual payments, keys, and
+            text API requests.
+          </p>
+        </div>
+        <span className="dev-badge">Video guide · 4:30</span>
+      </div>
+      <AuronixVideoGuide
+        src={AIO_DEVELOPER_VIDEO}
+        title="AIO Developer Platform — Complete Guide"
+        poster="/guides/aio-developers-cover.jpg"
+        initialDuration={270}
+        chapters={[]}
+        captionSrc={null}
+        chapterTrackSrc={null}
+        note="Developer walkthrough recorded November 13, 2026. Check the console for current prices, availability, and interface updates."
+      />
+    </section>
+  );
 }

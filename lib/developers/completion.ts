@@ -1,3 +1,5 @@
+import { adminDb } from "@/lib/firebase-admin";
+import { scheduleAccountEvents } from "@/lib/developers/events";
 import { randomBytes } from "crypto";
 import {
   bodyJson,
@@ -18,8 +20,11 @@ import {
 import { complete, providerModel } from "@/lib/developers/provider";
 export async function executeCompletion(
   request: Request,
-  u: { uid: string; keyId: string },
+  u: { uid: string; keyId: string; models?: string[] },
 ) {
+  const started = Date.now();
+  let selectedModel = "unknown";
+  let hadReservation = false;
   let reservation: { uid: string; id: string } | null = null;
   try {
     await rateLimit(u.uid, "api-attempts", 300);
@@ -39,6 +44,13 @@ export async function executeCompletion(
         e instanceof Error ? e.message : "Invalid request.",
       );
     }
+    selectedModel = input.model;
+    if (u.models && !u.models.includes(input.model))
+      throw new DeveloperError(
+        "This API key cannot use the selected model.",
+        403,
+        "model_not_allowed",
+      );
     const model = await providerModel(input.model),
       rate = pricing.rates[input.model];
     const key = request.headers.get("idempotency-key");
@@ -58,6 +70,7 @@ export async function executeCompletion(
       rate,
     );
     reservation = { uid: u.uid, id };
+    hadReservation = true;
     let answer;
     try {
       answer = await complete(input, model);
@@ -73,8 +86,16 @@ export async function executeCompletion(
       answer.usage.completion_tokens,
       rate,
     );
-    const balance = await settle(u.uid, id, answer.usage, charge);
+    const balance = await settle(u.uid, id, answer.usage, charge, {
+      durationMs: Date.now() - started,
+      statusCode: 200,
+    });
     reservation = null;
+    try {
+      await scheduleAccountEvents(u.uid);
+    } catch {
+      /* Delivery failures never change a settled API charge or result. */
+    }
     return json(
       {
         id: `aio-${id}`,
@@ -105,11 +126,39 @@ export async function executeCompletion(
   } catch (e) {
     if (reservation) {
       try {
-        await settle(reservation.uid, reservation.id);
+        await settle(reservation.uid, reservation.id, undefined, 0, {
+          durationMs: Date.now() - started,
+          errorCode:
+            e instanceof DeveloperError ? e.code : "service_unavailable",
+          statusCode: e instanceof DeveloperError ? e.status : 503,
+        });
       } catch {
         /* Pending holds expire after two minutes and are recovered on the next wallet/API transaction. */
       }
     }
+    if (!hadReservation) {
+      const attemptId = randomBytes(20).toString("hex");
+      await adminDb
+        .ref(`aioDeveloperUsage/${u.uid}/${started}_${attemptId}`)
+        .set({
+          id: attemptId,
+          requestId: attemptId,
+          createdAt: started,
+          finishedAt: Date.now(),
+          durationMs: Date.now() - started,
+          model: selectedModel,
+          keyId: u.keyId,
+          status: "rejected",
+          charged: 0,
+          errorCode:
+            e instanceof DeveloperError ? e.code : "service_unavailable",
+          statusCode: e instanceof DeveloperError ? e.status : 503,
+        })
+        .catch(() => undefined);
+    }
+    try {
+      await scheduleAccountEvents(u.uid);
+    } catch {}
     return fail(e);
   }
 }

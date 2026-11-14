@@ -7,7 +7,9 @@ export async function GET(request: Request) {
     await rateLimit(u.uid, "models", 60);
     return json({
       object: "list",
-      data: DEVELOPER_MODELS.map((m) => ({
+      data: DEVELOPER_MODELS.filter(
+        (m) => !u.models || u.models.includes(m.id),
+      ).map((m) => ({
         id: m.id,
         object: "model",
         owned_by: "auronix",

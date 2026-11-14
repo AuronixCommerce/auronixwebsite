@@ -13,6 +13,7 @@ import {
 import { UsageTable } from "./console";
 import { developerFetch } from "./client";
 import { AdminInvoiceReview } from "./invoice-payments";
+import { AdminApiNotices } from "./changelog";
 const date = (n: number) => new Date(n).toLocaleString();
 export function AdminDevelopers() {
   const [data, setData] = useState<any>(null),
@@ -131,6 +132,12 @@ export function AdminDevelopers() {
             onClick={() => setTab("pricing")}
           >
             API pricing
+          </button>
+          <button
+            aria-pressed={tab === "notices"}
+            onClick={() => setTab("notices")}
+          >
+            API changelog notices
           </button>
         </div>
         {!data ? (
@@ -518,7 +525,7 @@ export function AdminDevelopers() {
                           <td>
                             <button
                               className="dev-secondary"
-                              disabled={busy || i.status === "credited"}
+                              disabled={busy}
                               onClick={() => void run(() => open(i.uid, i))}
                             >
                               Review payment
@@ -558,6 +565,7 @@ export function AdminDevelopers() {
                 )}
               </section>
             )}
+            {tab === "notices" && <AdminApiNotices />}
             {tab === "pricing" && (
               <section className="dev-card">
                 <span className="dev-kicker">MANAGE LAUNCH RATES</span>

@@ -1,3 +1,11 @@
+import {
+  DEFAULT_SPENDING,
+  spendingState,
+  updateCounters,
+  ipAllowed,
+  requestIp,
+  type KeyPermissions,
+} from "./controls";
 import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
@@ -201,29 +209,67 @@ export async function apiIdentity(request: Request) {
       401,
       "invalid_api_key",
     );
+  if (value.permissions?.expiresAt && value.permissions.expiresAt <= Date.now())
+    throw new DeveloperError(
+      "This API key has expired.",
+      401,
+      "expired_api_key",
+    );
+  if (!ipAllowed(requestIp(request), value.permissions?.allowedIps || []))
+    throw new DeveloperError(
+      "This IP address is not allowed for this API key.",
+      403,
+      "ip_not_allowed",
+    );
   requireApiTerms(await account(value.uid, true));
   // A suspended Firebase account cannot keep using previously issued API keys.
   const user = await adminAuth.getUser(value.uid).catch(() => null);
-  if (!user || user.disabled || !user.emailVerified)
+  const profileStatus = (
+    await adminDb.ref(`users/${value.uid}/status`).get()
+  ).val();
+  if (
+    !user ||
+    user.disabled ||
+    !user.emailVerified ||
+    ["disabled", "suspended"].includes(profileStatus)
+  )
     throw new DeveloperError(
       "Account access is disabled.",
       403,
       "account_disabled",
     );
-  return { uid: value.uid as string, keyId: id };
+  return {
+    uid: value.uid as string,
+    keyId: id,
+    models: value.permissions?.models as string[] | undefined,
+  };
 }
-export async function createKey(uid: string, name: string) {
+export async function createKey(
+  uid: string,
+  name: string,
+  permissions: KeyPermissions = {
+    models: ["aio-one", "aio-2", "aio-2-fast"],
+    allowedIps: [],
+    expiresAt: null,
+  },
+) {
   const id = randomBytes(16).toString("hex"),
     secret = `aio_live_${id}_${randomBytes(24).toString("hex")}`,
     now = Date.now();
   await adminDb.ref().update({
-    [`aioDeveloperKeyIndex/${id}`]: { uid, hash: hash(secret), createdAt: now },
+    [`aioDeveloperKeyIndex/${id}`]: {
+      uid,
+      hash: hash(secret),
+      createdAt: now,
+      permissions,
+    },
     [`aioDeveloperKeys/${uid}/${id}`]: {
       id,
       name,
       prefix: secret.slice(0, 20) + "…",
       createdAt: now,
       status: "active",
+      permissions,
     },
   });
   return { secret, id };
@@ -282,6 +328,23 @@ export async function reserve(
         reason = "duplicate";
         return;
       }
+      const budget = spendingState(v, now);
+      if (
+        budget.controls.dailyUnits !== null &&
+        budget.dailySpent + budget.dailyReserved + amount >
+          budget.controls.dailyUnits
+      ) {
+        reason = "daily_limit";
+        return;
+      }
+      if (
+        budget.controls.monthlyUnits !== null &&
+        budget.monthlySpent + budget.monthlyReserved + amount >
+          budget.controls.monthlyUnits
+      ) {
+        reason = "monthly_limit";
+        return;
+      }
       const minute = Math.floor(now / 60_000),
         count = v.minute === minute ? Number(v.minuteCount || 0) : 0;
       if (count >= rpm) {
@@ -322,6 +385,12 @@ export async function reserve(
       return v;
     });
   if (!result.committed) {
+    if (reason === "daily_limit" || reason === "monthly_limit")
+      throw new DeveloperError(
+        `Account ${reason === "daily_limit" ? "daily" : "monthly"} spending limit reached. Limits include active request holds and reset in UTC.`,
+        402,
+        reason,
+      );
     if (reason === "duplicate")
       throw new DeveloperError(
         "This Idempotency-Key has already been used. Check usage before retrying with a new key.",
@@ -346,6 +415,11 @@ export async function settle(
   id: string,
   usage?: { prompt_tokens: number; completion_tokens: number },
   charge = 0,
+  metadata: {
+    durationMs?: number;
+    errorCode?: string;
+    statusCode?: number;
+  } = {},
 ) {
   const now = Date.now();
   const result = await adminDb
@@ -358,12 +432,41 @@ export async function settle(
         return;
       current.balance += r.reserved - charge;
       current.spent = Number(current.spent || 0) + charge;
+      updateCounters(current, r, charge, now);
+      const controls = { ...DEFAULT_SPENDING, ...(current.controls || {}) };
+      const actualBalance =
+        current.balance +
+        Object.values<any>(current.requests)
+          .filter((p) => p.status === "pending" && p.id !== id)
+          .reduce((s, p) => s + p.reserved, 0);
+      if (
+        usage &&
+        actualBalance <= controls.lowBalanceUnits &&
+        current.lowBalanceArmed !== false
+      ) {
+        current.pendingEvents ||= {};
+        current.hasPendingEvents = true;
+        const eventId = hash(uid + ":balance:" + id);
+        current.pendingEvents[eventId] = {
+          id: eventId,
+          type: "balance.low",
+          createdAt: now,
+          email: controls.emailAlerts,
+          data: {
+            balance_units: actualBalance,
+            threshold_units: controls.lowBalanceUnits,
+            units_per_credit: CREDIT_UNITS,
+          },
+        };
+        current.lowBalanceArmed = false;
+      }
       current.requests[id] = {
         ...r,
         status: usage ? "completed" : "failed",
         charged: charge,
         usage: usage || null,
         finishedAt: now,
+        ...metadata,
       };
       return current;
     });
@@ -398,6 +501,7 @@ export async function wallet(uid: string) {
   const billing = result.snapshot.val();
   await archiveRequests(uid, billing);
   return {
+    ...spendingState(billing),
     balance: billing.balance,
     spent: billing.spent,
     reserved: Object.values<any>(billing.requests || {}).reduce(
@@ -413,6 +517,7 @@ export async function grant(
   actorUid: string,
   reference: string,
   reason: string,
+  event?: any,
 ) {
   if (
     !validId(id) ||
@@ -434,6 +539,19 @@ export async function grant(
       v.references ||= {};
       v.references[hash(reference.toLowerCase())] = id;
       v.balance += units;
+      if (event) {
+        v.pendingEvents ||= {};
+        v.hasPendingEvents = true;
+        v.pendingEvents[event.id] = event;
+      }
+      if (
+        v.balance +
+          Object.values<any>(v.requests || {})
+            .filter((r) => r.status === "pending")
+            .reduce((sum, r) => sum + r.reserved, 0) >
+        { ...DEFAULT_SPENDING, ...(v.controls || {}) }.lowBalanceUnits
+      )
+        v.lowBalanceArmed = true;
       v.grants[id] = {
         id,
         units,

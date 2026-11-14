@@ -6,7 +6,10 @@
     },
     "aioDeveloperBilling": {
       ".read": false,
-      ".write": false
+      ".write": false,
+      ".indexOn": [
+        "hasPendingEvents"
+      ]
     },
     "aioDeveloperKeys": {
       ".read": false,
@@ -46,6 +49,30 @@
       }
     },
     "aioDeveloperPaymentReferences": {
+      ".read": false,
+      ".write": false
+    },
+    "aioDeveloperWebhooks": {
+      ".read": false,
+      ".write": false
+    },
+    "aioDeveloperEvents": {
+      ".read": false,
+      ".write": false,
+      "$uid": {
+        ".indexOn": [
+          "createdAt"
+        ]
+      }
+    },
+    "aioDeveloperEventQueue": {
+      ".read": false,
+      ".write": false,
+      ".indexOn": [
+        "nextAttemptAt"
+      ]
+    },
+    "aioApiNotices": {
       ".read": false,
       ".write": false
     }

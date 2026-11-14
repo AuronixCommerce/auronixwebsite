@@ -5,7 +5,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   images: { unoptimized: true },
-  experimental: { serverComponentsExternalPackages: ['pdfjs-dist'], outputFileTracingIncludes: { '/api/admin/knowledge':['./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs'], '/api/aio/transcript': ['./public/fonts/manrope-400.ttf','./public/fonts/manrope-700.ttf','./public/auronix-signature.jpeg'] } },
+  experimental: { serverComponentsExternalPackages: ['pdfjs-dist'], outputFileTracingIncludes: { '/api/developers/receipts/*':['./public/fonts/manrope-400.ttf','./public/fonts/manrope-700.ttf','./public/auronix-signature.jpeg'], '/api/admin/knowledge':['./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs'], '/api/aio/transcript': ['./public/fonts/manrope-400.ttf','./public/fonts/manrope-700.ttf','./public/auronix-signature.jpeg'] } },
   async redirects() {
     const logo = 'https://pub-6d8ed6ce9591489c885eda64cf2ea10f.r2.dev/AuronixCommerceLLC/AuronixNewLogo.jpeg';
     return [{ source:'/portfolio', destination:'https://shop.auronixcommerce.com/', permanent:true },{ source:'/products', destination:'https://shop.auronixcommerce.com/', permanent:true }, ...['/favicon.ico', '/apple-touch-icon.png', '/apple-touch-icon-precomposed.png'].map((source) => ({

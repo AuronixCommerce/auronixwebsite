@@ -1,3 +1,4 @@
+import { drainDeveloperEvents } from "@/lib/developers/events";
 import { createHash, createHmac } from 'crypto';
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
@@ -36,6 +37,7 @@ export async function GET(request: Request) {
     removed.developerRequestClaims = claimRemovals.filter(r => r.committed).length;
     if (Object.keys(updates).length) await adminDb.ref().update(updates);
 
+    removed.developerEventsProcessed = await drainDeveloperEvents(10);
     const backupNodes = ['newsletterSubscribers', 'newsletterCampaigns', 'sellerApplications', 'supplierApplications', 'users', 'site', 'legal', 'faqs', 'blogPosts', 'careers'];
     const backup: Record<string, unknown> = { schemaVersion: 1, createdAt: now, source: 'auronix-firebase-rtdb' };
     for (const node of backupNodes) backup[node] = (await adminDb.ref(node).get()).val() || null;

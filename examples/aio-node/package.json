@@ -1,0 +1,1 @@
+{"name":"aio-node-starter","version":"1.0.0","private":true,"type":"module","scripts":{"start":"node --env-file=.env example.mjs","webhook":"node --env-file=.env webhook.mjs"},"engines":{"node":">=20.6"}}

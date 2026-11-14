@@ -34,6 +34,7 @@ export const NAV_GROUPS = [
       "/aio",
       "/aio/developers",
       "/aio/developers/terms",
+      "/aio/developers/changelog",
       "/aio/chat",
       "/support",
       "/support/chat",
@@ -51,6 +52,7 @@ export const NAV_GROUPS = [
   },
 ];
 export const PUBLIC_PAGES = [
+  {id:"aio-api-changelog",path:"/aio/developers/changelog",title:"AIO API Changelog",category:"Resources"},
   {id:"aio-api-terms",path:"/aio/developers/terms",title:"AIO API Terms & Manual Payments",category:"Resources"},
  {id:"aio-developers",path:"/aio/developers",title:"AIO API for Developers",category:"Resources"},
  {id:'guides',path:'/guides',title:'Guide Library',category:'Resources'},

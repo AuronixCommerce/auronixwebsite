@@ -1,6 +1,18 @@
 "use client";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+import { DeveloperIntegrations } from "./integrations";
+import {
+  KeyPermissionFields,
+  KeyPermissionEditor,
+  permissionsFromForm,
+} from "./key-permissions";
+import { SdkDownloads } from "./sdk-downloads";
+const DeveloperAnalytics = dynamic(() => import("./analytics"), {
+  loading: () => <p className="dev-empty">Loading usage charts…</p>,
+  ssr: false,
+});
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
@@ -96,9 +108,15 @@ export function DeveloperConsole() {
     const requested = new URLSearchParams(window.location.search).get("tab");
     if (
       requested &&
-      ["overview", "keys", "usage", "billing", "docs", "playground"].includes(
-        requested,
-      )
+      [
+        "overview",
+        "keys",
+        "usage",
+        "billing",
+        "controls",
+        "docs",
+        "playground",
+      ].includes(requested)
     )
       setTab(requested);
   }, []);
@@ -510,6 +528,7 @@ export function DeveloperConsole() {
                     "keys",
                     "usage",
                     "billing",
+                    "controls",
                     "docs",
                   ].map((t) => (
                     <button
@@ -636,6 +655,7 @@ export function DeveloperConsole() {
                           const d = await developerFetch("keys", {
                             action: "create",
                             name: f.get("name"),
+                            permissions: permissionsFromForm(f),
                           });
                           setSecret(d.secret);
                           setCopied(false);
@@ -654,6 +674,8 @@ export function DeveloperConsole() {
                           disabled={!approved}
                         />
                       </label>
+                      <KeyPermissionFields disabled={!approved} />
+
                       <button
                         className="dev-primary"
                         disabled={busy || !approved}
@@ -680,7 +702,22 @@ export function DeveloperConsole() {
                                 <code>{k.prefix}</code>
                               </td>
                               <td>{date(k.createdAt)}</td>
-                              <td>{k.status}</td>
+                              <td>
+                                {k.status}
+                                <small>
+                                  {k.permissions?.models?.join(", ") ||
+                                    "All models"}{" "}
+                                  ·{" "}
+                                  {k.permissions?.allowedIps?.length
+                                    ? k.permissions.allowedIps.length +
+                                      " IP rules"
+                                    : "Any IP"}
+                                  <br />
+                                  {k.permissions?.expiresAt
+                                    ? "Expires " + date(k.permissions.expiresAt)
+                                    : "No expiry"}
+                                </small>
+                              </td>
                               <td>
                                 {k.status === "active" && (
                                   <button
@@ -709,6 +746,24 @@ export function DeveloperConsole() {
                         <p className="dev-empty">No API keys yet.</p>
                       )}
                     </div>
+                    <KeyPermissionEditor
+                      keys={keys}
+                      busy={busy}
+                      onSave={(id, permissions) =>
+                        run(async () => {
+                          setNotice(
+                            (
+                              await developerFetch("keys", {
+                                action: "permissions",
+                                id,
+                                permissions,
+                              })
+                            ).message,
+                          );
+                          await load();
+                        })
+                      }
+                    />
                     {keyNext && (
                       <button
                         className="dev-secondary"
@@ -736,6 +791,7 @@ export function DeveloperConsole() {
                 )}
                 {tab === "usage" && (
                   <section className="dev-card">
+                    <DeveloperAnalytics />
                     <h2>Usage ledger</h2>
                     <p className="dev-muted">
                       Each row shows a request’s model, provider-reported
@@ -948,7 +1004,13 @@ export function DeveloperConsole() {
                     onUsage={() => setTab("usage")}
                   />
                 )}
-                {tab === "docs" && <DeveloperReference />}
+                {tab === "controls" && <DeveloperIntegrations />}
+                {tab === "docs" && (
+                  <>
+                    <SdkDownloads />
+                    <DeveloperReference />
+                  </>
+                )}
               </>
             )}
           </>

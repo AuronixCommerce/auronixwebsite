@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
+import { downloadPaymentReceipt } from "./client";
 const date = (n: number) => (n ? new Date(n).toLocaleString() : "—");
 export function InvoicePayments({
   invoices,
@@ -11,10 +12,17 @@ export function InvoicePayments({
   busy: boolean;
   onAction: (b: any) => Promise<void>;
 }) {
+  const [receiptError, setReceiptError] = useState(""),
+    [downloading, setDownloading] = useState("");
   if (!invoices.length)
     return <p className="dev-empty">No credit purchase requests yet.</p>;
   return (
     <div className="dev-invoice-list">
+      {receiptError && (
+        <p className="dev-alert dev-error" role="alert">
+          {receiptError}
+        </p>
+      )}
       {invoices.map((i) => (
         <article className="dev-payment-card" key={i.id}>
           <div className="dev-section-title">
@@ -151,6 +159,21 @@ export function InvoicePayments({
           {i.status === "credited" && (
             <div className="dev-alert">
               <strong>Payment approved · {i.credits} credits added</strong>
+              <button
+                className="dev-secondary"
+                disabled={downloading === i.id}
+                onClick={() => {
+                  setReceiptError("");
+                  setDownloading(i.id);
+                  void downloadPaymentReceipt(i.id)
+                    .catch((e) => setReceiptError(e.message))
+                    .finally(() => setDownloading(""));
+                }}
+              >
+                {downloading === i.id
+                  ? "Preparing receipt…"
+                  : "Download payment receipt PDF"}
+              </button>
               <p>
                 Approved {date(i.creditedAt)}. Your credit addition and API
                 spending are visible in Billing and Usage.
@@ -185,10 +208,28 @@ export function AdminInvoiceReview({
   busy: boolean;
   onReview: (body: any) => Promise<void>;
 }) {
-  const [action, setAction] = useState("send-instructions");
+  const [action, setAction] = useState("send-instructions"),
+    [receiptError, setReceiptError] = useState("");
   return (
     <div className="dev-payment-review">
       <h3>Manual payment review</h3>
+      {receiptError && (
+        <p className="dev-alert dev-error" role="alert">
+          {receiptError}
+        </p>
+      )}
+      {invoice.status === "credited" && (
+        <button
+          className="dev-secondary"
+          onClick={() =>
+            void downloadPaymentReceipt(invoice.id, uid).catch((e) =>
+              setReceiptError(e.message),
+            )
+          }
+        >
+          Download payment receipt PDF
+        </button>
+      )}
       <p>
         Request <code>{invoice.id}</code> ·{" "}
         <strong>{invoice.status.replaceAll("_", " ")}</strong>

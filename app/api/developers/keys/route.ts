@@ -1,3 +1,4 @@
+import { parsePermissions } from "@/lib/developers/controls";
 import { adminDb } from "@/lib/firebase-admin";
 import {
   account,
@@ -40,7 +41,32 @@ export async function POST(request: Request) {
       await account(u.uid, true);
       const name = clean(b.name, 80);
       if (!name) throw new DeveloperError("Give your key a name.");
-      return json(await createKey(u.uid, name), 201);
+      let permissions;
+      try {
+        permissions = parsePermissions(b.permissions);
+      } catch (e) {
+        throw new DeveloperError((e as Error).message);
+      }
+      return json(await createKey(u.uid, name, permissions), 201);
+    }
+    if (b.action === "permissions" && validId(b.id)) {
+      await account(u.uid, true);
+      const own = (
+        await adminDb.ref(`aioDeveloperKeys/${u.uid}/${b.id}`).get()
+      ).val();
+      if (!own || own.status !== "active")
+        throw new DeveloperError("Active API key not found.", 404);
+      let permissions;
+      try {
+        permissions = parsePermissions(b.permissions);
+      } catch (e) {
+        throw new DeveloperError((e as Error).message);
+      }
+      await adminDb.ref().update({
+        [`aioDeveloperKeyIndex/${b.id}/permissions`]: permissions,
+        [`aioDeveloperKeys/${u.uid}/${b.id}/permissions`]: permissions,
+      });
+      return json({ message: "Key permissions updated." });
     }
     if (b.action === "revoke" && validId(b.id)) {
       if (
