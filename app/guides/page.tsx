@@ -5,6 +5,7 @@ import { ArrowRight, PlayCircle, BookOpen } from "lucide-react";
 import { PageHeader } from "@/components/site/page-header";
 import { Section } from "@/components/site/section";
 const guides = [
+  { title: "AIO Developer Platform", category: "Developers", type: "Video · 4½ min", description: "Accounts, admin approval, credits, manual payment, API keys, and your first text request.", href: "/aio/developers#developer-video" },
   {
     title: "Become an Auronix supplier",
     category: "Suppliers",
@@ -59,7 +60,7 @@ export default function Page() {
             <br />A clear next step.
           </>
         }
-        description="Watch a walkthrough or open a practical guide for suppliers, accounts, applications, and AIO."
+        description="Watch a walkthrough or open a practical guide for suppliers, accounts, applications, AIO, and developers."
       />
       <Section>
         <div className="op-guide-filters">
@@ -73,7 +74,7 @@ export default function Page() {
             />
           </label>
           <div className="op-tabs" role="tablist" aria-label="Guide categories">
-            {["All", "Suppliers", "Accounts", "Applications", "AIO"].map(
+            {["All", "Suppliers", "Accounts", "Applications", "AIO", "Developers"].map(
               (c) => (
                 <button
                   key={c}

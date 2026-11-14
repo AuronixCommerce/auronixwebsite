@@ -1,3 +1,4 @@
+import { DeveloperVideoGuide } from "@/components/developers/video-guide";
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -80,6 +81,7 @@ export default function Page() {
             </div>
           </div>
         </section>
+        <DeveloperVideoGuide/>
         <section className="dev-benefits" aria-label="Platform benefits">
           {[
             {
