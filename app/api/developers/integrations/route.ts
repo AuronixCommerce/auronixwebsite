@@ -1,3 +1,4 @@
+import { activityEmail } from "@/lib/email/activity";
 import { adminDb } from "@/lib/firebase-admin";
 import {
   account,
@@ -74,6 +75,7 @@ export async function POST(request: Request) {
         next.controls = controls;
         return next;
       });
+      await activityEmail({to:u.email,event:"spending-controls",title:"Your AIO spending controls were updated",body:"Your daily/monthly limits or low-balance email preferences changed. Check Controls in the developer console to review them.",reference:u.uid,revision:JSON.stringify(controls)+":"+Math.floor(Date.now()/60000),href:"/aio/developers/console?tab=controls"});
       return json({
         message:
           "Spending controls saved. Limits apply to all API keys and live playground requests, in UTC.",
@@ -81,7 +83,9 @@ export async function POST(request: Request) {
     }
     if (b.action === "webhook") {
       try {
-        return json(await configureWebhook(u.uid, b));
+        const configured = await configureWebhook(u.uid, b);
+        await activityEmail({to:u.email,event:"webhook-settings",title:"Your AIO webhook configuration changed",body:"The webhook configuration or signing secret for your developer account was updated. Signing secrets are never included in notification emails.",reference:u.uid,revision:Math.floor(Date.now()/60000),href:"/aio/developers/console?tab=controls"});
+        return json(configured);
       } catch (e) {
         throw new DeveloperError((e as Error).message);
       }

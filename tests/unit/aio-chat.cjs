@@ -913,37 +913,7 @@ test("branded PDFs paginate long guides and render rich transcript content", asy
   if (process.env.AURONIX_PDF_QA)
     fs.writeFileSync(process.env.AURONIX_PDF_QA, bytes);
 });
-test("mail fallback retries an unauthorized continue URL with the standard recovery page", async () => {
-  const previous = process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    oldFetch = global.fetch;
-  process.env.NEXT_PUBLIC_FIREBASE_API_KEY = "test-key";
-  const calls = [];
-  try {
-    global.fetch = async (_, options) => {
-      calls.push(JSON.parse(options.body));
-      return calls.length === 1
-        ? new Response(
-            JSON.stringify({ error: { message: "UNAUTHORIZED_DOMAIN" } }),
-            { status: 400 },
-          )
-        : new Response("{}", { status: 200 });
-    };
-    const mail = load("lib/server-mail.ts");
-    await mail.sendPasswordResetFallback({
-      email: "reader@example.com",
-      continueUrl: "https://auronixcommerce.com/seller/login",
-    });
-    assert.equal(calls.length, 2);
-    assert.ok(calls[0].continueUrl);
-    assert.equal(calls[1].continueUrl, undefined);
-    assert.equal(calls[1].requestType, "PASSWORD_RESET");
-  } finally {
-    global.fetch = oldFetch;
-    if (previous === undefined) delete process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-    else process.env.NEXT_PUBLIC_FIREBASE_API_KEY = previous;
-  }
-});
-test("SMTP authentication failure exits promptly so password-recovery fallback can run", async () => {
+test("SMTP authentication failure exits promptly so queued recovery can retry", async () => {
   const previous = process.env.SMTP_PASSWORD;
   process.env.SMTP_PASSWORD = "test-only";
   let attempts = 0;

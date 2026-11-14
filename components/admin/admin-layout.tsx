@@ -1,4 +1,5 @@
 "use client";
+import { AdminNotificationsProvider, AdminNotificationBell, AdminNotificationBanner } from "./notification-center";
 import { AdminEmailAlert } from "./email-alert";
 import { WorkspaceFrame } from "@/components/design/workspace-frame";
 import { Spinner } from "@/components/design/primitives";
@@ -43,6 +44,7 @@ import {
 } from "lucide-react";
 
 const ICON_MAP: Record<string, any> = {
+  Bell,
   KeyRound,
   LayoutDashboard,
   UserCheck,
@@ -152,8 +154,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <WorkspaceFrame
+    <AdminNotificationsProvider key={user?.email}><WorkspaceFrame
       title="Admin"
+      toolbarTools={<AdminNotificationBell/>}
       email={user?.email}
       items={ADMIN_NAV.map((item) => ({
         ...item,
@@ -161,8 +164,9 @@ export function AdminLayout({ children }: { children: ReactNode }) {
       }))}
       onSignOut={handleSignOut}
     >
+      <AdminNotificationBanner />
       <AdminEmailAlert />
       {children}
-    </WorkspaceFrame>
+    </WorkspaceFrame></AdminNotificationsProvider>
   );
 }

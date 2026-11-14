@@ -21,46 +21,13 @@ test('password reset sends a branded custom-site action link for an existing acc
   assert.equal(response.body.success, true);
   assert.equal(h.mails.length, 1);
   assert.equal(h.mails[0].email, 'seller@example.com');
-  assert.match(h.mails[0].resetUrl, /^https:\/\/auronixcommerce\.com\/reset-password\?oobCode=/);
+  assert.match(h.mails[0].resetUrl, /^https:\/\/auronixcommerce\.com\/reset-password\?code=/);
   assert.doesNotMatch(h.mails[0].resetUrl, /identity\.example\.test/);
 });
 
-test('password reset retries securely without revealing the primary delivery failure', async () => {
-  const h = harness();
-  h.setAuthUser({ email: 'seller@example.com', displayName: '' });
-  h.failPasswordResetMail(true);
-  const originalError = console.error;
-  console.error = () => {};
-  try {
-    const response = await h.call(route, { email: 'seller@example.com' });
-    assert.equal(response.status, 200);
-    assert.equal(response.body.success, true);
-    assert.equal(h.mails[0].type, 'password-reset-fallback');
-    assert.equal(Object.values(h.data.emailDeliveryLogs)[0].status, 'sent');
-    assert.doesNotMatch(JSON.stringify(response.body), /delivery|smtp|provider|unavailable|failed/i);
-  } finally {
-    console.error = originalError;
-  }
-});
-
-test('password reset records failure when both secure delivery paths fail', async () => {
-  const h = harness();
-  h.setAuthUser({ email: 'seller@example.com', displayName: '' });
-  h.failPasswordResetMail(true);
-  h.failPasswordResetFallback(true);
-  const originalError = console.error;
-  console.error = () => {};
-  try {
-    const response = await h.call(route, { email: 'seller@example.com' });
-    assert.equal(response.status, 200);
-    assert.equal(response.body.success, true);
-    const deliveries = Object.values(h.data.emailDeliveryLogs || {});
-    assert.equal(deliveries.length, 1);
-    assert.equal(deliveries[0].status, 'failed');
-    assert.match(deliveries[0].error, /both secure delivery attempts/i);
-  } finally {
-    console.error = originalError;
-  }
+test('password reset never sends a provider-hosted fallback when branded delivery fails', async () => {
+ const h=harness(); h.setAuthUser({email:'seller@example.com'}); h.failPasswordResetMail(true);
+ const r=await h.call(route,{email:'seller@example.com'});assert.equal(r.status,200);assert.equal(r.body.success,true);assert.equal(h.mails.length,0);assert.equal(Object.values(h.data.emailDeliveryLogs)[0].status,'failed');assert.doesNotMatch(JSON.stringify(r.body),/smtp|failed|provider/i);
 });
 
 test('password reset reports a general service error when account lookup is unavailable', async () => {
@@ -77,7 +44,7 @@ test('password reset reports a general service error when account lookup is unav
   }
 });
 
-test('password reset still attempts recovery delivery when custom link generation fails',async()=>{
+test('generation failures are logged without sending a Firebase default email',async()=>{
  const h=harness();h.setAuthUser({email:'seller@example.com'});h.failResetGeneration(true);
- const response=await h.call(route,{email:'seller@example.com'});assert.equal(response.status,200);assert.equal(response.body.success,true);assert.equal(h.mails[0].type,'password-reset-fallback');assert.equal(Object.values(h.data.emailDeliveryLogs)[0].status,'sent');
+ const r=await h.call(route,{email:'seller@example.com'});assert.equal(r.status,200);assert.equal(h.mails.length,0);assert.equal(Object.values(h.data.emailDeliveryLogs)[0].status,'failed');
 });

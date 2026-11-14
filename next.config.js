@@ -27,6 +27,7 @@ const nextConfig = {
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
         ],
       },
+      { source: '/reset-password', headers: [{ key: 'Referrer-Policy', value: 'no-referrer' },{ key: 'Cache-Control', value: 'no-store' },{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }] },
     ];
   },
 };

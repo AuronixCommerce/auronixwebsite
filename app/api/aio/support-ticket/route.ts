@@ -1,3 +1,4 @@
+import { activityEmail } from "@/lib/email/activity";
 import { randomBytes, createHash } from "crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -67,6 +68,7 @@ export async function POST(request: Request) {
       updatedAt: now,
     });
 
+    await activityEmail({to:parsed.data.email,event:"support-created",title:"Your Auronix support request was received",body:"A support request was recorded using this email address. The team will reply to your request. If you did not contact us, you can ignore this confirmation.",reference:String(ref.key),href:"/support/contact"});
     return NextResponse.json(
       {
         success: true,

@@ -1,4 +1,5 @@
 "use client";
+import { useSearchParams } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -32,6 +33,7 @@ export async function adminOperations(body?: any, view = "") {
   return d;
 }
 export function AdminOperations() {
+  const notificationParams = useSearchParams();
   const [data, setData] = useState<any>(null),
     [tab, setTab] = useState("suppliers"),
     [selected, setSelected] = useState(""),
@@ -40,6 +42,7 @@ export function AdminOperations() {
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [templates, setTemplates] = useState<any[]>([]);
+  useEffect(() => { const tab=notificationParams.get("tab"), id=notificationParams.get("item"); if(tab==="bookings") setTab("calls"); else if(tab==="feedback") setTab("feedback"); if(id) setSelected(id); }, [notificationParams]);
   async function load() {
     setError("");
     try {
@@ -524,7 +527,7 @@ export function AdminOperations() {
                     </div>
                   ))}
                   <h3>Booking details</h3>
-                  {data.bookings.map((b: any) => (
+                  {data.bookings.filter((b:any)=>!notificationParams.get("item") || notificationParams.get("tab")!=="bookings" || b.id===notificationParams.get("item")).map((b: any) => (
                     <div className="op-card" key={b.id}>
                       <h3>
                         {b.name} · {b.status}
@@ -626,7 +629,7 @@ export function AdminOperations() {
             {tab === "feedback" && (
               <div className="op-stack">
                 {!data.feedback.length && <p>No feedback received yet.</p>}
-                {data.feedback.map((f: any) => (
+                {data.feedback.filter((f:any)=>!notificationParams.get("item") || notificationParams.get("tab")!=="feedback" || f.id===notificationParams.get("item")).map((f: any) => (
                   <article className="op-card" key={f.id}>
                     <div className="op-row">
                       <h3>{f.kind}</h3>

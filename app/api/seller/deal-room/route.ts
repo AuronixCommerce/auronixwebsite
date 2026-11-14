@@ -1,3 +1,4 @@
+import { activityEmail } from "@/lib/email/activity";
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { requireSeller } from '@/lib/server-auth';
@@ -41,6 +42,7 @@ export async function POST(request: Request) {
     const item = { id: messageRef.key, body: message, senderRole: 'seller', senderUid: uid, senderEmail: clean(profile.email, 320), createdAt: Date.now() };
     await messageRef.set(item);
     await appendDealRoomTimeline(applicationId, { type: 'message', title: 'Partner message sent', description: message.slice(0, 240), actorRole: 'seller', actorEmail: clean(profile.email, 320) });
+    await activityEmail({to:profile.email,event:"deal-room-message",title:"Your Deal Room message was sent",body:"Your message is available to the Auronix team in your secure Deal Room.",reference:String(messageRef.key),href:"/seller/deal-room"});
     return NextResponse.json({ success: true, message: item }, { status: 201 });
   } catch (error) {
     return jsonError(userFacingError(error, 'Unable to send this message.'), 401);
@@ -49,7 +51,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const { applicationId, application } = await sellerContext(request);
+    const { applicationId, application, profile } = await sellerContext(request);
     const body = await request.json();
     await ensureDealRoom(applicationId, application);
     if (body.action === 'commercial') {
@@ -57,6 +59,7 @@ export async function PATCH(request: Request) {
       if (commercial.leadTimeDays && (!/^\d{1,4}$/.test(commercial.leadTimeDays) || Number(commercial.leadTimeDays) > 1000)) return jsonError('Lead time must be a number between 0 and 1000 days.');
       await adminDb.ref(`partnerDealRooms/${applicationId}`).update({ commercial, updatedAt: Date.now() });
       await appendDealRoomTimeline(applicationId, { type: 'commercial', title: 'Commercial terms updated', description: 'MOQ, pricing, lead time, brand, and fulfillment information were updated.', actorRole: 'seller' });
+      await activityEmail({to:profile.email,event:"commercial-updated",title:"Your commercial details were updated",body:"Your partnership commercial details were saved in the Deal Room.",reference:applicationId,revision:Math.floor(Date.now()/60000),href:"/seller/deal-room"});
       return NextResponse.json({ success: true, commercial });
     }
     if (body.action === 'preferences') {
@@ -65,6 +68,7 @@ export async function PATCH(request: Request) {
       if (whatsapp && phone.replace(/\D/g, '').length < 8) return jsonError('Enter a valid international phone number before enabling WhatsApp status updates.');
       const preferences = { email: body.email !== false, push: body.push === true, whatsapp, whatsappPhone: phone };
       await adminDb.ref(`partnerDealRooms/${applicationId}`).update({ notificationPreferences: preferences, updatedAt: Date.now() });
+      await activityEmail({to:profile.email,event:"notification-preferences",title:"Your notification preferences were updated",body:"Your email, push or WhatsApp notification settings were changed. Transactional confirmations and essential account security emails remain separate from marketing subscriptions.",reference:applicationId,revision:JSON.stringify(preferences)+":"+Math.floor(Date.now()/60000),href:"/seller/settings"});
       return NextResponse.json({ success: true, notificationPreferences: preferences });
     }
     return jsonError('Unsupported Deal Room action.');

@@ -1,4 +1,5 @@
 "use client";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { RefreshCw, Search, ArrowUpRight } from "lucide-react";
@@ -16,6 +17,7 @@ import { AdminInvoiceReview } from "./invoice-payments";
 import { AdminApiNotices } from "./changelog";
 const date = (n: number) => new Date(n).toLocaleString();
 export function AdminDevelopers() {
+  const notificationParams = useSearchParams();
   const [data, setData] = useState<any>(null),
     [selected, setSelected] = useState<any>(null),
     [tab, setTab] = useState("accounts"),
@@ -34,6 +36,11 @@ export function AdminDevelopers() {
       }),
     [],
   );
+  useEffect(() => {
+    const uid = notificationParams.get('uid');
+    if(!data || !uid) return;
+    void (async () => { try { const selectedData = await developerFetch('?uid='+encodeURIComponent(uid), undefined, true); setSelected(selectedData); setTab('accounts'); const id=notificationParams.get('invoice'); if(id) setInvoice((selectedData.invoices?.items || selectedData.invoices || []).find((i:any)=>i.id===id) || null); } catch(e){setError((e as Error).message);} })();
+  }, [data, notificationParams]);
   async function run(fn: () => Promise<void>) {
     setBusy(true);
     setError("");

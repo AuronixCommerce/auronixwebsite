@@ -1,5 +1,6 @@
 'use client';
 import { userFacingError } from '@/lib/user-facing-error';
+import { CustomerActionSecurity } from '@/components/site/customer-action-security';
 import { Spinner } from '@/components/design/primitives';
 
 import { FormField } from '@/components/design/primitives';
@@ -21,13 +22,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { pushData, getTimestamp } from '@/lib/firebase-db';
+import { getTimestamp } from '@/lib/firebase-db';
 import type { ContactMessage, ContactCategory } from '@/lib/types';
 import { CONTACT_CATEGORIES, COMPANY } from '@/lib/constants';
 import { CheckCircle2, ArrowRight, Loader2, Mail, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ContactPage() {
+  const [security, setSecurity] = useState(''), [securityReset,setSecurityReset] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -77,7 +79,8 @@ export default function ContactPage() {
         updatedAt: now,
       };
 
-      await pushData('contactMessages', message as unknown as Record<string, unknown>);
+      const response = await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...message,turnstileToken:security})});
+      const result = await response.json(); if(!response.ok) throw Error(result.error || 'Unable to send your message.');
       setSuccess(true);
       toast({ title: 'Message sent', description: 'We will be in touch soon.' });
     } catch (err) {
@@ -87,7 +90,7 @@ export default function ContactPage() {
         variant: 'destructive',
       });
     } finally {
-      setSubmitting(false);
+      setSubmitting(false); setSecurity(''); setSecurityReset(v=>v+1);
     }
   };
 
@@ -198,7 +201,8 @@ export default function ContactPage() {
                   />
                 </FormField>
 
-                <Button type="submit" disabled={submitting} size="lg">
+                <CustomerActionSecurity onToken={setSecurity} resetKey={securityReset}/>
+                <Button type="submit" disabled={submitting || (!!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !security)} size="lg">
                   {submitting ? (
                     <>
                       <Spinner className="w-4 h-4 mr-2" />

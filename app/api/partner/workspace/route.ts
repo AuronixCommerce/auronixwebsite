@@ -1,3 +1,4 @@
+import { activityEmail } from "@/lib/email/activity";
 import { adminDb } from "@/lib/firebase-admin";
 import {
   partner,
@@ -92,10 +93,12 @@ export async function POST(request: Request) {
           updatedAt: Date.now(),
           email: user.email,
         });
+      await activityEmail({to:user.email,event:"supplier-draft-saved",title:"Your supplier application draft is saved",body:"Your latest application details are saved. You can return to your supplier workspace to continue.",reference:user.key,revision:Math.floor(Date.now()/3600000),href:"/supplier/track"});
       return response({ success: true });
     }
     if (body.action === "delete-draft") {
       await adminDb.ref(`supplierDrafts/${user.key}`).remove();
+      await activityEmail({to:user.email,event:"supplier-draft-deleted",title:"Your supplier draft was deleted",body:"The unfinished supplier application draft was removed from your workspace.",reference:user.key,revision:Math.floor(Date.now()/3600000),href:"/supplier/track"});
       return response({ success: true });
     }
     if (body.action === "read") {
@@ -123,6 +126,7 @@ export async function POST(request: Request) {
       await adminDb
         .ref(`suppliers/${supplier.id}`)
         .update({ updatedAt: Date.now() });
+      await activityEmail({to:user.email,event:"supplier-reply",title:"Your reply was sent to the Auronix team",body:"Your supplier workspace reply was recorded for the review team.",reference:supplier.id,revision:Math.floor(Date.now()/60000),href:"/supplier/track"});
       return response({ success: true });
     }
     throw new PortalError("Choose a valid workspace action.");

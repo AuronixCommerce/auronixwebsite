@@ -1,3 +1,4 @@
+import { activityEmail } from "@/lib/email/activity";
 import { userFacingError } from '@/lib/user-facing-error';
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
       if (price && (!Number.isFinite(Number(price)) || Number(price) < 0)) return errorResponse('Price must be a valid non-negative number.', 'VALIDATION_ERROR', 400);
       const item = { name, sku: clean(body.sku, 100), category: clean(body.category, 150), description: clean(body.description), price, status: 'draft', createdAt: now, updatedAt: now };
       const ref = adminDb.ref(`sellerData/${uid}/products`).push(); await ref.set(item);
+      await activityEmail({to:profile.email,event:"product-saved",title:"Your product draft was saved",body:"A new product draft is available in your seller workspace.",reference:String(ref.key),href:"/seller/dashboard/products"});
       return NextResponse.json({ success: true, item: { id: ref.key, ...item } }, { status: 201 });
     }
     if (resource === 'catalog') {
@@ -59,6 +61,7 @@ export async function POST(request: Request) {
       const item = { name, url: url.toString(), description: clean(body.description), createdAt: now, updatedAt: now };
       const ref = adminDb.ref(`sellerData/${uid}/catalogs`).push(); await ref.set(item);
       const notification = adminDb.ref(`sellerNotifications/${uid}`).push(); await notification.set({ id: notification.key, type: 'catalog', title: 'Catalog added', message: `${name} is now connected to your seller workspace.`, href: '/seller/dashboard/catalogs', createdAt: now });
+      await activityEmail({to:profile.email,event:'catalog-added',title:'Your catalog was added',body:'Your catalog link was saved in your seller workspace.',reference:String(ref.key),href:'/seller/dashboard/catalogs'});
       return NextResponse.json({ success: true, item: { id: ref.key, ...item } }, { status: 201 });
     }
     if (resource === 'ticket') {
@@ -66,6 +69,7 @@ export async function POST(request: Request) {
       if (!subject || !category || message.length < 10) return errorResponse('Subject, category, and a detailed message are required.', 'VALIDATION_ERROR', 400);
       const item = { name: profile.name || profile.displayName || profile.email || '', email: profile.email || '', sellerUid: uid, sellerEmail: profile.email || '', category, subject, message, status: 'open', createdAt: now, updatedAt: now };
       const ref = adminDb.ref('tickets').push(); await ref.set(item);
+      await activityEmail({to:profile.email,event:'support-created',title:'Your Auronix support request was received',body:'Your support request was saved for the team.',reference:String(ref.key),href:'/seller/support'});
       return NextResponse.json({ success: true, item: { id: ref.key, ...item } }, { status: 201 });
     }
     return errorResponse('Unsupported seller workspace action.', 'UNSUPPORTED_ACTION', 400);
@@ -77,12 +81,13 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const { uid } = await context(request); const body = await request.json();
+    const { uid, profile } = await context(request); const body = await request.json();
     const displayName = clean(body.displayName, 160); const website = clean(body.website, 500);
     if (!displayName) return errorResponse('Display name is required.', 'VALIDATION_ERROR', 400);
     if (website) { try { const url = new URL(website); if (!['http:', 'https:'].includes(url.protocol)) throw new Error(); } catch { return errorResponse('Enter a valid website URL.', 'VALIDATION_ERROR', 400); } }
     const updates = { displayName, name: displayName, businessName: clean(body.businessName, 200), phone: clean(body.phone, 60), website, updatedAt: Date.now() };
     await adminDb.ref(`users/${uid}`).update(updates);
+    await activityEmail({to:profile.email,event:"profile-updated",title:"Your Auronix profile was updated",body:"Your seller profile details were changed. Review your profile in Settings if you did not make this change.",reference:uid,revision:Math.floor(Date.now()/60000),href:"/seller/settings"});
     return NextResponse.json({ success: true, profile: updates });
   } catch (error) {
     console.error('Seller profile update failed:', error instanceof Error ? userFacingError(error) : 'Unknown error');
@@ -92,10 +97,11 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const { uid } = await context(request); const url = new URL(request.url);
+    const { uid, profile } = await context(request); const url = new URL(request.url);
     const resource = url.searchParams.get('resource'); const id = clean(url.searchParams.get('id'), 200);
     if (!id || !['product', 'catalog'].includes(resource || '')) return errorResponse('A valid resource and item ID are required.', 'VALIDATION_ERROR', 400);
     await adminDb.ref(`sellerData/${uid}/${resource === 'product' ? 'products' : 'catalogs'}/${id}`).remove();
+    await activityEmail({to:profile.email,event:"workspace-item-deleted",title:"A seller workspace item was deleted",body:"A product draft or catalog was removed from your workspace.",reference:id,href:"/seller/dashboard"});
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Seller workspace delete failed:', error instanceof Error ? userFacingError(error) : 'Unknown error');

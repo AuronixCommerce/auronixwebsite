@@ -1,3 +1,4 @@
+import { activityEmail } from "@/lib/email/activity";
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { cleanText, sellerContext, sellerTickets } from '@/lib/server-seller-os';
@@ -61,6 +62,7 @@ export async function POST(request: Request) {
       };
       const ref = adminDb.ref('tickets').push();
       await ref.set(ticket);
+      await activityEmail({to:profile.email,event:"support-created",title:"Your Auronix support request was received",body:"Your support ticket was saved for the team. You can follow progress and reply from your seller workspace.",reference:String(ref.key),href:"/seller/support"});
       return NextResponse.json({ success: true, ticket: { id: ref.key, ...ticket, messages: [] } }, { status: 201 });
     }
 
@@ -75,6 +77,7 @@ export async function POST(request: Request) {
       const messageRef = owned.ref.child('messages').push();
       await messageRef.set({ role: 'customer', content: message, createdAt: now });
       await owned.ref.update({ updatedAt: now, lastCustomerReplyAt: now, status: owned.value.status === 'closed' ? 'open' : owned.value.status || 'open' });
+      await activityEmail({to:profile.email,event:'support-reply-saved',title:'Your support reply was saved',body:'Your message was added to the support conversation.',reference:String(messageRef.key),href:'/seller/support'});
       return NextResponse.json({ success: true, message: { id: messageRef.key, role: 'customer', content: message, createdAt: now } });
     }
 
@@ -82,11 +85,13 @@ export async function POST(request: Request) {
       const rating = Number(body.rating);
       if (!Number.isInteger(rating) || rating < 1 || rating > 5) return NextResponse.json({ error: 'Rating must be between 1 and 5.' }, { status: 400 });
       await owned.ref.update({ rating, ratingUpdatedAt: now, updatedAt: now });
+      await activityEmail({to:profile.email,event:"support-rated",title:"Thank you for your support feedback",body:"Your support rating was recorded. Thank you for helping us improve.",reference:id,revision:rating,href:"/seller/support"});
       return NextResponse.json({ success: true, rating });
     }
 
     if (action === 'close') {
       await owned.ref.update({ status: 'closed', closedBySellerAt: now, updatedAt: now });
+      await activityEmail({to:profile.email,event:'support-closed',title:'Your support ticket was closed',body:'Your support ticket was marked closed. You can reopen the conversation if you still need help.',reference:id,href:'/seller/support'});
       return NextResponse.json({ success: true, status: 'closed' });
     }
 

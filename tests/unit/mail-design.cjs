@@ -6,8 +6,9 @@ const ts=require('typescript');
 const root=path.resolve(__dirname,'../..');
 
 function mailHarness(){
-  const sent=[],jobs=new Map(),cache=new Map();
+  const sent=[],jobs=new Map(),cache=new Map(),pending=[];
   const mocks={
+    "@vercel/functions":{waitUntil:promise=>pending.push(promise)},
     nodemailer:{createTransport:()=>({sendMail:async value=>{sent.push(value);return {accepted:[value.to],messageId:'test'};}})},
     '@/lib/firebase-admin':{adminDb:{}},
     '@/lib/aio/customer-session-cleanup':{cleanupCustomerActionSessions:async()=>{}},
@@ -26,7 +27,7 @@ function mailHarness(){
     new Function('require','module','exports',source)((dep)=>load(dep.startsWith('.')?path.resolve(path.dirname(file),dep)+'.ts':dep),mod,mod.exports);
     return mod.exports;
   }
-  return {sent,load};
+  return {sent,load,pending};
 }
 process.env.SMTP_PASSWORD='test-only-not-a-real-password';
 process.env.SMTP_USER='business@example.test';
@@ -79,4 +80,9 @@ test('branding is idempotent and untrusted message text stays escaped',()=>{
   const html=design.emailShell({title:'Security <test>',preheader:'Hello <test>',body:design.professionalEmailBody('<img src=x onerror=alert(1)>\n\nhttps://example.test/?a=1&b=2','Update','<b>Name</b>')});
   assert.equal(design.ensureBrandedEmail(html,'Repeated'),html);
   assert.doesNotMatch(html,/<img src=x|<b>Name/);assert.match(html,/&lt;img src=x/);assert.match(html,/href="https:\/\/example.test\/\?a=1&amp;b=2"/);
+});
+
+test('automatic activity mail persists its job and uses the server background lifetime',async()=>{
+ const old=process.env.VERCEL;process.env.VERCEL='1';const h=mailHarness();
+ try{const mail=h.load('@/lib/server-mail');const result=await mail.sendProfessionalEmail({to:'recipient@example.test',subject:'Profile updated',body:'Your profile was saved.',deferDelivery:true});assert.equal(result.queued,true);assert.equal(result.queueId,'1');assert.equal(h.pending.length,1);await Promise.all(h.pending);assert.equal(h.sent.length,1);assert.match(h.sent[0].html,/data-auronix-email="v2"/);}finally{if(old===undefined)delete process.env.VERCEL;else process.env.VERCEL=old;}
 });

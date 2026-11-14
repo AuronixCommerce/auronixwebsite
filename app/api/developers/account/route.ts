@@ -1,3 +1,4 @@
+import { activityEmail } from "@/lib/email/activity";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
 import { sendProfessionalEmail } from "@/lib/server-mail";
 import {
@@ -184,6 +185,7 @@ export async function POST(request: Request) {
           "You already have an application. Check its status in your console.",
           409,
         );
+      await activityEmail({to:u.email,event:"developer-applied",title:"Your AIO developer application was received",body:"Your API-access application is awaiting admin review. We will email you when the team updates its status.",reference:u.uid,href:"/aio/developers/console"});
       return json({
         message:
           "Application submitted for admin review. API access starts after approval.",
@@ -235,6 +237,7 @@ export async function POST(request: Request) {
         [`aioDeveloperInvoiceQueue/${invoice.key}`]: value,
       });
       await notifyPaymentReview(value, "New credit purchase request");
+      await activityEmail({to:u.email,event:"invoice-requested",title:"Your AIO credit purchase request was received",body:"Your credit purchase request is saved. Wait for payment instructions from the team before sending funds. Credits are added only after payment is independently verified.",reference:String(invoice.key),href:"/aio/developers/console?tab=billing"});
       return json({
         message:
           "Invoice requested. The team will arrange payment; credits are added only after payment is verified.",

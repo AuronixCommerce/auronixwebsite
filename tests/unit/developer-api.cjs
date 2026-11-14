@@ -1076,7 +1076,7 @@ test("low-balance email and webhook events are emitted once, not for temporary h
   });
   assert.equal(configured.status, 200);
   await h.mod.reserve("alice", "temporary", 800000, "aio-2", "key", 30, "test");
-  assert.equal(h.mails.length, 0);
+  assert.equal(h.mails.filter(m => m.subject === "AIO API low-balance alert").length, 0);
   await h.mod.settle("alice", "temporary");
   const response = await h.call(PLAYGROUND, input);
   assert.equal(response.status, 200);

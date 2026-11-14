@@ -513,31 +513,7 @@ test("real PDF extraction reads company text and rejects image-only or non-PDF u
     /No readable text/,
   );
 });
-test("queued password resets try Firebase recovery immediately and cancel the SMTP retry after acceptance", async () => {
-  const h = harness({
-    emailQueue: {
-      "reset-job": {
-        status: "queued",
-        payload: { encrypted: true },
-        leaseUntil: 0,
-      },
-    },
-  });
-  h.setAuthUser({ uid: "customer", email: "customer@example.test" });
-  h.mocks["@/lib/server-mail"].sendPasswordResetEmail = async () => ({
-    queued: true,
-    queueId: "reset-job",
-    messageId: "queue:reset-job",
-  });
-  const result = await h.call("app/api/auth/request-password-reset/route.ts", {
-    email: "customer@example.test",
-  });
-  assert.equal(result.status, 200);
-  assert.equal(h.data.emailQueue["reset-job"].status, "sent");
-  assert.equal(h.data.emailQueue["reset-job"].payload ?? null, null);
-  assert.ok(h.mails.some((m) => m.type === "password-reset-fallback"));
-});
-test("failed Firebase reset fallback keeps the encrypted SMTP job queued", async () => {
+test("branded password reset keeps its encrypted retry job without a provider email", async () => {
   const h = harness({
     emailQueue: {
       "reset-job": {
@@ -565,4 +541,5 @@ test("failed Firebase reset fallback keeps the encrypted SMTP job queued", async
   assert.equal(h.data.emailQueue["reset-job"].status, "queued");
   assert.deepEqual(h.data.emailQueue["reset-job"].payload, { encrypted: true });
   assert.equal(h.data.emailQueue["reset-job"].leaseUntil, 0);
+  assert.ok(!h.mails.some(m=>m.type==='password-reset-fallback'));
 });

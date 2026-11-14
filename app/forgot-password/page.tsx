@@ -1,4 +1,5 @@
-﻿'use client';
+'use client';
+import { CustomerActionSecurity } from '@/components/site/customer-action-security';
 import { Spinner } from '@/components/design/primitives';
 
 import { FormEvent, useState } from 'react';
@@ -8,6 +9,8 @@ import { AuronixMark } from '@/components/site/auronix-mark';
 import { userFacingError } from '@/lib/user-facing-error';
 
 export default function ForgotPasswordPage() {
+  const [security, setSecurity] = useState('');
+  const [securityReset, setSecurityReset] = useState(0);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -38,7 +41,7 @@ export default function ForgotPasswordPage() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            email: normalizedEmail,
+            email: normalizedEmail, turnstileToken: security,
           }),
         }
       );
@@ -68,7 +71,7 @@ export default function ForgotPasswordPage() {
         )
       );
     } finally {
-      setLoading(false);
+      setLoading(false); setSecurity(''); setSecurityReset(v => v + 1);
     }
   };
 
@@ -184,7 +187,8 @@ export default function ForgotPasswordPage() {
                   />
                 </div>
 
-                {error && (
+                <CustomerActionSecurity onToken={setSecurity} resetKey={securityReset} />
+              {error && (
                   <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-sm text-red-700">
                     {error}
                   </div>
@@ -192,7 +196,7 @@ export default function ForgotPasswordPage() {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || (!!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !security)}
                   className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {loading ? (

@@ -1,3 +1,4 @@
+import { waitUntil } from "@vercel/functions";
 import { emailShell, emailButton as cta, emailCode, ensureBrandedEmail, emailLogoAttachment, professionalEmailBody } from "@/lib/email/design";
 export { emailShell } from "@/lib/email/design";
 import { cleanupCustomerActionSessions } from "@/lib/aio/customer-session-cleanup";
@@ -166,8 +167,12 @@ async function deliverQueued(mail: QueuedMail, id: string) {
     messageId: `<auronix-${id}@auronixcommerce.com>`,
   } as MailOptions);
 }
-async function sendWithSender(sender: string, options: MailOptions) {
+async function sendWithSender(sender: string, options: MailOptions, defer = false) {
   const id = await enqueueMail({ sender, options });
+  if (defer && process.env.VERCEL === "1") {
+    waitUntil(processMailJob(id, deliverQueued).catch(() => undefined));
+    return { success: true, queued: true, queueId: id };
+  }
   return processMailJob(id, deliverQueued);
 }
 export async function retryQueuedEmail(id: string) {
@@ -223,6 +228,7 @@ export function sendProfessionalEmail(value: any, type = "") {
       references: value?.references,
       attachments: value?.attachments,
     },
+    value?.deferDelivery === true,
   );
 }
 
@@ -279,48 +285,6 @@ export async function sendPasswordResetEmail(input: {
     html,
     text: `Hello ${input.name || "there"},\n\nReset your password using this secure link:\n${url}\n\nIf you did not request this, ignore this email. Contact ${SUPPORT_EMAIL} if you need help.`,
   });
-}
-
-export async function sendPasswordResetFallback(input: {
-  email: string;
-  continueUrl: string;
-}) {
-  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY?.trim();
-  if (!apiKey)
-    throw new Error("Auronix Auth recovery delivery is not configured.");
-
-  const deliver = (withContinue: boolean) =>
-    fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${encodeURIComponent(apiKey)}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Referer: input.continueUrl,
-        },
-        body: JSON.stringify({
-          requestType: "PASSWORD_RESET",
-          email: input.email,
-          ...(withContinue ? { continueUrl: input.continueUrl } : {}),
-        }),
-        cache: "no-store",
-        signal: AbortSignal.timeout(10000),
-      },
-    );
-  let response = await deliver(true);
-  if (!response.ok) {
-    const payload = await response.json().catch(() => null);
-    if (
-      /INVALID_CONTINUE_URI|UNAUTHORIZED_DOMAIN|MISSING_CONTINUE_URI/.test(
-        String(payload?.error?.message || ""),
-      )
-    )
-      response = await deliver(false);
-  }
-  if (!response.ok)
-    throw new Error("Auronix Auth recovery delivery was not accepted.");
-
-  return { accepted: [input.email], messageId: `auronix-auth-${Date.now()}` };
 }
 
 export async function sendSellerEmailVerification(input: {

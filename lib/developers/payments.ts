@@ -1,3 +1,4 @@
+import { activityEmail } from "@/lib/email/activity";
 import { scheduleAccountEvents, queueEvent } from "./events";
 import { COMPANY } from "@/lib/constants";
 import { adminDb } from "@/lib/firebase-admin";
@@ -163,6 +164,7 @@ export async function submitPayment(uid: string, id: string, b: any) {
     };
   });
   await notifyPaymentReview(result);
+  await activityEmail({to:result.email,event:"payment-submitted",title:"Your payment reference is awaiting review",body:"Your transfer reference was submitted to the Auronix team. No credits have been added yet; approval requires verification of the actual received payment.",reference:id,revision:result.version,href:"/aio/developers/console?tab=billing"});
   return {
     invoice: result,
     message:
@@ -170,13 +172,15 @@ export async function submitPayment(uid: string, id: string, b: any) {
   };
 }
 export async function cancelInvoice(uid: string, id: string) {
-  return changeInvoice(uid, id, (v) => {
+  const cancelled = await changeInvoice(uid, id, (v) => {
     if (!["requested", "awaiting_payment"].includes(v.status) || v.submission)
       throw Error(
         "A request with submitted payment must be reviewed by the team.",
       );
     return { ...v, status: "cancelled", cancelledAt: Date.now() };
   });
+  await activityEmail({to:cancelled.email,event:"invoice-cancelled",title:"Your unpaid AIO credit request was cancelled",body:"Your unpaid credit request was cancelled. No wallet credits were added.",reference:id,href:"/aio/developers/console?tab=billing"});
+  return cancelled;
 }
 async function claimReceipt(
   uid: string,

@@ -1,3 +1,4 @@
+import { activityEmail } from "@/lib/email/activity";
 import { randomBytes } from "crypto";
 import { adminDb } from "@/lib/firebase-admin";
 import {
@@ -70,7 +71,8 @@ export async function POST(request: Request) {
       message: safeObjectName(file.name),
       actor: "supplier",
     });
-    return response({ success: true });
+    const emailStatus = await activityEmail({to:user.email,event:"document-uploaded",title:"Your supplier document was received",body:"Your requested document was uploaded and is awaiting review. You can follow its status in your supplier workspace.",reference:String(ref.key),href:"/supplier/track"});
+    return response({ success: true, emailStatus });
   } catch (error) {
     return failure(error);
   }

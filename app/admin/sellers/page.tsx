@@ -1,4 +1,5 @@
 "use client";
+import { useSearchParams } from "next/navigation";
 import { userFacingError } from "@/lib/user-facing-error";
 import { Spinner } from "@/components/design/primitives";
 
@@ -357,7 +358,9 @@ export default function AdminSellersPage() {
 
   const [filter, setFilter] = useState<Filter>("all");
 
+  const notificationItem = useSearchParams().get("item");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  useEffect(() => { if(notificationItem) setSelectedId(notificationItem); }, [notificationItem]);
 
   const [actionLoading, setActionLoading] = useState(false);
 

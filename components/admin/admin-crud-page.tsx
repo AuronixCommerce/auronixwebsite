@@ -1,4 +1,5 @@
 'use client';
+import { useSearchParams } from 'next/navigation';
 import { Spinner } from '@/components/design/primitives';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -42,6 +43,7 @@ export function AdminCrudPage({
   fields,
   searchKeys = [],
 }: AdminCrudPageProps) {
+  const params = useSearchParams(), target = params.get('item');
   const [records, setRecords] = useState<Record<string, Record<string, any>>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -74,6 +76,7 @@ export function AdminCrudPage({
 
   const filteredRecords = useMemo(() => {
     const entries = Object.entries(records);
+    if (target && records[target] && !search.trim()) return entries.filter(([id]) => id === target);
 
     if (!search.trim()) return entries;
 
@@ -90,7 +93,7 @@ export function AdminCrudPage({
           .includes(query)
       );
     });
-  }, [records, search, searchKeys]);
+  }, [records, search, searchKeys, target]);
 
   const openCreate = () => {
     const next: Record<string, any> = {};

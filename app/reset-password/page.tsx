@@ -1,10 +1,10 @@
-﻿'use client';
+'use client';
+import { CustomerActionSecurity } from '@/components/site/customer-action-security';
 import { Spinner } from '@/components/design/primitives';
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
-  confirmPasswordReset,
   verifyPasswordResetCode,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -23,6 +23,8 @@ export default function ResetPasswordPage() {
 
   const oobCode = searchParams.get('oobCode') || searchParams.get('code') || '';
 
+  const [security, setSecurity] = useState('');
+  const [securityReset, setSecurityReset] = useState(0);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -113,11 +115,13 @@ export default function ResetPasswordPage() {
     setSaving(true);
 
     try {
-      await confirmPasswordReset(
-        auth,
-        oobCode,
-        password
-      );
+      const response = await fetch('/api/auth/reset-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store',
+        body: JSON.stringify({ code: oobCode, password, turnstileToken: security }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Unable to update your password.');
+      window.history.replaceState(null, '', '/reset-password');
 
       setSuccess(true);
 
@@ -130,11 +134,10 @@ export default function ResetPasswordPage() {
         err
       );
 
-      setError(
-        'Unable to reset the password. The reset link may have expired or already been used.'
-      );
+      setError(err instanceof Error ? err.message : 'Unable to update your password. Please try again.');
     } finally {
       setSaving(false);
+      setSecurity(''); setSecurityReset(v => v + 1);
     }
   };
 
@@ -240,6 +243,7 @@ export default function ResetPasswordPage() {
                       setPassword(event.target.value)
                     }
                     minLength={8}
+                    maxLength={128}
                     autoComplete="new-password"
                     required
                     className="w-full h-11 rounded-xl border border-border bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-accent/20"
@@ -262,12 +266,14 @@ export default function ResetPasswordPage() {
                       setConfirmPassword(event.target.value)
                     }
                     minLength={8}
+                    maxLength={128}
                     autoComplete="new-password"
                     required
                     className="w-full h-11 rounded-xl border border-border bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-accent/20"
                   />
                 </div>
 
+                <CustomerActionSecurity onToken={setSecurity} resetKey={securityReset} />
                 {error && (
                   <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-sm text-red-700">
                     {error}
@@ -276,7 +282,7 @@ export default function ResetPasswordPage() {
 
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || (!!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !security)}
                   className="w-full h-11 rounded-xl bg-primary text-primary-foreground text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {saving ? (

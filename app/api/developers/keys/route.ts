@@ -1,3 +1,4 @@
+import { activityEmail } from "@/lib/email/activity";
 import { parsePermissions } from "@/lib/developers/controls";
 import { adminDb } from "@/lib/firebase-admin";
 import {
@@ -47,7 +48,9 @@ export async function POST(request: Request) {
       } catch (e) {
         throw new DeveloperError((e as Error).message);
       }
-      return json(await createKey(u.uid, name, permissions), 201);
+      const created = await createKey(u.uid, name, permissions);
+      await activityEmail({to:u.email,event:"api-key-created",title:"A new AIO API key was created",body:"A new API key was created in your developer account. Review its permissions and revoke it immediately if you did not create it. The secret key is never sent by email.",reference:created.id,href:"/aio/developers/console?tab=keys"});
+      return json(created, 201);
     }
     if (b.action === "permissions" && validId(b.id)) {
       await account(u.uid, true);
@@ -66,6 +69,7 @@ export async function POST(request: Request) {
         [`aioDeveloperKeyIndex/${b.id}/permissions`]: permissions,
         [`aioDeveloperKeys/${u.uid}/${b.id}/permissions`]: permissions,
       });
+      await activityEmail({to:u.email,event:"api-key-permissions",title:"Your AIO API key permissions changed",body:"The model, IP or expiry restrictions for an API key were updated. Review the key in your console if you did not make this change.",reference:b.id,revision:Math.floor(Date.now()/60000),href:"/aio/developers/console?tab=keys"});
       return json({ message: "Key permissions updated." });
     }
     if (b.action === "revoke" && validId(b.id)) {
@@ -77,6 +81,7 @@ export async function POST(request: Request) {
         [`aioDeveloperKeyIndex/${b.id}/revokedAt`]: Date.now(),
         [`aioDeveloperKeys/${u.uid}/${b.id}/status`]: "revoked",
       });
+      await activityEmail({to:u.email,event:"api-key-revoked",title:"An AIO API key was revoked",body:"An API key in your account was revoked. New requests using that key will be rejected.",reference:b.id,href:"/aio/developers/console?tab=keys"});
       return json({
         message: "Key revoked. New requests with it will be rejected.",
       });

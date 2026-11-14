@@ -1,4 +1,5 @@
 "use client";
+import { useSearchParams } from "next/navigation";
 import { ReplyTemplatePicker } from '@/components/partner/reply-template-picker';
 import { userFacingError } from "@/lib/user-facing-error";
 import { Spinner } from "@/components/design/primitives";
@@ -53,7 +54,9 @@ export default function AdminTicketsPage() {
     "all" | "open" | "in-progress" | "resolved" | "closed"
   >("all");
 
+  const notificationItem = useSearchParams().get("item");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  useEffect(() => { if(notificationItem) setSelectedId(notificationItem); }, [notificationItem]);
 
   const [draft, setDraft] = useState("");
 

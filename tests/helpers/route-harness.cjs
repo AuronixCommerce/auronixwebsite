@@ -50,6 +50,7 @@ function harness(initial = {}) {
         if (value !== undefined) write(p, value);
         return { committed: value !== undefined, snapshot: snap(p) };
       },
+      limitToLast: (count) => ({get:async()=>({val:()=>Object.fromEntries(Object.entries(read(p)||{}).sort(([a],[b])=>a.localeCompare(b)).slice(-count))})}),
       orderByChild: (field) => ({
         limitToLast: (count) => ({ get: async () => ({ val: () => Object.fromEntries(Object.entries(read(p) || {}).sort(([, a], [, b]) => a[field] - b[field]).slice(-count)) }) }),
         endAt: (value) => ({
