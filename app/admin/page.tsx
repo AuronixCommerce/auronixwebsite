@@ -165,7 +165,7 @@ export default function AdminDashboardPage() {
     );
 
     subscribeToCount(
-      'contact',
+      'contactMessages',
       (
         current,
         value

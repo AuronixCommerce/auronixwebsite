@@ -97,7 +97,7 @@ export function AdminLayout({ children }: { children: ReactNode }) {
           router.push("/admin/login");
           return;
         }
-        setUser(profile);
+        setUser({ ...profile, email: firebaseUser.email || profile.email });
       } catch {
         router.push("/admin/login");
         return;

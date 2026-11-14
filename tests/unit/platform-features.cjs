@@ -543,3 +543,29 @@ test("branded password reset keeps its encrypted retry job without a provider em
   assert.equal(h.data.emailQueue["reset-job"].leaseUntil, 0);
   assert.ok(!h.mails.some(m=>m.type==='password-reset-fallback'));
 });
+
+test("mail queue commits successful and failed deliveries when settlement starts with an empty Firebase cache", async () => {
+  const h = harness(), original = h.ref;
+  h.mocks["@/lib/firebase-admin"].adminDb = { ref: (path) => {
+    const base = original(path);
+    return { ...base, transaction: async (fn) => {
+      if (fn(null) === undefined) return { committed: false, snapshot: { val: () => null } };
+      return base.transaction(fn);
+    } };
+  } };
+  const q = h.load("lib/mail-queue.ts"), success = await q.enqueueMail(message);
+  const result = await q.processMailJob(success, async () => ({ messageId: "accepted-test" }));
+  assert.equal(result.queued, false); assert.equal(h.data.emailQueue[success].status, "sent");
+  assert.equal(h.data.emailQueue[success].providerMessageId, "accepted-test");
+  assert.equal(h.data.emailQueue[success].payload, null);
+  const failed = await q.enqueueMail(message);
+  await q.processMailJob(failed, async () => { throw Object.assign(Error("Timeout"), {code:"ETIMEDOUT"}); });
+  assert.equal(h.data.emailQueue[failed].status, "queued");
+  assert.equal(h.data.emailQueue[failed].leaseUntil, 0);
+  assert.equal(h.data.emailQueue[failed].lastError, "ETIMEDOUT");
+});
+test("expired abandoned processing jobs are shown as expired rather than currently sending", () => {
+  const q = harness().load("lib/mail-queue.ts");
+  assert.equal(q.publicMailJob("old", {status:"processing",expiresAt:Date.now()-1000}).status,"expired");
+  assert.equal(q.publicMailJob("active", {status:"processing",expiresAt:Date.now()+60000}).status,"processing");
+});

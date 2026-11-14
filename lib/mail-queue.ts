@@ -164,8 +164,11 @@ export async function processMailJob(
   }
   try {
     const result = await send(decrypt(job.payload), id);
-    await ref.transaction((current) =>
-      current?.owner === owner
+    await ref.transaction((current) => {
+      // Firebase may invoke the callback with an empty local cache first.
+      // Returning null lets the server retry with its current record; undefined aborts.
+      if (current === null) return current;
+      return current?.owner === owner
         ? {
             ...current,
             status: "sent",
@@ -175,8 +178,8 @@ export async function processMailJob(
             leaseUntil: 0,
             updatedAt: Date.now(),
           }
-        : undefined,
-    );
+        : undefined;
+    });
     await adminDb.ref(`emailAlerts/${id}`).remove();
     return { ...result, success: true, queued: false, queueId: id };
   } catch (error: any) {
@@ -188,8 +191,9 @@ export async function processMailJob(
     const code = String(error?.code || error?.responseCode || "DELIVERY_FAILED")
       .replace(/[^a-z0-9_-]/gi, "")
       .slice(0, 60);
-    await ref.transaction((current) =>
-      current?.owner === owner
+    await ref.transaction((current) => {
+      if (current === null) return current;
+      return current?.owner === owner
         ? {
             ...current,
             status,
@@ -199,8 +203,8 @@ export async function processMailJob(
             leaseUntil: 0,
             updatedAt: Date.now(),
           }
-        : undefined,
-    );
+        : undefined;
+    });
     await alert(id, job, status);
     if (terminal)
       throw new Error(
@@ -253,7 +257,9 @@ export function publicMailJob(id: string, job: any) {
     id,
     recipient: job.recipient,
     subject: job.subject,
-    status: job.status,
+    status: ["queued", "processing"].includes(job.status) && Number(job.expiresAt) <= Date.now()
+      ? "expired"
+      : job.status,
     attempts: job.attempts,
     createdAt: job.createdAt,
     updatedAt: job.updatedAt,
