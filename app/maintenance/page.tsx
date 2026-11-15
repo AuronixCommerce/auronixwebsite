@@ -186,13 +186,13 @@ function normalizeContext(
 export default async function MaintenancePage({
   searchParams,
 }: {
-  searchParams?: {
+  searchParams?: Promise<{
     path?: string;
     scope?: string;
-  };
+  }>;
 }) {
   const pathname =
-    searchParams?.path ||
+    (await searchParams)?.path ||
     '/';
 
   const rawContext =

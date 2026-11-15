@@ -44,3 +44,5 @@ jobs:
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
+      - name: Production dependency security gate
+        run: npm audit --omit=dev --audit-level=high

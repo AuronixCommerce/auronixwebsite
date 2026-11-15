@@ -8,7 +8,7 @@ const signature = (value: string) => createHmac('sha256', process.env.ADMIN_MFA_
 export function createAdminSessionValue(uid: string, expiresAt: number) { const id = randomBytes(18).toString('hex'); const value = `${uid}.${expiresAt}.${id}`; return { id, value: `${value}.${signature(value)}` }; }
 export async function verifyAdminSession(uid: string) {
   if (!adminMfaConfigured()) return { valid: true, configured: false };
-  const raw = cookies().get(ADMIN_SESSION_COOKIE)?.value || '';
+  const raw = (await cookies()).get(ADMIN_SESSION_COOKIE)?.value || '';
   const parts = raw.split('.'); if (parts.length !== 4 || parts[0] !== uid) return { valid: false, configured: true };
   const [cookieUid, expiry, id, supplied] = parts; const value = `${cookieUid}.${expiry}.${id}`; const expected = signature(value);
   if (Buffer.byteLength(supplied) !== Buffer.byteLength(expected) || !timingSafeEqual(Buffer.from(supplied), Buffer.from(expected)) || Number(expiry) <= Date.now()) return { valid: false, configured: true };

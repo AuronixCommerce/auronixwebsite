@@ -81,7 +81,7 @@ export function failure(error: unknown) {
   );
 }
 export async function partner() {
-  const token = cookies().get(COOKIE)?.value || "";
+  const token = (await cookies()).get(COOKIE)?.value || "";
   if (!/^[a-f0-9]{64}$/.test(token))
     throw new PortalError("Verify your email to continue.", 401);
   const session = (

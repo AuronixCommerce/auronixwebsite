@@ -23,8 +23,8 @@ function strictFlag(
   );
 }
 
-function getPathname(): string {
-  const requestHeaders = headers();
+async function getPathname(): Promise<string> {
+  const requestHeaders = await headers();
 
   const pathname =
     requestHeaders.get('x-auronix-pathname') || requestHeaders.get(
@@ -74,7 +74,7 @@ export async function ServerMaintenanceGate({
   children,
 }: MaintenanceGateProps) {
   const pathname =
-    getPathname();
+    await getPathname();
 
   /*
    * Never block administrative pages.

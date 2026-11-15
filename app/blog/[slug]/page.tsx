@@ -1,4 +1,5 @@
 'use client';
+import { useParams } from "next/navigation";
 
 import { useEffect, useState } from 'react';
 import { SiteLayout } from '@/components/site/site-layout';
@@ -11,7 +12,8 @@ import Link from 'next/link';
 import { ArrowLeft, Calendar, Clock, ArrowRight } from 'lucide-react';
 import { notFound } from 'next/navigation';
 
-export default function BlogPostPage({ params }: { params: { slug: string } }) {
+export default function BlogPostPage() {
+  const params = useParams<{ slug: string }>();
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);

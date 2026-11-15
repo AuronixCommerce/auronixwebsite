@@ -398,13 +398,13 @@ function Block({
 export default async function CampaignPage({
   params,
 }: {
-  params: {
+  params: Promise<{
     token: string;
-  };
+  }>;
 }) {
   const campaign =
     await getTemporaryNewsletterLink(
-      params.token
+      (await params).token
     );
 
   if (

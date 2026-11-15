@@ -14,7 +14,15 @@ The application CI now covers all app/component/backend/test changes and pull re
 
 ## Remaining launch gates
 
-- The dependency audit flags the installed Next.js 13 and other dependencies. This code patch alone does not resolve those advisories or certify production readiness. Framework/dependency migration needs its own complete build and runtime verification.
+- Review the 15 remaining moderate dependency advisories; the latest production audit reports zero high and zero critical findings. Audit results are time-sensitive and do not establish exploitability or complete security assurance.
 - Verify the private Firebase rules and indexes documented in `docs/aio-developer-api.md` in the actual deployed project; this workspace cannot attest to deployed rules.
 - Complete the live test seller/developer lifecycle, promotional credit grant and metered request with the owned QA identity. The seller draft was email-verified and reached final review, but has not been submitted after the browser session restarted. No account access or credits were granted.
 - Confirm production email/webhook retry scheduling and alert monitoring. Earlier live testing verified SMTP and one contact receipt, not every template or delivery destination.
+
+## Framework and dependency follow-up
+
+Migrated Next.js 13.5.11 to 15.5.29 and the matching ESLint configuration. Server request cookies/headers and dynamic route parameters are awaited; client dynamic pages use `useParams`. Updated maintenance search parameters and moved tracing/external-package options to their supported configuration locations.
+
+Updated Nodemailer to 10.1.4, Zod to 4.6.7 and ESLint to the compatible 8.57.1 patch; refreshed compatible lockfile dependencies. Explicit overrides use the existing patched PostCSS 8.5.23 and gRPC 1.13.6 to avoid vulnerable nested versions. All 184 backend regressions pass after these changes, including mail, OTP, account actions and billing. CI rejects high/critical production dependency advisories. This gate does not automatically configure Vercel branch protection.
+
+No user credentials, production environment variables, Firebase rules, real payments or account approvals were changed.

@@ -38,15 +38,15 @@ function safeNumber(
 export async function POST(
   request: Request,
   context: {
-    params: {
+    params: Promise<{
       token: string;
-    };
+    }>;
   }
 ) {
   try {
     const token =
       text(
-        context.params?.token,
+        (await context.params)?.token,
         100
       ).toUpperCase();
 

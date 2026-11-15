@@ -29,18 +29,18 @@ function cleanText(
 export async function generateMetadata({
   params,
 }: {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }): Promise<Metadata> {
   const path =
-    `/blog/${params.slug}`;
+    `/blog/${(await params).slug}`;
 
   try {
     const snapshot =
       await adminDb
         .ref(
-          `blogPosts/${params.slug}`
+          `blogPosts/${(await params).slug}`
         )
         .get();
 

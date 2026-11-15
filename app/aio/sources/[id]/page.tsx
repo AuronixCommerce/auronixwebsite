@@ -1,8 +1,10 @@
 "use client";
+import { useParams } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import { auth } from "@/lib/firebase";
-export default function SourcePage({ params }: { params: { id: string } }) {
+export default function SourcePage() {
+  const params = useParams<{ id: string }>();
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   async function download() {

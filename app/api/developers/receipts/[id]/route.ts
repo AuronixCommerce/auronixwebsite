@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const requested = new URL(request.url).searchParams.get("uid");
@@ -33,11 +33,11 @@ export async function GET(
     }
     await account(uid);
     await rateLimit(actor, "receipts", 20);
-    const bytes = await serverPdf(await paymentReceipt(uid, params.id));
+    const bytes = await serverPdf(await paymentReceipt(uid, (await params).id));
     return new Response(bytes as BodyInit, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="Auronix-receipt-${params.id}.pdf"`,
+        "Content-Disposition": `attachment; filename="Auronix-receipt-${(await params).id}.pdf"`,
         "Cache-Control": "private, no-store",
         "X-Content-Type-Options": "nosniff",
       },

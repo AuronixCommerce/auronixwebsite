@@ -147,7 +147,7 @@ export default async function RootLayout({
     React.ReactNode;
 }) {
   const requestHeaders =
-    headers();
+    await headers();
 
   const pathname =
     requestHeaders.get(

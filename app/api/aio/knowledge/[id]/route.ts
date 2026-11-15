@@ -5,12 +5,12 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!/^[\w-]{1,160}$/.test(params.id))
+  if (!/^[\w-]{1,160}$/.test((await params).id))
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   const document = (
-    await adminDb.ref(`aioKnowledgeDocuments/${params.id}`).get()
+    await adminDb.ref(`aioKnowledgeDocuments/${(await params).id}`).get()
   ).val();
   if (!document || document.status !== "approved")
     return NextResponse.json(

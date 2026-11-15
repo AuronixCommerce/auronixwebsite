@@ -10,16 +10,16 @@ import { buildSeo } from '@/lib/seo';
 
 export function generateStaticParams() { return TROUBLESHOOTING_ARTICLES.map(({ slug }) => ({ slug })); }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  if (params.slug === 'whatsapp-verification') permanentRedirect('/help/email-verification');
-  const article = getTroubleshootingArticle(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  if ((await params).slug === 'whatsapp-verification') permanentRedirect('/help/email-verification');
+  const article = getTroubleshootingArticle((await params).slug);
   if (!article) return {};
   return buildSeo({ title: article.title, description: article.summary, path: `/help/${article.slug}`, keywords: ['Auronix help', 'seller troubleshooting', article.category] });
 }
 
-export default function TroubleshootingArticlePage({ params }: { params: { slug: string } }) {
-  if (params.slug === 'whatsapp-verification') permanentRedirect('/help/email-verification');
-  const article = getTroubleshootingArticle(params.slug);
+export default async function TroubleshootingArticlePage({ params }: { params: Promise<{ slug: string }> }) {
+  if ((await params).slug === 'whatsapp-verification') permanentRedirect('/help/email-verification');
+  const article = getTroubleshootingArticle((await params).slug);
   if (!article) notFound();
   const related = TROUBLESHOOTING_ARTICLES.filter((item) => item.slug !== article.slug && (item.category === article.category || item.audience === article.audience)).slice(0, 3);
   const schema = { '@context': 'https://schema.org', '@type': 'TechArticle', headline: article.title, description: article.summary, audience: { '@type': 'Audience', audienceType: article.audience }, author: { '@type': 'Organization', name: 'Auronix Commerce LLC' }, publisher: { '@type': 'Organization', name: 'Auronix Commerce LLC' } };

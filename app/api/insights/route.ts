@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   try {
     let consent: any;
     try {
-      consent = JSON.parse(cookies().get("auronix_consent")?.value || "{}");
+      consent = JSON.parse((await cookies()).get("auronix_consent")?.value || "{}");
     } catch {}
     if (consent?.a !== true) return response({ recorded: false });
     const body = await request.json();
