@@ -38,7 +38,7 @@ The grant record in the wallet is the authoritative immutable credit audit. If f
 - `GET /api/aio/v1/models`
 - `POST /api/aio/v1/chat/completions`
 
-Authorization: `Bearer aio_live_…`. Text messages only, max 32 messages and 16 KB UTF-8 content, max completion 4,096 tokens. Non-streaming. Only documented parameters are accepted. Full examples and errors are on the public page. This is an OpenAI-style response shape, not a claim of complete OpenAI SDK compatibility.
+Authorization: `Bearer aio_live_…`. Text messages only, max 32 messages and 16 KB UTF-8 content, max completion 8,192 tokens (default 4,096). Non-streaming. Only documented parameters are accepted. Full examples and errors are on the public page. This is an OpenAI-style response shape, not a claim of complete OpenAI SDK compatibility.
 
 Responses include exact provider token counts, `billing.charged_units`, `units_per_credit`, `available_units`, and `X-Request-ID`. Usage history stores model, tokens, rate snapshot, charge, status, key ID, and timing; prompts and answers are not retained. No API keys or upstream credentials appear in usage records.
 
@@ -72,3 +72,9 @@ Merge the updated Firebase rule fragment and indexes for `aioDeveloperWebhooks`,
 The shared provider sender prepends the server-owned AIO identity instruction for public text completions and live console playground requests. Client task instructions and conversation history remain intact. The instruction identifies AIO as the Auronix Commerce LLC product, discourages generic ChatGPT/GPT-4 introductions, and prohibits invented underlying model, training or provider claims. It is a model instruction, not a guaranteed response filter or a change to safety requirements.
 
 The maximum input reservation includes the platform identity instruction and its message overhead. Actual input usage and billing continue to use provider-reported tokens, including platform instructions; no fixed identity fee is added. No provider keys, routing aliases, safety settings or account permissions change.
+
+## Response depth defaults
+
+API requests that omit an output limit now allow 4,096 completion tokens (previously 512), with an 8,192-token maximum. Explicit smaller caller limits are respected, including the older starter examples. The playground starts on AIO 2 at 4,096 tokens and offers an 8,192-token option. GPT-OSS 20B/120B provider requests use high reasoning effort without exposing internal reasoning text; other configured providers receive no unsupported reasoning flags. Provider timeout is 45 seconds within the existing 60-second route budget and 120-second credit hold.
+
+This increases available reasoning/answer capacity, not the published price or a minimum charge. Actual provider-reported tokens determine the charge, and reasoning counts when reported as output usage. The larger maximum reservation may require more available credits; unused holds are released. Simple questions can still finish below the budget.

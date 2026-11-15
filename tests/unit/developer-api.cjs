@@ -1571,3 +1571,46 @@ test("API provider prepends AIO identity without replacing application instructi
     else process.env.GROQ_API_KEY = originalKey;
   }
 });
+
+test("larger response defaults respect caller limits and bound the complete credit hold", () => {
+  const h = setup();
+  const b = { model: "aio-2", messages: [{ role: "user", content: "Compare sourcing strategies in detail." }] };
+  assert.equal(h.model.parseCompletion(b).maxTokens, 4096);
+  assert.equal(h.model.parseCompletion({ ...b, max_tokens: 8192 }).maxTokens, 8192);
+  assert.equal(h.model.parseCompletion({ ...b, max_completion_tokens: 64 }).maxTokens, 64);
+  assert.throws(() => h.model.parseCompletion({ ...b, max_completion_tokens: 8193 }), /between 1 and 8192/);
+  assert.throws(() => h.model.parseCompletion({ ...b, max_tokens: 4096, max_completion_tokens: 8192 }), /only one/);
+});
+test("high reasoning is sent only to supported GPT-OSS models and returned tokens remain authoritative", async () => {
+  const h = setup(), requests = [], clients = [];
+  h.mocks["groq-sdk"] = { default: class {
+    constructor(options) { clients.push(options); }
+    chat = { completions: { create: async (args) => {
+      requests.push(args);
+      return { choices: [{ message: { content: "Complete answer." }, finish_reason: "stop" }], usage: { prompt_tokens: 120, completion_tokens: 340 } };
+    } } };
+  } };
+  const prior = process.env.GROQ_API_KEY;
+  process.env.GROQ_API_KEY = "test-key";
+  try {
+    const provider = h.load("lib/developers/provider.ts");
+    const parsed = h.model.parseCompletion({ model: "aio-2", messages: [{ role: "user", content: "Analyze this problem." }] });
+    for (const model of ["openai/gpt-oss-20b", "openai/gpt-oss-120b", "test-nonreasoning-model"]) {
+      const result = await provider.complete(parsed, model);
+      const sent = requests.at(-1);
+      assert.equal(sent.max_completion_tokens, 4096);
+      assert.deepEqual(result.usage, { prompt_tokens: 120, completion_tokens: 340 });
+      if (model.startsWith("openai/")) {
+        assert.equal(sent.reasoning_effort, "high");
+        assert.equal(sent.include_reasoning, false);
+      } else {
+        assert.equal("reasoning_effort" in sent, false);
+        assert.equal("include_reasoning" in sent, false);
+      }
+    }
+    assert.ok(clients.every(c => c.timeout === 45000 && c.maxRetries === 0));
+  } finally {
+    if (prior === undefined) delete process.env.GROQ_API_KEY;
+    else process.env.GROQ_API_KEY = prior;
+  }
+});

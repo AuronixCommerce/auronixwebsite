@@ -31,7 +31,7 @@ export async function complete(
   const client = new Groq({
     apiKey: process.env.GROQ_API_KEY!.trim(),
     maxRetries: 0,
-    timeout: 25_000,
+    timeout: 45_000,
   });
   const result = await client.chat.completions.create({
     model,
@@ -40,6 +40,9 @@ export async function complete(
       ...input.messages,
     ],
     max_completion_tokens: input.maxTokens,
+    ...(["openai/gpt-oss-20b", "openai/gpt-oss-120b"].includes(model)
+      ? { reasoning_effort: "high" as const, include_reasoning: false }
+      : {}),
     temperature: input.temperature,
     stream: false,
   });

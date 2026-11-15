@@ -6,7 +6,7 @@ const samples = {
   cURL: `curl https://auronixcommerce.com/api/aio/v1/chat/completions \\\n  -H "Authorization: Bearer $AIO_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -H "Idempotency-Key: order-summary-001" \\\n  -d '{
     "model": "aio-2-fast",
     "messages": [{"role": "user", "content": "Explain wholesale sourcing."}],
-    "max_completion_tokens": 512
+    "max_completion_tokens": 4096
   }'`,
   JavaScript: `// Server-side only. Keep your API key out of browser code.
 const response = await fetch(
@@ -21,7 +21,7 @@ const response = await fetch(
     body: JSON.stringify({
       model: "aio-2-fast",
       messages: [{ role: "user", content: "Explain wholesale sourcing." }],
-      max_completion_tokens: 512
+      max_completion_tokens: 4096
     })
   }
 );
@@ -39,7 +39,7 @@ response = requests.post(
     json={
         "model": "aio-2-fast",
         "messages": [{"role": "user", "content": "Explain wholesale sourcing."}],
-        "max_completion_tokens": 512,
+        "max_completion_tokens": 4096,
     },
     timeout=60,
 )
@@ -112,7 +112,7 @@ export function DeveloperReference({ compact = false }: { compact?: boolean }) {
                 </tr>
                 <tr>
                   <td>max_completion_tokens</td>
-                  <td>1–4,096; default 512. max_tokens is an alternative.</td>
+                  <td>1–8,192; default 4,096. max_tokens is an alternative.</td>
                 </tr>
                 <tr>
                   <td>temperature</td>

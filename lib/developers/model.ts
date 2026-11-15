@@ -1,6 +1,8 @@
 import { AIO_API_IDENTITY_PROMPT } from "@/lib/aio/api-identity";
 
 export const CREDIT_UNITS = 1_000_000;
+export const DEFAULT_COMPLETION_TOKENS = 4096;
+export const MAX_COMPLETION_TOKENS = 8192;
 export const API_TERMS_VERSION = "2026-11-13-manual-v1";
 export const MIN_TOPUP_CREDITS = 5;
 export const DEVELOPER_MODELS = [
@@ -142,9 +144,10 @@ export function parseCompletion(body: any) {
   if (bytes > 16_384) throw Error("Messages exceed the 16 KB input limit.");
   if (body.max_tokens !== undefined && body.max_completion_tokens !== undefined)
     throw Error("Use only one output token limit.");
-  const maxTokens = body.max_completion_tokens ?? body.max_tokens ?? 512;
-  if (!Number.isInteger(maxTokens) || maxTokens < 1 || maxTokens > 4096)
-    throw Error("The output token limit must be between 1 and 4096.");
+  const maxTokens =
+    body.max_completion_tokens ?? body.max_tokens ?? DEFAULT_COMPLETION_TOKENS;
+  if (!Number.isInteger(maxTokens) || maxTokens < 1 || maxTokens > MAX_COMPLETION_TOKENS)
+    throw Error(`The output token limit must be between 1 and ${MAX_COMPLETION_TOKENS}.`);
   const temperature = body.temperature ?? 0.5;
   if (
     typeof temperature !== "number" ||

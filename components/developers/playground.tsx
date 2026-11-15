@@ -5,6 +5,7 @@ import { Copy, Play, Check, ArrowUpRight } from "lucide-react";
 import { auth } from "@/lib/firebase";
 import {
   API_TERMS_VERSION,
+  DEFAULT_COMPLETION_TOKENS,
   credits,
   DEVELOPER_MODELS,
   pricingReady,
@@ -23,11 +24,11 @@ export function DeveloperPlayground({
   onRefresh: () => Promise<void>;
   onUsage: () => void;
 }) {
-  const [model, setModel] = useState("aio-2-fast"),
+  const [model, setModel] = useState("aio-2"),
     [prompt, setPrompt] = useState(
-      "Explain wholesale sourcing in two sentences.",
+      "Explain wholesale sourcing in detail, compare supplier evaluation approaches, and give a practical launch checklist.",
     ),
-    [maxTokens, setMaxTokens] = useState(512),
+    [maxTokens, setMaxTokens] = useState(DEFAULT_COMPLETION_TOKENS),
     [busy, setBusy] = useState(false),
     [result, setResult] = useState<any>(null),
     [error, setError] = useState(""),
@@ -141,6 +142,8 @@ export function DeveloperPlayground({
                 <option value={512}>512</option>
                 <option value={1024}>1,024</option>
                 <option value={2048}>2,048</option>
+                <option value={4096}>4,096</option>
+                <option value={8192}>8,192</option>
               </select>
             </label>
           </div>
