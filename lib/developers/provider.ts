@@ -1,4 +1,5 @@
 import Groq from "groq-sdk";
+import { AIO_API_IDENTITY_PROMPT } from "@/lib/aio/api-identity";
 import { adminDb } from "@/lib/firebase-admin";
 import { resolveAioModel } from "@/lib/aio/models";
 import { DeveloperError } from "./server";
@@ -34,7 +35,10 @@ export async function complete(
   });
   const result = await client.chat.completions.create({
     model,
-    messages: input.messages,
+    messages: [
+      { role: "system", content: AIO_API_IDENTITY_PROMPT },
+      ...input.messages,
+    ],
     max_completion_tokens: input.maxTokens,
     temperature: input.temperature,
     stream: false,

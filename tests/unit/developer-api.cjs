@@ -1534,3 +1534,40 @@ test("an invoice deleted after the review read is never recreated or reported as
   assert.equal(h.data.aioDeveloperInvoiceQueue[id].status, "requested");
   assert.equal(h.data.aioDeveloperBilling, undefined);
 });
+
+test("API provider prepends AIO identity without replacing application instructions or history", async () => {
+  const h = setup(), requests = [];
+  h.mocks["groq-sdk"] = { default: class {
+    chat = { completions: { create: async (args) => {
+      requests.push(args);
+      return { choices: [{ message: { content: "I'm AIO." }, finish_reason: "stop" }], usage: { prompt_tokens: 25, completion_tokens: 5 } };
+    } } };
+  } };
+  const originalKey = process.env.GROQ_API_KEY;
+  process.env.GROQ_API_KEY = "test-provider-key";
+  try {
+    const messages = [
+      { role: "system", content: "Answer concisely in Urdu." },
+      { role: "assistant", content: "I am ChatGPT, powered by GPT-4." },
+      { role: "user", content: "Who are you?" },
+    ];
+    const parsed = h.model.parseCompletion({ ...input, messages });
+    const provider = h.load("lib/developers/provider.ts");
+    await provider.complete(parsed, "test-upstream-model");
+    const sent = requests[0];
+    assert.equal(sent.messages[0].role, "system");
+    assert.match(sent.messages[0].content, /You are AIO/);
+    assert.match(sent.messages[0].content, /Auronix Commerce LLC/);
+    assert.match(sent.messages[0].content, /Never invent your model version/);
+    assert.deepEqual(sent.messages.slice(1), messages);
+    assert.deepEqual(parsed.messages, messages);
+    assert.equal(sent.model, "test-upstream-model");
+    assert.equal(sent.max_completion_tokens, input.max_completion_tokens);
+    assert.equal(sent.stream, false);
+    const actualBytes = Buffer.byteLength(sent.messages.map(m => m.content).join(""), "utf8");
+    assert.ok(parsed.inputBound >= actualBytes + sent.messages.length * 128);
+  } finally {
+    if (originalKey === undefined) delete process.env.GROQ_API_KEY;
+    else process.env.GROQ_API_KEY = originalKey;
+  }
+});

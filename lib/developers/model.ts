@@ -1,3 +1,5 @@
+import { AIO_API_IDENTITY_PROMPT } from "@/lib/aio/api-identity";
+
 export const CREDIT_UNITS = 1_000_000;
 export const API_TERMS_VERSION = "2026-11-13-manual-v1";
 export const MIN_TOPUP_CREDITS = 5;
@@ -157,6 +159,10 @@ export function parseCompletion(body: any) {
     messages,
     maxTokens,
     temperature,
-    inputBound: bytes + messages.length * 128 + 512,
+    inputBound:
+      bytes +
+      Buffer.byteLength(AIO_API_IDENTITY_PROMPT, "utf8") +
+      (messages.length + 1) * 128 +
+      512,
   };
 }

@@ -66,3 +66,9 @@ Current terms: `/aio/developers/terms`, with a branded offline PDF; website Term
 - **Starters:** `/downloads/aio-node-starter.zip` and `/downloads/aio-python-starter.zip` are generated from `examples/` by `python scripts/package-aio-starters.py`. They include generation clients, environment placeholders, error/idempotency handling and matching signed webhook receivers. They contain no real keys. The receivers use an explicitly documented in-memory demo cache; production deployments must replace it with durable storage. ZIPs are committed; Python is not required by the website runtime.
 
 Merge the updated Firebase rule fragment and indexes for `aioDeveloperWebhooks`, `aioDeveloperEvents`, `aioDeveloperEventQueue`, `aioDeveloperBilling.hasPendingEvents` and `aioApiNotices` before enabling these features. No permissive root/parent rule may cover these collections. This release does not deploy database rules or change production secrets.
+
+## API product identity
+
+The shared provider sender prepends the server-owned AIO identity instruction for public text completions and live console playground requests. Client task instructions and conversation history remain intact. The instruction identifies AIO as the Auronix Commerce LLC product, discourages generic ChatGPT/GPT-4 introductions, and prohibits invented underlying model, training or provider claims. It is a model instruction, not a guaranteed response filter or a change to safety requirements.
+
+The maximum input reservation includes the platform identity instruction and its message overhead. Actual input usage and billing continue to use provider-reported tokens, including platform instructions; no fixed identity fee is added. No provider keys, routing aliases, safety settings or account permissions change.
