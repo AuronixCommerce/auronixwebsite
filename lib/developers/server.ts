@@ -323,6 +323,9 @@ export async function reserve(
     .ref(`aioDeveloperBilling/${uid}`)
     .transaction((current) => {
       reason = "";
+      // An empty SDK cache is not proof that the server wallet is absent.
+      // Propose a no-op so Firebase can retry against authoritative data.
+      if (current === null) return null;
       const v = recoverHolds(current, now);
       if (v.requests[id]) {
         reason = "duplicate";
@@ -384,7 +387,7 @@ export async function reserve(
       };
       return v;
     });
-  if (!result.committed) {
+  if (!result.committed || result.snapshot.val() === null) {
     if (reason === "daily_limit" || reason === "monthly_limit")
       throw new DeveloperError(
         `Account ${reason === "daily_limit" ? "daily" : "monthly"} spending limit reached. Limits include active request holds and reset in UTC.`,
@@ -425,6 +428,7 @@ export async function settle(
   const result = await adminDb
     .ref(`aioDeveloperBilling/${uid}`)
     .transaction((current) => {
+      if (current === null) return null;
       if (!current?.requests?.[id] || current.requests[id].status !== "pending")
         return;
       const r = current.requests[id];
@@ -470,7 +474,7 @@ export async function settle(
       };
       return current;
     });
-  if (!result.committed)
+  if (!result.committed || result.snapshot.val() === null)
     throw new DeveloperError(
       "This request could not be settled. No answer was released; check usage or contact support.",
       503,

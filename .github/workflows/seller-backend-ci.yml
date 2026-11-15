@@ -1,27 +1,33 @@
-name: Seller Backend CI
+name: Application Release Checks
 
 on:
   push:
     branches: [main]
     paths:
-      - 'app/api/seller/**'
-      - 'app/api/mobile/**'
-      - 'lib/server-seller-os.ts'
-      - 'lib/server-push.ts'
-      - 'lib/server-r2.ts'
-      - 'lib/server-groq.ts'
-      - 'lib/server-auth.ts'
-      - 'lib/firebase-admin.ts'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'tsconfig.json'
+      - 'app/**'
+      - 'components/**'
+      - 'lib/**'
+      - 'tests/**'
+      - 'public/**'
+      - 'scripts/**'
+      - '*.json'
+      - '*.js'
       - '.github/workflows/seller-backend-ci.yml'
+  pull_request:
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-checks-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,6 +35,12 @@ jobs:
           node-version: 22.13.0
           cache: npm
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: TypeScript
         run: npm run typecheck
+      - name: Backend and security regression tests
+        run: node --test tests/unit/*.cjs
+      - name: Production build
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'

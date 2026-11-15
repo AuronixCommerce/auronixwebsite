@@ -93,10 +93,14 @@ export async function configureWebhook(uid: string, b: any) {
     updatedAt: Date.now(),
   };
   // CAS prevents concurrent secret rotations from returning a secret that was already replaced.
-  const r = await ref.transaction((v) =>
-    Number(v?.version || 0) === Number(prior?.version || 0) ? value : undefined,
-  );
-  if (!r.committed) throw Error("Webhook settings changed. Refresh and retry.");
+  const r = await ref.transaction((v) => {
+    if (v === null && prior) return null;
+    return Number(v?.version || 0) === Number(prior?.version || 0)
+      ? value
+      : undefined;
+  });
+  if (!r.committed || r.snapshot.val() === null)
+    throw Error("Webhook settings changed. Refresh and retry.");
   if (
     value.enabled &&
     (!prior?.enabled || !prior?.events?.includes("balance.low"))
@@ -157,15 +161,16 @@ export async function deliverEvent(id: string) {
   const ref = adminDb.ref(`aioDeveloperEventQueue/${id}`),
     now = Date.now(),
     leaseId = randomBytes(12).toString("hex");
-  const claim = await ref.transaction((v) =>
-    v &&
+  const claim = await ref.transaction((v) => {
+    if (v === null) return null;
+    return v &&
     v.status === "queued" &&
     v.nextAttemptAt <= now &&
     Number(v.leaseUntil || 0) <= now
       ? { ...v, leaseUntil: now + 90_000, leaseId }
-      : undefined,
-  );
-  if (!claim.committed) return false;
+      : undefined;
+  });
+  if (!claim.committed || claim.snapshot.val() === null) return false;
   const job = claim.snapshot.val();
   if (job.email.state === "queued") {
     job.email.attempts++;
@@ -238,11 +243,13 @@ export async function deliverEvent(id: string) {
     : Number.MAX_SAFE_INTEGER;
   job.updatedAt = Date.now();
   job.leaseUntil = 0;
-  const saved = await ref.transaction((v) =>
-    v?.leaseId === leaseId ? job : undefined,
-  );
-  if (saved.committed) await mirrorEvent(job);
-  return saved.committed;
+  const saved = await ref.transaction((v) => {
+    if (v === null) return null;
+    return v?.leaseId === leaseId ? job : undefined;
+  });
+  const settled = saved.committed && saved.snapshot.val() !== null;
+  if (settled) await mirrorEvent(job);
+  return settled;
 }
 export async function flushAccountEvents(uid: string, attempt = true) {
   const pending =
@@ -291,6 +298,7 @@ export async function retryEvent(uid: string, id: string) {
   const ref = adminDb.ref(`aioDeveloperEventQueue/${id}`),
     cfg = (await adminDb.ref(`aioDeveloperWebhooks/${uid}`).get()).val();
   const r = await ref.transaction((v) => {
+    if (v === null) return null;
     if (!v || v.uid !== uid || v.leaseUntil > Date.now()) return;
     const mail =
       v.email.state === "failed" ? { state: "queued", attempts: 0 } : v.email;
@@ -306,7 +314,8 @@ export async function retryEvent(uid: string, id: string) {
       leaseId: "",
     };
   });
-  if (!r.committed) throw Error("Delivery not found or already processing.");
+  if (!r.committed || r.snapshot.val() === null)
+    throw Error("Delivery not found or already processing.");
   await deliverEvent(id);
   return { message: "Delivery retried. Check its latest status." };
 }

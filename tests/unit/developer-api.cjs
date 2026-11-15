@@ -1431,3 +1431,106 @@ test("profile suspension disables existing API keys as well as console access", 
   assert.equal((await h.call(CHAT, input, { token: key })).status, 403);
   assert.equal(h.calls(), 0);
 });
+
+// A new server process may run each transaction first against an empty SDK cache.
+// Abort (undefined) must stop immediately; any proposed write retries on server data.
+function coldTransactions(h) {
+  const db = h.mocks["@/lib/firebase-admin"].adminDb;
+  const original = db.ref;
+  db.ref = (path = "") => {
+    const base = original(path);
+    return { ...base, transaction: async (fn) => {
+      const initial = fn(null);
+      if (initial === undefined)
+        return { committed: false, snapshot: await base.get() };
+      return base.transaction(fn);
+    } };
+  };
+}
+test("cold API processes reserve and settle actual usage once without losing credits", async () => {
+  const h = setup(), token = await funded(h);
+  coldTransactions(h);
+  const result = await h.call(CHAT, input, { token });
+  assert.equal(result.status, 200, JSON.stringify(result.body));
+  assert.equal(h.calls(), 1);
+  const charged = result.body.billing.charged_units;
+  assert.ok(charged > 0);
+  assert.equal(h.data.aioDeveloperBilling.alice.balance, 1000000 - charged);
+  assert.equal(h.data.aioDeveloperBilling.alice.spent, charged);
+  const records = Object.values(h.data.aioDeveloperUsage.alice);
+  assert.equal(records.length, 1);
+  assert.equal(records[0].status, "completed");
+  await assert.rejects(h.mod.settle("alice", records[0].requestId), /could not be settled/);
+  assert.equal(h.data.aioDeveloperBilling.alice.balance, 1000000 - charged);
+});
+test("cold API provider failure refunds its hold and genuinely absent wallets fail closed", async () => {
+  const h = setup(), token = await funded(h);
+  coldTransactions(h);
+  h.failProvider();
+  const result = await h.call(CHAT, input, { token });
+  assert.equal(result.status, 502, JSON.stringify(result.body));
+  assert.equal(h.calls(), 1);
+  assert.equal(h.data.aioDeveloperBilling.alice.balance, 1000000);
+  assert.equal(h.data.aioDeveloperBilling.alice.spent, 0);
+  assert.equal((await h.mod.wallet("alice")).reserved, 0);
+  const empty = setup();
+  coldTransactions(empty);
+  await assert.rejects(empty.mod.reserve("alice", "missing", 10, "aio-2", "key", 30, "test"), /Insufficient/);
+  await assert.rejects(empty.mod.settle("alice", "missing"), /could not be settled/);
+  assert.equal(empty.data.aioDeveloperBilling?.alice, undefined);
+});
+test("cold manual-payment review and approval preserve the quote and deduplicate credits", async () => {
+  const h = setup();
+  coldTransactions(h);
+  const id = await paymentReady(h);
+  assert.equal((await h.call(ADMIN, approve(id))).status, 200);
+  assert.equal((await h.call(ADMIN, approve(id))).status, 200);
+  assert.equal(h.data.aioDeveloperInvoices.alice[id].status, "credited");
+  assert.equal(h.data.aioDeveloperBilling.alice.balance, 10000000);
+  assert.equal(Object.keys(h.data.aioDeveloperBilling.alice.grants).length, 1);
+});
+test("cold webhook workers claim delivery, persist results, rotate settings and retry safely", async () => {
+  const h = setup();
+  coldTransactions(h);
+  const configuration = { action: "webhook", enabled: true, url: "https://hooks.example.com/aio", events: ["balance.low"] };
+  assert.equal((await h.call(INTEGRATIONS, configuration)).status, 200);
+  const rotated = await h.call(INTEGRATIONS, { ...configuration, rotate: true });
+  assert.equal(rotated.status, 200);
+  assert.equal(h.data.aioDeveloperWebhooks.alice.version, 2);
+  h.failWebhook();
+  const queued = await h.call(INTEGRATIONS, { action: "test-webhook" });
+  assert.equal(queued.status, 200);
+  const id = queued.body.id;
+  assert.equal(h.data.aioDeveloperEventQueue[id].webhook.attempts, 1);
+  h.failWebhook(false);
+  assert.equal((await h.call(INTEGRATIONS, { action: "retry-event", id })).status, 200);
+  assert.equal(h.data.aioDeveloperEventQueue[id].status, "completed");
+  assert.equal(h.webhookPosts.length, 1);
+  const events = h.load("lib/developers/events.ts");
+  assert.equal(await events.deliverEvent(id), false);
+  assert.equal(await events.deliverEvent("missing"), false);
+  await assert.rejects(events.retryEvent("alice", "missing"), /not found/);
+  assert.equal(h.webhookPosts.length, 1);
+});
+test("an invoice deleted after the review read is never recreated or reported as updated", async () => {
+  const h = setup();
+  const requested = await h.call(ACCOUNT, { action: "invoice", credits: 10, termsAccepted: true });
+  const id = requested.body.invoice.id;
+  const db = h.mocks["@/lib/firebase-admin"].adminDb, original = db.ref;
+  db.ref = (path = "") => {
+    const base = original(path);
+    if (path !== `aioDeveloperInvoices/alice/${id}`) return base;
+    return { ...base, transaction: async (fn) => {
+      await base.remove();
+      return base.transaction(fn);
+    } };
+  };
+  const response = await h.call(ADMIN, {
+    action: "invoice-review", uid: "alice", invoiceId: id,
+    reviewAction: "request-information", note: "Test concurrent deletion during invoice review.",
+  });
+  assert.equal(response.status, 409);
+  assert.equal(h.data.aioDeveloperInvoices.alice[id], undefined);
+  assert.equal(h.data.aioDeveloperInvoiceQueue[id].status, "requested");
+  assert.equal(h.data.aioDeveloperBilling, undefined);
+});

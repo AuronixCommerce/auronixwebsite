@@ -35,6 +35,9 @@ async function changeInvoice(
     .ref(`aioDeveloperInvoices/${uid}/${id}`)
     .transaction((v) => {
       reason = "";
+      // Firebase may invoke this with null before reading the server record.
+      // Do not abort early or recreate an invoice deleted during this review.
+      if (v === null) return null;
       try {
         const next = change(v);
         return {
@@ -50,7 +53,7 @@ async function changeInvoice(
         return;
       }
     });
-  if (!r.committed)
+  if (!r.committed || r.snapshot.val() === null)
     throw new DeveloperError(
       reason || "Invoice changed. Refresh and retry.",
       409,
