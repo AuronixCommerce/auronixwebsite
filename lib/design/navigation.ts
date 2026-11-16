@@ -15,7 +15,7 @@ export const NAV_GROUPS = [
   {
     title: "Commerce",
     note: "From supplier relationships to marketplace operations.",
-    paths: ["/solutions", "/marketplace-expertise", "/partners"],
+    paths: ["/amazon-store", "/solutions", "/marketplace-expertise", "/partners"],
   },
   {
     title: "Partners",
@@ -52,6 +52,7 @@ export const NAV_GROUPS = [
   },
 ];
 export const PUBLIC_PAGES = [
+  {id:"amazon-store",path:"/amazon-store",title:"AuronixDirect Amazon Store",category:"Commerce"},
   {id:"aio-api-changelog",path:"/aio/developers/changelog",title:"AIO API Changelog",category:"Resources"},
   {id:"aio-api-terms",path:"/aio/developers/terms",title:"AIO API Terms & Manual Payments",category:"Resources"},
  {id:"aio-developers",path:"/aio/developers",title:"AIO API for Developers",category:"Resources"},

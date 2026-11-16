@@ -23,6 +23,7 @@ const PUBLIC_ROUTES: Array<{
   changeFrequency: Frequency;
   priority: number;
 }> = [
+  {path:'/amazon-store',changeFrequency:'weekly',priority:0.9},
   {path:'/guides',changeFrequency:'monthly',priority:0.8},
   {path:'/partnership-call',changeFrequency:'monthly',priority:0.7},
   {path:'/guide',changeFrequency:'monthly',priority:0.8},

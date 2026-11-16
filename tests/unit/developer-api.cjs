@@ -15,6 +15,7 @@ function setup(extra = {}) {
     },
     settings: {
       aioDeveloperApi: {
+        pricingVersion: 2,
         enabled: true,
         usdCentsPerCredit: 100,
         requestsPerMinute: 30,
@@ -603,8 +604,8 @@ test("launch pricing is usable by default and explicit admin pauses remain respe
     p = await h.mod.getPricing();
   assert.equal(p.enabled, true);
   assert.equal(p.usdCentsPerCredit, 100);
-  assert.equal(p.rates["aio-2"].input, 500);
-  assert.equal(p.rates["aio-2-fast"].output, 1000);
+  assert.equal(p.rates["aio-2"].input, 2500);
+  assert.equal(p.rates["aio-2-fast"].output, 5000);
   const paused = setup();
   paused.data.settings.aioDeveloperApi.enabled = false;
   assert.equal((await paused.mod.getPricing()).enabled, false);
@@ -1613,4 +1614,47 @@ test("high reasoning is sent only to supported GPT-OSS models and returned token
     if (prior === undefined) delete process.env.GROQ_API_KEY;
     else process.env.GROQ_API_KEY = prior;
   }
+});
+
+test("pricing v2 increases legacy token rates exactly fivefold without changing balances or credit value", async () => {
+  const h = setup();
+  await funded(h);
+  delete h.data.settings.aioDeveloperApi.pricingVersion;
+  const original = structuredClone(h.data.settings.aioDeveloperApi);
+  const balance = h.data.aioDeveloperBilling.alice.balance;
+  const price = await h.mod.getPricing();
+  assert.equal(price.rates['aio-2'].input, original.rates['aio-2'].input * 5);
+  assert.equal(price.rates['aio-2'].output, original.rates['aio-2'].output * 5);
+  assert.equal(price.usdCentsPerCredit, original.usdCentsPerCredit);
+  assert.equal(price.pricingVersion, 2);
+  assert.deepEqual(await h.mod.getPricing(), price);
+  assert.deepEqual(h.data.settings.aioDeveloperApi, original);
+  assert.equal(h.data.aioDeveloperBilling.alice.balance, balance);
+  h.data.settings.aioDeveloperApi = h.model.parsePricing(price);
+  assert.deepEqual(await h.mod.getPricing(), price);
+});
+test("pricing migration preserves pauses and uses current defaults for missing model rates", async () => {
+  const h = setup();
+  h.data.settings.aioDeveloperApi = { enabled: false, usdCentsPerCredit: 100, rates: { 'aio-one': { input: 250, output: 1000 } } };
+  const p = await h.mod.getPricing();
+  assert.equal(p.enabled, false);
+  assert.equal(p.rates['aio-one'].input, 1250);
+  assert.equal(p.rates['aio-2'].input, 2500);
+  h.data.settings.aioDeveloperApi = { enabled: false, usdCentsPerCredit: 0, rates: {} };
+  assert.equal((await h.mod.getPricing()).enabled, false);
+});
+test("new requests charge the published 5x legacy rates while ledger and wallet remain consistent", async () => {
+  const current = setup(), legacy = setup();
+  const key1 = await funded(current, 10000000), key2 = await funded(legacy, 10000000);
+  delete legacy.data.settings.aioDeveloperApi.pricingVersion;
+  const before = await current.call(CHAT, input, { token: key1 });
+  const after = await legacy.call(CHAT, input, { token: key2 });
+  assert.equal(before.status, 200);
+  assert.equal(after.status, 200);
+  assert.equal(after.body.billing.charged_units, before.body.billing.charged_units * 5);
+  assert.equal(legacy.data.aioDeveloperBilling.alice.balance, 10000000 - after.body.billing.charged_units);
+  const record = Object.values(legacy.data.aioDeveloperUsage.alice)[0];
+  assert.equal(record.rates.input, 500000);
+  assert.equal(record.rates.output, 1000000);
+  assert.equal(record.charged, after.body.billing.charged_units);
 });

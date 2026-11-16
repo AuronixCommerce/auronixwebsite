@@ -1,6 +1,8 @@
 import { AIO_API_IDENTITY_PROMPT } from "@/lib/aio/api-identity";
 
 export const CREDIT_UNITS = 1_000_000;
+export const API_PRICING_VERSION = 2;
+export const LEGACY_TOKEN_PRICE_MULTIPLIER = 5;
 export const DEFAULT_COMPLETION_TOKENS = 4096;
 export const MAX_COMPLETION_TOKENS = 8192;
 export const API_TERMS_VERSION = "2026-11-13-manual-v1";
@@ -24,19 +26,21 @@ export const DEVELOPER_MODELS = [
 ] as const;
 export type DeveloperModel = (typeof DEVELOPER_MODELS)[number]["id"];
 export type ApiPricing = {
+  pricingVersion?: number;
   enabled: boolean;
   usdCentsPerCredit: number;
   requestsPerMinute: number;
   rates: Record<DeveloperModel, { input: number; output: number }>;
 };
 export const DEFAULT_API_PRICING: ApiPricing = {
+  pricingVersion: API_PRICING_VERSION,
   enabled: true,
   usdCentsPerCredit: 100,
   requestsPerMinute: 30,
   rates: {
-    "aio-one": { input: 250, output: 1000 },
-    "aio-2": { input: 500, output: 2000 },
-    "aio-2-fast": { input: 250, output: 1000 },
+    "aio-one": { input: 1250, output: 5000 },
+    "aio-2": { input: 2500, output: 10000 },
+    "aio-2-fast": { input: 1250, output: 5000 },
   },
 };
 export function credits(units: number) {
@@ -94,6 +98,7 @@ export function parsePricing(value: any): ApiPricing {
     rates[m.id] = { input: r.input, output: r.output };
   }
   return {
+    pricingVersion: API_PRICING_VERSION,
     enabled: value.enabled,
     usdCentsPerCredit: value.usdCentsPerCredit,
     requestsPerMinute: value.requestsPerMinute,

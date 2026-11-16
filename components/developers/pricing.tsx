@@ -29,6 +29,7 @@ export function DeveloperPricing() {
   const ready = pricing && pricingReady(pricing);
   return (
     <>
+      <p className="dev-muted">Token pricing updated November 16, 2026: input and output rates increased 5× for new requests. Existing credit balances and past charges are unchanged. Current rates are shown below.</p>
       <div className="dev-model-grid">
         {DEVELOPER_MODELS.map((m, i) => (
           <article className="dev-card" key={m.id}>

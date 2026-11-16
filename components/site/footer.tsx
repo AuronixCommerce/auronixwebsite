@@ -5,6 +5,7 @@ import { Spinner } from "@/components/design/primitives";
 import { FormEvent, useEffect, useState } from "react";
 
 import Link from "next/link";
+import { AmazonLink } from "./amazon-link";
 import { AuronixMark } from "@/components/site/auronix-mark";
 
 import {
@@ -307,6 +308,7 @@ export function Footer() {
             <h3 className="text-sm font-semibold">Sellers & Partners</h3>
 
             <nav className="mt-4 space-y-3 text-sm text-foreground-muted">
+              <AmazonLink destination="page" compact className="amazon-footer-link" />
               <a
                 href={AMAZON_STORE_URL}
                 target="_blank"

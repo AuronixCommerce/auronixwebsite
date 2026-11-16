@@ -1,5 +1,13 @@
 export const API_RELEASES = [
   {
+    id: "2026-11-16-pricing",
+    version: "API v1 · Pricing v2",
+    date: "2026-11-16",
+    title: "Token pricing update for future usage",
+    type: "release",
+    body: "Input and output token prices increased 5× for new requests. Standard rates per million tokens: AIO One / AIO 2 Fast $1.25 input and $5 output; AIO 2 $2.50 input and $10 output. One credit remains $1. Existing balances, past usage charges, locked invoice quotes and accepted request rate snapshots are unchanged. Check the API page or console for current admin-published rates before making a request.",
+  },
+  {
     id: "2026-11-14",
     version: "API v1 · 2026-11-14",
     date: "2026-11-14",

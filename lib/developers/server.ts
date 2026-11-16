@@ -11,6 +11,9 @@ import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
 import {
   DEFAULT_API_PRICING,
+  API_PRICING_VERSION,
+  LEGACY_TOKEN_PRICE_MULTIPLIER,
+  DEVELOPER_MODELS,
   CREDIT_UNITS,
   API_TERMS_VERSION,
   type ApiPricing,
@@ -159,11 +162,22 @@ export async function getPricing(): Promise<ApiPricing> {
     !data ||
     (Number(data.usdCentsPerCredit || 0) === 0 &&
       Object.values<any>(data.rates || {}).every((r) => !r.input && !r.output));
-  if (unpublished) return structuredClone(DEFAULT_API_PRICING);
+  if (unpublished)
+    return { ...structuredClone(DEFAULT_API_PRICING), enabled: data?.enabled !== false };
+  const legacy = Number(data.pricingVersion || 1) < API_PRICING_VERSION;
+  const rates = Object.fromEntries(DEVELOPER_MODELS.map(({ id }) => {
+    const stored = data.rates?.[id];
+    const rate = stored || DEFAULT_API_PRICING.rates[id];
+    const multiplier = legacy && stored ? LEGACY_TOKEN_PRICE_MULTIPLIER : 1;
+    return [id, { input: rate.input * multiplier, output: rate.output * multiplier }];
+  })) as ApiPricing['rates'];
+  // Adapt legacy records at read time; admin saves stamp the current version.
+  // Existing wallets, invoices and accepted request rate snapshots are untouched.
   return {
     ...DEFAULT_API_PRICING,
-    ...(data || {}),
-    rates: { ...DEFAULT_API_PRICING.rates, ...(data?.rates || {}) },
+    ...data,
+    pricingVersion: API_PRICING_VERSION,
+    rates,
   };
 }
 export async function account(uid: string, approved = false) {
