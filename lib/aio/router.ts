@@ -1,3 +1,4 @@
+import { isDeveloperTopic } from './developer-brand';
 import type { AioChatMessage, AioIntent, AioRouteDecision } from '@/lib/aio/types';
 
 const CONTINUE_RE = /^(continue|go on|keep going|carry on|more|tell me more|continue please)[.!\s]*$/i;
@@ -39,6 +40,8 @@ function classify(value: string): AioIntent {
   ) {
     return 'navigation';
   }
+
+  if (isDeveloperTopic(value)) return 'auronix_information';
 
   if (includesAny(text, ['supplier', 'manufacturer', 'distributor', 'brand partnership', 'supply products', 'onboarding'])) {
     return 'supplier';
@@ -94,8 +97,10 @@ export function routeAioQuery(
 ): AioRouteDecision {
   const latest = clean(latestUserMessage);
   const continuation = CONTINUE_RE.test(latest);
-  const prior = continuation ? previousUserMessage(messages) : '';
-  const queryForIntent = prior || latest;
+  const previous = previousUserMessage(messages);
+  const developerFollowup = !continuation && latest.length < 180 && isDeveloperTopic(previous) && /^(and\b|what about\b|how (?:much|many)\b|(?:pricing|prices?|costs?|billing|credits?|token limits?)\b)/i.test(latest);
+  const prior = continuation || developerFollowup ? previous : '';
+  const queryForIntent = developerFollowup ? `${prior}. ${latest}` : prior || latest;
   const intent = classify(queryForIntent);
   const trackingId = latest.match(TRACKING_ID_RE)?.[0]?.toUpperCase();
 
@@ -119,13 +124,13 @@ export function routeAioQuery(
   const retrievalQuery = clean(
     continuation
       ? `${prior}. Continue the current Auronix topic.${pageContext}`
-      : `${latest}${pageContext}`
+      : `${queryForIntent}${pageContext}`
   );
 
   return {
     intent,
     continuation,
-    requiresRetrieval: companyIntent || intent === 'marketplace',
+    requiresRetrieval: companyIntent || intent === 'marketplace' || isDeveloperTopic(retrievalQuery),
     requiresLiveData: intent === 'application_tracking' && Boolean(trackingId),
     requiresAuthentication: intent === 'application_tracking',
     shouldSuggestLiveAgent: intent === 'live_agent' || intent === 'support',

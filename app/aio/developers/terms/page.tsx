@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DeveloperLogo } from "@/components/developers/brand";
 import { buildSeo } from "@/lib/seo";
 import { API_TERMS_VERSION } from "@/lib/developers/model";
 import { API_TERMS_SECTIONS } from "@/lib/developers/terms";
@@ -15,7 +16,7 @@ export default function Page() {
       <div className="dev-wrap">
         <div className="dev-local-nav">
           <Link className="dev-brand" href="/aio/developers">
-            AIO <span>API service terms</span>
+            <DeveloperLogo />
           </Link>
           <Link className="dev-secondary" href="/aio/developers/console">
             Developer console

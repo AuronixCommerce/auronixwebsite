@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { DeveloperLogo } from "@/components/developers/brand";
 import dynamic from "next/dynamic";
 import { DeveloperIntegrations } from "./integrations";
 import {
@@ -198,7 +199,7 @@ export function DeveloperConsole() {
           aria-label="Developer console navigation"
         >
           <Link className="dev-brand" href="/aio/developers">
-            <AuronixMark /> AIO <span>developer console</span>
+            <DeveloperLogo />
           </Link>
           <div>
             <Link href="/aio/developers#api-reference">

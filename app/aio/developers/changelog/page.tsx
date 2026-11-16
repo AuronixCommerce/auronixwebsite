@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DeveloperLogo } from "@/components/developers/brand";
 import { API_RELEASES } from "@/lib/developers/changelog";
 import { PublicApiNotices } from "@/components/developers/changelog";
 import { SdkDownloads } from "@/components/developers/sdk-downloads";
@@ -15,7 +16,7 @@ export default function Page() {
       <div className="dev-wrap">
         <nav className="dev-local-nav" aria-label="API changelog navigation">
           <Link className="dev-brand" href="/aio/developers">
-            AIO <span>API changelog</span>
+            <DeveloperLogo />
           </Link>
           <Link className="dev-secondary" href="/aio/developers/console">
             Developer console

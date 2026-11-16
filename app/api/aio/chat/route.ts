@@ -1,3 +1,6 @@
+import { isDeveloperTopic } from "@/lib/aio/developer-brand";
+import { developerPricingKnowledge } from "@/lib/aio/developer-knowledge";
+import { getPricing } from "@/lib/developers/server";
 import { CUSTOMER_ACTIONS,suggestCustomerAction,type CustomerActionKind } from '@/lib/aio/customer-actions';
 import {
   SUPPORT_NAMES,
@@ -392,7 +395,6 @@ export async function POST(request: Request) {
       : "professional");
   const saveHistory = preferences?.saveHistory !== false;
   const decision = routeAioQuery(latestUserMessage, messages, pathname);
-  const retrievalLimit = safeNumber(settings.aioRetrievalLimit, 4, 1, 6);
   const maxResponseTokens = safeNumber(
     settings.aioMaxResponseTokens,
     1600,
@@ -407,12 +409,19 @@ export async function POST(request: Request) {
     knowledgeSnapshot.exists() ? knowledgeSnapshot.val() : {},
   );
 
+  if (knowledgeEnabled && isDeveloperTopic(decision.retrievalQuery)) {
+    const livePricing = await getPricing().then(developerPricingKnowledge).catch(() => null);
+    if (livePricing) records.push(livePricing);
+  }
+
   const ranked =
-    knowledgeEnabled && decision.requiresRetrieval
-      ? retrieveAioKnowledge(decision.retrievalQuery, records, {
+    knowledgeEnabled
+      ? retrieveAioKnowledge(decision.requiresRetrieval ? decision.retrievalQuery : "", records, {
           pathname,
           intent: decision.intent,
-          limit: retrievalLimit,
+          allRelevant: decision.requiresRetrieval,
+          limit: decision.requiresRetrieval ? undefined : 1,
+          requiredRoutes: ["/", "/aio/developers"],
           allowAuthenticated: Boolean(identity),
         })
       : [];
@@ -420,13 +429,14 @@ export async function POST(request: Request) {
   const evidence = ranked.map((entry) => entry.record);
   const sources = evidence.map(knowledgeToSource);
   const actions = buildAioActions(decision, sources);
-  const memoryMatch = findPremadeAnswer(latestUserMessage);
+  const memoryMatch = isDeveloperTopic(decision.retrievalQuery) || /\b(?:auronixdirect|amazon store|amazon storefront)\b/i.test(latestUserMessage)
+    ? null : findPremadeAnswer(latestUserMessage);
 
   if (memoryMatch && !decision.continuation && replyLength !== "detailed") {
     return streamResponse(async (send) => {
       send({ type: "message_start", requestId });
       send({ type: "status", label: "Found in Auronix knowledge" });
-      for (const source of sources.slice(0, 3)) {
+      for (const source of sources) {
         send({ type: "source", source });
       }
       for (const action of actions) {
@@ -579,7 +589,7 @@ export async function POST(request: Request) {
       send({
         type: "message_complete",
         requestId,
-        answerSource: sources.length ? "auronix" : "general",
+        answerSource: sources.length && decision.requiresRetrieval ? "auronix" : "general",
         provider: providerName,
         model: providerModel,
         usedFallback,

@@ -96,6 +96,7 @@ export function getStaticAioKnowledge(): AioKnowledgeRecord[] {
       .filter(Boolean)
       .join("\n"),
     summary: entry.summary,
+    lastUpdated: entry.updatedAt,
     sourceType: /privacy|terms|cookie|disclaimer|policy/i.test(entry.path)
       ? "policy"
       : "website",
@@ -219,7 +220,7 @@ function scoreRecord(
     tokens(`${title} ${body} ${category} ${metadata}`),
   );
 
-  let score = Number(record.priority || 0);
+  let score = 0;
 
   for (const token of queryTokens) {
     if (title.includes(token)) score += 4;
@@ -253,7 +254,7 @@ function scoreRecord(
     score += 8;
   if (intent === "policy" && record.sourceType === "policy") score += 8;
 
-  return score;
+  return score > 0 ? score + Number(record.priority || 0) : 0;
 }
 
 export function retrieveAioKnowledge(
@@ -263,6 +264,8 @@ export function retrieveAioKnowledge(
     pathname?: string;
     intent: AioIntent;
     limit?: number;
+    allRelevant?: boolean;
+    requiredRoutes?: string[];
     allowAuthenticated?: boolean;
   },
 ) {
@@ -281,19 +284,35 @@ export function retrieveAioKnowledge(
     }))
     .filter((entry) => entry.score > 1)
     .sort((a, b) => b.score - a.score)
-    .slice(0, limit);
+    .slice(0, options.allRelevant ? undefined : limit);
 
-  if (!ranked.length) {
+  // Required brand pages are consulted each turn; other pages still need relevance.
+  const required = (options.requiredRoutes || []).flatMap(route => {
+    const record = visible.find(item => item.route === route);
+    return record ? [{ record, score: 1 }] : [];
+  });
+  const combined = [...required, ...ranked.filter(entry => !required.some(item => item.record.id === entry.record.id))];
+  // Bound model context by text size, never hide a consulted source behind a display limit.
+  let remaining = 32000;
+  const selected: typeof ranked = [];
+  for (const entry of combined) {
+    if (remaining < 300) break;
+    const content = entry.record.content.slice(0, Math.min(4000, remaining));
+    selected.push({ ...entry, record: { ...entry.record, content } });
+    remaining -= content.length + entry.record.title.length + 180;
+  }
+
+  if (!selected.length) {
     const page = getPageKnowledge(pathname);
     if (page) {
       const record = getStaticAioKnowledge().find(
         (item) => item.route === page.path,
       );
-      if (record) ranked.push({ record, score: 1 });
+      if (record) selected.push({ record, score: 1 });
     }
   }
 
-  return ranked;
+  return selected;
 }
 
 export function knowledgeToSource(record: AioKnowledgeRecord): AioSource {

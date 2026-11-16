@@ -5,6 +5,9 @@ import { CustomerActionPanel,type CustomerActionSelection } from './customer-act
 import { isCustomerActionKind,type CustomerActionKind,CUSTOMER_ACTIONS } from '@/lib/aio/customer-actions';
 import { AIO_MODELS, normalizeAioModelId } from "@/lib/aio/models";
 import { AIMessageContent } from "./ai-message-content";
+import { AISearchActivity } from "./ai-search-activity";
+import { DeveloperLogo } from "@/components/developers/brand";
+import { isDeveloperTopic } from "@/lib/aio/developer-brand";
 import {
   CHAT_PREFERENCES_KEY,
   DEFAULT_CHAT_PREFERENCES,
@@ -241,6 +244,7 @@ export function AIChat({
   const abortRef = useRef<AbortController | null>(null);
 
   const currentAnswerRef = useRef("");
+  const [activeSources, setActiveSources] = useState<AioSource[]>([]);
   const currentSourcesRef = useRef<AioSource[]>([]);
   const currentActionsRef = useRef<AioAction[]>([]);
   const currentRequestIdRef = useRef("");
@@ -605,6 +609,7 @@ export function AIChat({
 
       setTicketStep("creating");
       setLoading(true);
+      setActiveSources([]);
 
       try {
         const response = await fetch("/api/aio/support-ticket", {
@@ -711,6 +716,7 @@ export function AIChat({
       return;
     }
     setLoading(true);
+    setActiveSources([]);
     setActivityLabel("AIO is analyzing…");
     setActiveAnswerSource("general");
     setVisibleAnswer("");
@@ -806,6 +812,7 @@ export function AIChat({
           ) {
             streamedSources = [...streamedSources, event.source];
             currentSourcesRef.current = streamedSources;
+            setActiveSources(streamedSources);
           }
           return;
         }
@@ -1613,7 +1620,8 @@ export function AIChat({
                           <div className="aio-message-body">
                             {message.role === "assistant" ? (
                               <>
-                                <AIMessageContent content={message.content} />
+                                <AISearchActivity sources={message.sources || []} />
+                                <AIMessageContent content={message.content} developerContext={isDeveloperTopic(messages[index - 1]?.role === "user" ? messages[index - 1].content : "")} />
                                 {message.interrupted && (
                                   <p className="aio-interrupted">
                                     Reply stopped before it finished.
@@ -1727,9 +1735,10 @@ export function AIChat({
                           <strong>AIO</strong>
                         </div>
                         <div className="aio-message-body">
+                          <AISearchActivity sources={activeSources} active />
                           {visibleAnswer ? (
                             <div className="aio-streaming">
-                              <AIMessageContent content={visibleAnswer} />
+                              <AIMessageContent content={visibleAnswer} developerContext={isDeveloperTopic(messages[messages.length - 1]?.role === "user" ? messages[messages.length - 1].content : "")} />
                               <span className="aio-stream-cursor" />
                             </div>
                           ) : (
@@ -2018,7 +2027,7 @@ function AioMessageSources({ sources }: { sources: AioSource[] }) {
                 key={source.id}
                 className="rounded-xl border border-border bg-secondary/35 p-3"
               >
-                <div className="text-xs font-semibold">{source.title}</div>
+                <div className="text-xs font-semibold">{isDeveloperTopic(source.title, [source.route || ""]) ? <DeveloperLogo /> : source.title}</div>
                 {source.excerpt && (
                   <div className="mt-1 line-clamp-3 text-[11px] leading-5 text-foreground-muted">
                     {source.excerpt}

@@ -1,6 +1,7 @@
 import { SdkDownloads } from "@/components/developers/sdk-downloads";
 import { DeveloperVideoGuide } from "@/components/developers/video-guide";
 import Link from "next/link";
+import { DeveloperLogo } from "@/components/developers/brand";
 import {
   ArrowUpRight,
   KeyRound,
@@ -24,7 +25,7 @@ export default function Page() {
       <div className="dev-wrap">
         <nav className="dev-local-nav" aria-label="Developer navigation">
           <Link href="/aio/developers" className="dev-brand">
-            <AuronixMark /> AIO <span>for developers</span>
+            <DeveloperLogo />
           </Link>
           <div>
             <a href="#models">Models &amp; pricing</a>

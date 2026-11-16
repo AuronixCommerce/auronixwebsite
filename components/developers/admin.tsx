@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { RefreshCw, Search, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import { DeveloperLogo } from "./brand";
 import { AdminLayout } from "@/components/admin/admin-layout";
 import { auth } from "@/lib/firebase";
 import {
@@ -91,6 +92,7 @@ export function AdminDevelopers() {
   return (
     <AdminLayout>
       <div className="dev-admin">
+        <DeveloperLogo className="aio-developer-admin-logo" />
         <div className="dev-section-title">
           <div>
             <span className="dev-kicker">AIO DEVELOPER PLATFORM</span>
