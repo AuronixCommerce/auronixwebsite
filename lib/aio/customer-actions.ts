@@ -486,6 +486,9 @@ export function customerActionSteps(
 }
 export function suggestCustomerAction(text: string): CustomerActionKind | null {
   const s = text.trim().toLowerCase();
+  // Informational overviews should use knowledge retrieval, not open a submission form.
+  if (/\b(?:overview|compare|comparison|explain|tell me about|information about)\b/.test(s) &&
+      !/\b(?:apply for me|submit|sign me up|subscribe me|unsubscribe me|send me|email me|open my|show my)\b/.test(s)) return null;
   if (
     /\b(unsubscribe|unsubcribe|stop (?:the )?(?:newsletter|marketing|updates))\b/.test(
       s,
@@ -509,7 +512,7 @@ export function suggestCustomerAction(text: string): CustomerActionKind | null {
     return "my_application";
   if (
     /\b(supplier|vendor)\b/.test(s) &&
-    /\b(apply|application|register|sign up|signup|become|start)\b/.test(s)
+    /\b(apply|application|register|sign (?:me )?up|signup|become|start)\b/.test(s)
   )
     return "supplier_apply";
   if (
@@ -519,7 +522,7 @@ export function suggestCustomerAction(text: string): CustomerActionKind | null {
     return "application_track";
   if (
     /\bseller\b/.test(s) &&
-    /\b(apply|application|register|sign up|signup|become)\b/.test(s)
+    /\b(apply|application|register|sign (?:me )?up|signup|become)\b/.test(s)
   )
     return "seller_apply";
   if (

@@ -8,6 +8,7 @@ test('developer topic and follow-ups use current site retrieval without turning 
   const { routeAioQuery } = h.load('lib/aio/router.ts');
   assert.equal(isDeveloperTopic('Tell me about AIO for developers'), true);
   assert.equal(isDeveloperTopic('How do I get an API key?'), true);
+  assert.equal(isDeveloperTopic('What are the current AIO One and AIO 2 API input and output token prices?'), true);
   assert.equal(isDeveloperTopic('Pricing?', ['/aio/developers#models']), true);
   assert.equal(isDeveloperTopic('What is photosynthesis?'), false);
   assert.equal(routeAioQuery('What is AIO for developers?', [{role:'user',content:'What is AIO for developers?'}]).requiresRetrieval, true);
@@ -61,7 +62,7 @@ test('chat supplies current pricing to the model and skips stale canned answers 
   assert.match(request.messages[0].content, /AIO 2: USD 7.00 per million input tokens; USD 15.00 per million output tokens/);
   assert.match(events, /live:aio-developer-pricing/);
   h.data.settings.aioDeveloperApi.rates['aio-2'].input = 9000;
-  const refreshed = await route.POST(new Request('http://localhost/api/aio/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversationId:'brand-knowledge-refresh',messages:[{role:'user',content:'What is current AIO API pricing?'}],preferences:{saveHistory:false}})}));
+  const refreshed = await route.POST(new Request('http://localhost/api/aio/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({conversationId:'brand-knowledge-refresh',messages:[{role:'user',content:'What are the current AIO One and AIO 2 API input and output token prices?'}],preferences:{saveHistory:false}})}));
   await refreshed.text();
   assert.match(request.messages[0].content, /AIO 2: USD 9.00 per million input tokens/);
   assert.equal(h.accesses.some(p => /^aioDeveloper(?:Billing|Accounts|Keys|Invoices)/.test(p)), false);
@@ -90,4 +91,10 @@ test('reply retrieval always checks the two base pages and includes more than fo
   assert.ok(!result.some(r=>r.record.id==='private'||r.record.id==='unrelated'));
   const general=retrieveAioKnowledge('photosynthesis',records,{intent:'general_question',allRelevant:true,requiredRoutes:['/','/aio/developers']});
   assert.deepEqual(general.map(r=>r.record.id),['home','dev']);
+});
+test('informational supplier overviews stay in chat while explicit application requests open the action', () => {
+  const h=harness(), {suggestCustomerAction}=h.load('lib/aio/customer-actions.ts');
+  assert.equal(suggestCustomerAction('Give me a short overview of AIO for developers pricing, supplier document checklists, application tracking, video guides and the Amazon store.'),null);
+  assert.equal(suggestCustomerAction('I want to apply as a supplier'),'supplier_apply');
+  assert.equal(suggestCustomerAction('Explain the process and sign me up as a supplier'),'supplier_apply');
 });
